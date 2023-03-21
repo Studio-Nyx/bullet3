@@ -1,0 +1,38 @@
+#ifndef _BT_CABLE_H
+#define _BT_CABLE_H
+
+#include "LinearMath/btAlignedObjectArray.h"
+#include "LinearMath/btTransform.h"
+#include "LinearMath/btIDebugDraw.h"
+#include "LinearMath/btVector3.h"
+#include "BulletDynamics/Dynamics/btRigidBody.h"
+
+#include "BulletCollision/CollisionShapes/btConcaveShape.h"
+#include "BulletCollision/CollisionDispatch/btCollisionCreateFunc.h"
+#include "BulletCollision/BroadphaseCollision/btDbvt.h"
+#include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
+#include "BulletDynamics/Featherstone/btMultiBodyConstraint.h"
+#include "BulletSoftBody/btSoftBody.h"
+
+///The btCable is a class that inherits from btSoftBody.
+///Its purpose is to be able to create a cable/rope with our own method parameters that Bullet does not implement.
+class btCable : public btSoftBody
+{
+public:
+	btCable(btSoftBodyWorldInfo* worldInfo, int node_count, const btVector3* x, const btScalar* m);
+
+	void removeLink(int index);
+	void removeNode(int index);
+	void removeAnchor(int index);
+
+	void setRestLenghtLink(int index, btScalar distance);
+	btScalar getRestLenghtLink(int index);
+
+	void swapNodes(int index0, int index1);
+
+	btScalar getLength();
+
+	btVector3* getImpulseAnchors(int nb);
+};
+
+#endif  //_BT_CABLE_H
