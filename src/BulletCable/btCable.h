@@ -1,6 +1,5 @@
 #ifndef _BT_CABLE_H
 #define _BT_CABLE_H
-
 #include "LinearMath/btAlignedObjectArray.h"
 #include "LinearMath/btTransform.h"
 #include "LinearMath/btIDebugDraw.h"
@@ -18,7 +17,14 @@
 ///Its purpose is to be able to create a cable/rope with our own method parameters that Bullet does not implement.
 class btCable : public btSoftBody
 {
+private:
+
 public:
+	btVector3* impulses;
+	
+	void solveConstraints() override;
+	static btSoftBody::psolver_t getSolver(ePSolver::_ solver);
+	static void PSolve_Anchors(btSoftBody* psb, btScalar kst, btScalar ti);
 	btCable(btSoftBodyWorldInfo* worldInfo, int node_count, const btVector3* x, const btScalar* m);
 
 	void removeLink(int index);
@@ -32,7 +38,7 @@ public:
 
 	btScalar getLength();
 
-	btVector3* getImpulseAnchors(int nb);
+	btVector3* getImpulses();
 };
 
 #endif  //_BT_CABLE_H

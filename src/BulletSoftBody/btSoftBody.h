@@ -1088,7 +1088,7 @@ public:
 	/* predictMotion														*/
 	void predictMotion(btScalar dt);
 	/* solveConstraints														*/
-	void solveConstraints();
+	virtual void solveConstraints();
 	/* staticSolve															*/
 	void staticSolve(int iterations);
 	/* solveCommonConstraints												*/
