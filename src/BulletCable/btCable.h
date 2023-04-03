@@ -25,6 +25,7 @@ public:
 	void solveConstraints() override;
 	static btSoftBody::psolver_t getSolver(ePSolver::_ solver);
 	static void PSolve_Anchors(btSoftBody* psb, btScalar kst, btScalar ti);
+	static void PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti);
 	btCable(btSoftBodyWorldInfo* worldInfo, int node_count, const btVector3* x, const btScalar* m);
 
 	void removeLink(int index);
