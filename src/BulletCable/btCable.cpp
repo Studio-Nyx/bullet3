@@ -149,12 +149,6 @@ void btCable::PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti)
 				btVector3 aPos = del * (k * a.m_im);
 				btVector3 bPos = del * (k * b.m_im);
 
-				if (i >= 2 * (psb->m_links.size() / 5) && i <= 3 * (psb->m_links.size() / 5))
-				{
-					aPos *= btVector3(0, 1, 0);
-					bPos *= btVector3(0, 1, 0);
-				}
-
 				a.m_x -= aPos;
 				b.m_x += bPos;
 			}
