@@ -36,6 +36,7 @@ public:
 	btScalar getRestLenghtLink(int index);
 
 	void swapNodes(int index0, int index1);
+	void swapAnchors(int index0, int index1);
 
 	btScalar getLength();
 

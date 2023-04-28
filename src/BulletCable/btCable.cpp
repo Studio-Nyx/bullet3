@@ -96,7 +96,7 @@ void btCable::PSolve_Anchors(btSoftBody* psb, btScalar kst, btScalar ti)
 		btVector3 impulse = a.m_c0 * vr * a.m_influence;
 		cable->impulses[i] += -impulse / dt;
 		btScalar k = cable->m_materials[0]->m_kLST;
-		a.m_body->applyImpulse((-impulse / dt) * k, a.m_c1);
+		a.m_body->applyImpulse((-impulse / dt) * k, a.m_c1);  // (-impulse / dt) * k <= - impulse (avant)
 		n.m_x += impulse * a.m_c2;
 	}
 }
@@ -104,15 +104,25 @@ void btCable::PSolve_Anchors(btSoftBody* psb, btScalar kst, btScalar ti)
 void btCable::PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti)
 {
 	btCable* cable = (btCable*)psb;
-	
 	BT_PROFILE("PSolve_Links");
 	for (int i = 0, ni = psb->m_links.size(); i < ni; ++i)
 	{
 		Link& l = psb->m_links[i];
 		if (l.m_c0 > 0 && l.m_c0)
 		{
+			// Based method
+			/*
 			Node& a = *l.m_n[0];
 			Node& b = *l.m_n[1];
+			const btVector3 del = b.m_x - a.m_x;
+			const btScalar len = del.length2();
+			if (l.m_c1 + len > SIMD_EPSILON)
+			{
+				const btScalar k = ((l.m_c1 - len) / (l.m_c0 * (l.m_c1 + len))) * kst;
+				a.m_x -= del * (k * a.m_im);
+				b.m_x += del * (k * b.m_im);
+			}
+			*/
 
 			// Position Based Dynamics method
 			/*
@@ -140,17 +150,63 @@ void btCable::PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti)
 			b.m_x += delB * kprime;  // k || kprime
 			*/
 
-			// Based method
-			const btVector3 del = b.m_x - a.m_x;
+			// Scalar projection
+			Node& a = *l.m_n[0];
+			Node& b = *l.m_n[1];
+			btVector3 del = b.m_x - a.m_x;
 			const btScalar len = del.length2();
 			if (l.m_c1 + len > SIMD_EPSILON)
 			{
 				const btScalar k = ((l.m_c1 - len) / (l.m_c0 * (l.m_c1 + len))) * kst;
-				btVector3 aPos = del * (k * a.m_im);
-				btVector3 bPos = del * (k * b.m_im);
+				btVector3 posA = (del * (k * a.m_im));
+				btVector3 posB = (del * (k * b.m_im));
 
-				a.m_x -= aPos;
-				b.m_x += bPos;
+				if (a.m_n != btVector3(0, 0, 0))
+				{
+					/*
+					{ // Strict position
+						del = a.m_n * l.m_rl;
+
+						btVector3 posA = (del * (k * a.m_im));
+						btVector3 posB = (del * (k * b.m_im));
+
+						b.m_x = posB + a.m_x + del;
+					}
+					*/
+
+					/* 
+					{ // Orthogonal projection 
+						btVector3 normal = btVector3(0, 1, 0);
+						btScalar ratio = del.dot(normal) / normal.length2();
+						btVector3 proj = ratio * normal;
+
+						btVector3 posA = (proj * (k * a.m_im));
+						btVector3 posB = (proj * (k * b.m_im));
+
+						a.m_x -= posA;
+						b.m_x = posB + a.m_x + proj;
+					}
+					*/
+
+					{ // BlackHole method
+						btVector3 dirBlackHole = a.m_n - a.m_x;
+						btScalar forceBlackHole = 1 / dirBlackHole.length();
+						a.m_x -= dirBlackHole * forceBlackHole * k;
+					}
+
+					/*
+					{ // BlackHole Orthogonal projection method
+						btVector3 dirBlackHole = a.m_n - a.m_x;
+						btVector3 normal = btVector3(1, 0, 0).normalize();
+						btVector3 projBlackHole = (dirBlackHole.dot(normal) / normal.length2()) * normal;
+						btScalar forceBlackHole = 1 / projBlackHole.length();
+						a.m_x -= projBlackHole * forceBlackHole * k;
+					}
+					*/
+				}
+
+				a.m_x -= posA;
+				b.m_x += posB;
 			}
 
 			// simple method : Distance constraint
@@ -205,6 +261,11 @@ btScalar btCable::getRestLenghtLink(int index)
 void btCable::swapNodes(int index0, int index1)
 {
 	m_nodes.swap(index0, index1);
+}
+
+void btCable::swapAnchors(int index0, int index1)
+{
+	m_anchors.swap(index0, index1);
 }
 
 btScalar btCable::getLength()
