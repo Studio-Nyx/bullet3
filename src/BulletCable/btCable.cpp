@@ -3,7 +3,191 @@
 #include <fstream>
 #include <iostream>
 
-void btCable::solveConstraints() {
+#pragma region Forces
+
+void btCable::addSpringForces()
+{
+	// each link will receive an amout of force depending the spring-mass and the damping
+	// 0----/\/\/-----0 Spring-mass : force exerted by spring to restore its relaxed state
+	std::ofstream MyFile("addSpringForces.txt");
+
+	for (int i = 0; i < m_links.size(); ++i)
+	{
+		Link& l = m_links[i];  // the spring
+		Node& na = *l.m_n[0];  // 1st particle
+		Node& nb = *l.m_n[1];  // 2nd particle
+
+		btVector3 ab = nb.m_x - na.m_x;       // vector AB
+		btScalar lenAB = ab.length();         // length AB
+		btVector3 dirAB = ab.normalized();    // direction AB
+		btScalar k = m_materials[0]->m_kLST;  // spring stiffness
+		btScalar b = m_materials[0]->m_kVST;  // spring bending
+		btScalar angle = dirAB.angle(btVector3(0, 1, 0));
+
+		// Hook's law - Axial stiffness
+		btVector3 sForce = k * (lenAB - l.m_rl) * dirAB;  // Hook's law on the link's direction
+		if (na.m_battach == 0) na.m_f += sForce;
+		if (nb.m_battach == 0) nb.m_f -= sForce;
+
+		// Bending stiffness
+
+		MyFile << "Link[" << i << "]: " << std::endl;
+		MyFile << "		k(stiffness): " << k << std::endl;
+		MyFile << "		Length(AB): " << lenAB << std::endl;
+		MyFile << "		Diff length(lij - l0): " << (lenAB - l.m_rl) << std::endl;
+		MyFile << "		sForce(AB): " << sForce.length() << std::endl;
+	}
+
+	for (int i = 0; i < m_nodes.size(); ++i)
+		MyFile << "		Forces n[" << i << "]:" << m_nodes[i].m_f << std::endl
+			   << std::endl;
+
+	// Close the file
+	MyFile.close();
+}
+
+void btCable::addMoorDyn()
+{
+	// each link will receive an amout of force depending the spring-mass and the damping
+	// 0----/\/\/-----0 Spring-mass : force exerted by spring to restore its relaxed state
+	// 0----[===|-----0 Damping : reduce the oscillations in the spring
+	std::ofstream MyFile("addMoorDyn.txt");
+
+	btScalar I = 3.1415 / 4. * (2 * getCollisionShape()->getMargin()) * (2 * getCollisionShape()->getMargin());
+	btScalar E = 3.0e6;
+	btScalar C = 3.0e5;
+
+	MyFile << "I: " << I << std::endl;
+	MyFile << "E: " << E << std::endl;
+	MyFile << "C: " << C << std::endl;
+	MyFile << std::endl;
+
+	for (int i = 0; i < m_links.size(); ++i)
+	{
+		Link& l = m_links[i];  // the spring
+		Node& na = *l.m_n[0];  // 1st particle
+		Node& nb = *l.m_n[1];  // 2nd particle
+
+		btVector3 AB = nb.m_x - na.m_x;  // vector AB
+		btScalar lenAB = AB.length();    // length AB
+		btVector3 velAB = nb.m_v - na.m_v;
+		btVector3 rateStrainAB = AB * velAB / l.m_rl;
+		btScalar k = m_materials[0]->m_kLST;
+		btScalar d = m_materials[0]->m_kVST;
+
+		btVector3 tForce = k * (lenAB - l.m_rl) * AB.normalized();
+		if (na.m_battach == 0) na.m_f += tForce;
+		if (nb.m_battach == 0) nb.m_f -= tForce;
+
+
+		MyFile << "Link[" << i << "]: " << std::endl;
+		MyFile << "		K(stiffness): " << E * I << std::endl;
+		MyFile << "		C(damping): " << C * I << std::endl;
+		MyFile << "		Length(AB): " << lenAB << std::endl;
+		MyFile << "		Ratio (AB): " << (AB / l.m_rl).length() << std::endl;
+		MyFile << "		Diff. length: " << (lenAB - l.m_rl) << std::endl;
+		MyFile << "		Vel. AB: " << velAB.length() << std::endl;
+		MyFile << "		rate of strain: " << rateStrainAB.length() << std::endl;
+		MyFile << "		sForce(AB): " << tForce.length() << std::endl;
+	}
+
+	MyFile << std::endl;
+	for (int i = 0; i < m_nodes.size(); ++i)
+		MyFile << "Forces n[" << i << "]:" << m_nodes[i].m_f.length() << std::endl;
+	MyFile << std::endl;
+}
+
+void btCable::addForces()
+{
+	std::ofstream MyFile("addForces.txt");
+
+	for (int i = 0; i < m_links.size(); ++i)
+	{
+		Link& l  = m_links[i]; // the spring
+		Node& na = *l.m_n[0];  // 1st particle
+		Node& nb = *l.m_n[1];  // 2nd particle
+
+		btVector3 distAB  = nb.m_x - na.m_x;     // distance AB
+		btVector3 velAB   = nb.m_v - na.m_v;     // velocity AB
+		btScalar lenAB    = distAB.length();     // length AB
+		btVector3 dirAB   = distAB.normalized(); // direction AB
+
+		btScalar mr   = 1 / (na.m_im + nb.m_im);	  // mass reduced
+		btScalar k    = m_materials[0]->m_kLST;		  // spring stiffness
+		btScalar kMax = mr / (m_sst.sdt * m_sst.sdt); // spring stiffness max
+		btScalar d    = m_materials[0]->m_kVST;		  // spring damping
+		btScalar dMax = mr / m_sst.sdt;			      // spring damping max
+
+		// Forces
+		btVector3 sForce = k * kMax * (lenAB - l.m_rl) * dirAB;  // spring force
+		if (na.m_battach == 0) na.m_f += sForce;
+		if (nb.m_battach == 0) nb.m_f -= sForce;
+
+		btScalar velA = dirAB.dot(na.m_v);
+		btScalar velB = dirAB.dot(nb.m_v);
+		btVector3 dForce = d * dMax * dirAB.dot(velAB) * dirAB;  // damping force
+		// if (na.m_battach == 0) na.m_f += dForce;
+		// if (nb.m_battach == 0) nb.m_f -= dForce;
+
+		btVector3 gForce = 0.5 * m_worldInfo->m_gravity * mr; // gravity force
+		if (na.m_battach == 0) na.m_f += gForce;
+		if (nb.m_battach == 0) nb.m_f += gForce;
+
+		MyFile << "Link[" << i << "]: " << std::endl;
+		{
+			MyFile << "	k (stiffness): " << k << std::endl;
+			MyFile << "	kMax (stiffness): " << kMax << std::endl;
+			MyFile << "	d (damping): " << d << std::endl;
+			MyFile << "	dMax (damping): " << dMax << std::endl;
+
+			MyFile << "	Node A: " << std::endl;
+			{
+				MyFile << "		Mass inv. (a): " << na.m_im << std::endl;
+				MyFile << "		Mass (a): " << mr << std::endl;
+				MyFile << "		Pos. (a): (" << na.m_x.getX() << "; " << na.m_x.getY() << "; " << na.m_x.getZ() << ")" << std::endl;
+				MyFile << "		Vel. (a): (" << na.m_v.getX() << "; " << na.m_v.getY() << "; " << na.m_v.getZ() << ")" << std::endl;
+				MyFile << "		Vel. length (a): " << na.m_v.length() << std::endl;
+			}
+
+			MyFile << "	Node B:" << std::endl;
+			{
+				MyFile << "		Mass inv. (b): " << nb.m_im << std::endl;
+				MyFile << "		Mass (b): " << mr << std::endl;
+				MyFile << "		Pos. (b): (" << nb.m_x.getX() << "; " << nb.m_x.getY() << "; " << nb.m_x.getZ() << ")" << std::endl;
+				MyFile << "		Vel. (b): (" << nb.m_v.getX() << "; " << nb.m_v.getY() << "; " << nb.m_v.getZ() << ")" << std::endl;
+				MyFile << "		Vel. length (b): " << nb.m_v.length() << std::endl;
+			}
+
+			MyFile << "	Forces:" << std::endl;
+			{
+				MyFile << "		Spring Force: " << sForce.length() << std::endl;		
+				MyFile << "		Spring Force (a): (" << sForce.getX() << "; " << sForce.getY() << "; " << sForce.getZ() << ")" << std::endl;
+				MyFile << "		Spring Force (b): (" << -sForce.getX() << "; " << -sForce.getY() << "; " << -sForce.getZ() << ")" << std::endl;
+
+				MyFile << "		Damping Force: " << dForce.length() << std::endl;
+				MyFile << "		Damping Force (a): (" << dForce.getX() << "; " << dForce.getY() << "; " << dForce.getZ() << ")" << std::endl;
+				MyFile << "		Damping Force (b): (" << -dForce.getX() << "; " << -dForce.getY() << "; " << -dForce.getZ() << ")" << std::endl;
+
+				MyFile << "		Gravity Force: " << gForce.length() << std::endl;
+				MyFile << "		Gravity Force (a): (" << -gForce.getX() << "; " << -gForce.getY() << "; " << -gForce.getZ() << ")" << std::endl;
+				MyFile << "		Gravity Force (b): (" << -gForce.getX() << "; " << -gForce.getY() << "; " << -gForce.getZ() << ")" << std::endl;
+			}
+
+			MyFile << std::endl;
+		}
+	}
+
+	MyFile << std::endl;
+	for (int i = 0; i < m_nodes.size(); ++i)
+		MyFile << "Total forces node[" << i << "]:" << m_nodes[i].m_f.length() << std::endl;
+	MyFile << std::endl;
+
+	MyFile.close();
+}
+
+
+void btCable::solveConstraints()
+{
 
 	int i, ni;
 
@@ -13,20 +197,16 @@ void btCable::solveConstraints() {
 		l.m_c3 = l.m_n[1]->m_q - l.m_n[0]->m_q;
 		l.m_c2 = 1 / (l.m_c3.length2() * l.m_c0);
 	}
-
 	/* Prepare anchors		*/
 	for (i = 0, ni = m_anchors.size(); i < ni; ++i)
 	{
 		Anchor& a = m_anchors[i];
 		const btVector3 ra = a.m_body->getWorldTransform().getBasis() * a.m_local;
-		
-
 		a.m_c0 = ImpulseMatrix(m_sst.sdt,
 							   a.m_node->m_im,
 							   a.m_body->getInvMass(),
 							   a.m_body->getInvInertiaTensorWorld(),
 							   ra);
-		// impulseMatrix = Diagonal(2.4); <==> sdt: 0.0167 / a.n.im: 25 / a.body.im: 1/16000 / a.body.invTen: truc tres ptit (~0) / pos par rapport à l'init ?
 		a.m_c1 = ra;
 		a.m_c2 = m_sst.sdt * a.m_node->m_im;
 		a.m_body->activate();
@@ -34,18 +214,19 @@ void btCable::solveConstraints() {
 	/* Solve positions		*/
 	if (m_cfg.piterations > 0)
 	{
-		// reset impulses for each frame
-		for (int i = 0; i < m_anchors.size(); ++i)
-			impulses[i] = btVector3{0, 0, 0};
-
-		for (int isolve = 0; isolve < m_cfg.piterations; ++isolve)
+		for (int isolve = 0; isolve < 1; ++isolve)
 		{
+			for (i = 0, ni = m_anchors.size(); i < ni; ++i)
+				impulses[i] = btVector3(0, 0, 0);
+
 			const btScalar ti = isolve / (btScalar)m_cfg.piterations;
-			for (int iseq = 0; iseq < m_cfg.m_psequence.size(); ++iseq)
+			for (int iseq = 0; iseq < 2; ++iseq)
 			{
-				getSolver(m_cfg.m_psequence[iseq])(this, 1, 0);
+				btCable::getSolver(m_cfg.m_psequence[iseq])(this, 1, ti);
 			}
 		}
+
+		/*
 		const btScalar vc = m_sst.isdt * (1 - m_cfg.kDP);
 		for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 		{
@@ -53,18 +234,102 @@ void btCable::solveConstraints() {
 			n.m_v = (n.m_x - n.m_q) * vc;
 			n.m_f = btVector3(0, 0, 0);
 		}
+		*/
+	}
+}
+
+#pragma endregion
+
+void btCable::predictMotion(btScalar dt)
+{
+	int i, ni;
+	/* Prepare                */
+	m_sst.sdt = dt * m_cfg.timescale;
+	m_sst.isdt = 1 / m_sst.sdt;
+	m_sst.velmrg = m_sst.sdt * 3;
+	m_sst.radmrg = getCollisionShape()->getMargin();
+	m_sst.updmrg = m_sst.radmrg * (btScalar)0.25;
+
+	/* Forces        */
+	addForces(); // spring-mass
+
+	/* Integrate (old: Euler semi-Implicit) */
+	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
+	{
+		Node& n = m_nodes[i];
+		n.m_q = n.m_x;
+		btVector3 deltaV = n.m_f * n.m_im * m_sst.sdt;
+		n.m_v += deltaV;
+		n.m_x += n.m_v * m_sst.sdt;
+
+
+		n.m_v *= (1 - m_cfg.kDP);
+		n.m_f = btVector3(0, 0, 0);
 	}
 
- }
+	/* Integrate (new)
+	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
+	{
+		Node& n = m_nodes[i];
+		if (n.m_battach == 0)
+		{
+			n.m_q = n.m_x;
+
+			btVector3 acc = n.m_f * n.m_im;
+			n.m_x += n.m_v * m_sst.sdt + 0.5 * acc * m_sst.sdt * m_sst.sdt;
+			n.m_v += acc * m_sst.sdt;
+			n.m_v *= (1 - m_cfg.kDP);
+	
+			n.m_f = btVector3(0, 0, 0);
+		}
+	}
+	*/
+
+	/* Integrate (new: Implicit)
+	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
+	{
+		Node& n = m_nodes[i];
+		if (n.m_battach == 0)
+		{
+			n.m_v +=  
+
+			n.m_f = btVector3(0, 0, 0);
+		}
+	}
+	*/
+
+	/* Bounds                */
+	updateBounds();
+	/* Nodes                */
+	ATTRIBUTE_ALIGNED16(btDbvtVolume)
+	vol;
+	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
+	{
+		Node& n = m_nodes[i];
+		vol = btDbvtVolume::FromCR(n.m_x, m_sst.radmrg);
+		m_ndbvt.update(n.m_leaf,
+					   vol,
+					   n.m_v * m_sst.velmrg,
+					   m_sst.updmrg);
+	}
+
+	/* Clear contacts        */
+	m_rcontacts.resize(0);
+	m_scontacts.resize(0);
+	/* Optimize dbvt's        */
+	m_ndbvt.optimizeIncremental(1);
+	m_fdbvt.optimizeIncremental(1);
+	m_cdbvt.optimizeIncremental(1);
+}
 
 btSoftBody::psolver_t btCable::getSolver(ePSolver::_ solver)
 {
 	switch (solver)
 	{
-		case ePSolver::Anchors:
-			return (&btCable::PSolve_Anchors);
 		case ePSolver::Linear:
 			return (&btCable::PSolve_Links);
+		case ePSolver::Anchors:
+			return (&btCable::PSolve_Anchors);
 		case ePSolver::RContacts:
 			return (&btSoftBody::PSolve_RContacts);
 		case ePSolver::SContacts:
@@ -78,8 +343,7 @@ btSoftBody::psolver_t btCable::getSolver(ePSolver::_ solver)
 
 void btCable::PSolve_Anchors(btSoftBody* psb, btScalar kst, btScalar ti)
 {
-
-	btCable* cable = (btCable*) psb;
+	btCable* cable = (btCable*)psb;
 
 	BT_PROFILE("PSolve_Anchors");
 	const btScalar kAHR = psb->m_cfg.kAHR * kst;
@@ -89,14 +353,13 @@ void btCable::PSolve_Anchors(btSoftBody* psb, btScalar kst, btScalar ti)
 		Anchor& a = psb->m_anchors[i];
 		const btTransform& t = a.m_body->getWorldTransform();
 		Node& n = *a.m_node;
-		const btVector3 wa = t * a.m_local;
-		const btVector3 va = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt;
-		const btVector3 vb = n.m_x - n.m_q;
+		const btVector3 wa = t * a.m_local;                                   // world pos
+		const btVector3 va = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt;  // speed rel.
+		const btVector3 vb = n.m_x - n.m_q;                                   // speed node
 		const btVector3 vr = (va - vb) + (wa - n.m_x) * kAHR;
 		btVector3 impulse = a.m_c0 * vr * a.m_influence;
 		cable->impulses[i] += -impulse / dt;
-		btScalar k = cable->m_materials[0]->m_kLST;
-		a.m_body->applyImpulse((-impulse / dt) * k, a.m_c1);  // (-impulse / dt) * k <= - impulse (avant)
+		a.m_body->applyImpulse(-impulse, a.m_c1);
 		n.m_x += impulse * a.m_c2;
 	}
 }
@@ -104,137 +367,127 @@ void btCable::PSolve_Anchors(btSoftBody* psb, btScalar kst, btScalar ti)
 void btCable::PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti)
 {
 	btCable* cable = (btCable*)psb;
+	int method = 0;
+
 	BT_PROFILE("PSolve_Links");
-	for (int i = 0, ni = psb->m_links.size(); i < ni; ++i)
+	for (int i = 0; i < psb->m_links.size(); ++i)
 	{
 		Link& l = psb->m_links[i];
 		if (l.m_c0 > 0 && l.m_c0)
 		{
-			// Based method
-			/*
-			Node& a = *l.m_n[0];
-			Node& b = *l.m_n[1];
-			const btVector3 del = b.m_x - a.m_x;
-			const btScalar len = del.length2();
-			if (l.m_c1 + len > SIMD_EPSILON)
-			{
-				const btScalar k = ((l.m_c1 - len) / (l.m_c0 * (l.m_c1 + len))) * kst;
-				a.m_x -= del * (k * a.m_im);
-				b.m_x += del * (k * b.m_im);
-			}
-			*/
-
-			// Position Based Dynamics method
-			/*
-			const btVector3 v_ab = a.m_x - b.m_x;
-			const btScalar d_ab = v_ab.length2();
-			const btScalar d_ab_abs = abs(d_ab);
-			const btScalar d_wanted = pow(l.m_rl, 2);
-			const btScalar k = cable->m_materials[0]->m_kLST;
-			const btScalar n = d_ab / d_ab_abs;
-		
-			// Scalar
-			btScalar ma = a.m_im / (a.m_im + b.m_im);
-			btScalar mb = b.m_im / (a.m_im + b.m_im);
-			btScalar d = d_ab_abs - d_wanted;
-
-			// Streching
-			btVector3 v = v_ab / d_ab_abs;
-			btVector3 delA = d * v * ma;
-			btVector3 delB = d * v * mb;
-
-			btScalar kprime = 1 - pow(1 - k, 1 / n);
-
-			// POSITIONS
-			a.m_x -= delA * kprime;  // k || kprime
-			b.m_x += delB * kprime;  // k || kprime
-			*/
-
-			// Scalar projection
 			Node& a = *l.m_n[0];
 			Node& b = *l.m_n[1];
 			btVector3 del = b.m_x - a.m_x;
 			const btScalar len = del.length2();
 			if (l.m_c1 + len > SIMD_EPSILON)
 			{
-				const btScalar k = ((l.m_c1 - len) / (l.m_c0 * (l.m_c1 + len))) * kst;
-				btVector3 posA = (del * (k * a.m_im));
-				btVector3 posB = (del * (k * b.m_im));
-
-				if (a.m_n != btVector3(0, 0, 0))
+				switch ((int)method)
 				{
-					/*
-					{ // Strict position
-						del = a.m_n * l.m_rl;
+					// Place nodes : Based method
+					case 0:
+					default:
+					{
+						btScalar k = ((l.m_c1 - len) / (l.m_c0 * (l.m_c1 + len))) * kst;
+						a.m_x -= (del * (k * a.m_im));
+						b.m_x += (del * (k * b.m_im));
+					}
+					break;
 
+					// Place nodes: Strict position (not working)
+					/*
+					case 1:
+					{
+						del = a.m_n * l.m_rl;
 						btVector3 posA = (del * (k * a.m_im));
 						btVector3 posB = (del * (k * b.m_im));
-
 						b.m_x = posB + a.m_x + del;
 					}
+					break;
 					*/
 
-					/* 
-					{ // Orthogonal projection 
-						btVector3 normal = btVector3(0, 1, 0);
-						btScalar ratio = del.dot(normal) / normal.length2();
-						btVector3 proj = ratio * normal;
+					// Place nodes: Position Based Dynamics method
+					case 2:
+					{
+						// diff distance
+						btScalar lenAB = del.length();
+						btScalar diff = lenAB - l.m_rl;
+						btVector3 n = del / lenAB;
 
-						btVector3 posA = (proj * (k * a.m_im));
-						btVector3 posB = (proj * (k * b.m_im));
+						// mass
+						btScalar ma = a.m_im / (a.m_im + b.m_im);  // 0.5
+						btScalar mb = b.m_im / (a.m_im + b.m_im);  // 0.5
 
-						a.m_x -= posA;
-						b.m_x = posB + a.m_x + proj;
+						// positions
+						a.m_x -= ma * diff * n;
+						b.m_x += mb * diff * n;
+
+						// Stiffness
+						btScalar k = cable->m_materials[0]->m_kLST;
+						btScalar kprime = 1 - pow(1 - k, 1 / ti);
+						// add the stiffness
 					}
-					*/
+					break;
 
-					{ // BlackHole method
-						btVector3 dirBlackHole = a.m_n - a.m_x;
-						btScalar forceBlackHole = 1 / dirBlackHole.length();
-						a.m_x -= dirBlackHole * forceBlackHole * k;
-					}
+					// Place nodes: Distance constraint method
+					case 3:
+					{
+						btVector3 posA = a.m_x;
+						btVector3 posB = b.m_x;
+						btVector3 direction = (posB - posA).normalize();
+						btScalar abs_p12 = abs((posA - posB).length());
+						btScalar c = abs_p12 - l.m_rl;
 
-					/*
-					{ // BlackHole Orthogonal projection method
-						btVector3 dirBlackHole = a.m_n - a.m_x;
-						btVector3 normal = btVector3(1, 0, 0).normalize();
-						btVector3 projBlackHole = (dirBlackHole.dot(normal) / normal.length2()) * normal;
-						btScalar forceBlackHole = 1 / projBlackHole.length();
-						a.m_x -= projBlackHole * forceBlackHole * k;
+						a.m_x += direction * c / 2;
+						b.m_x -= direction * c / 2;
 					}
-					*/
+					break;
+
+					// Place & Grab nodes: Blackhole method
+					case 4:
+					{
+						btScalar k = ((l.m_c1 - len) / (l.m_c0 * (l.m_c1 + len))) * kst;
+						if (a.m_n != btVector3(0, 0, 0))
+						{
+							// BlackHole method (use the node's normal)
+							btVector3 dirBlackHole = a.m_n - a.m_x;
+							btScalar forceBlackHole = 1 / dirBlackHole.length();
+							a.m_x -= dirBlackHole * forceBlackHole * k;
+						}
+						a.m_x -= (del * (k * a.m_im));
+						b.m_x += (del * (k * b.m_im));
+					}
+					break;
+
+					// Place nodes: relaxation method
+					case 5:
+					{
+						btScalar deltaD = del.length() - l.m_rl;
+						btVector3 direction = del.normalized();
+						btScalar k = cable->m_materials[0]->m_kLST;
+						btScalar kprime = 1.0 - pow(1.0 - k, ti);
+
+						a.m_x += k * 0.5 * deltaD * direction;
+						b.m_x -= k * 0.5 * deltaD * direction;
+					}
+					break;
 				}
-
-				a.m_x -= posA;
-				b.m_x += posB;
 			}
-
-			// simple method : Distance constraint
-			/*
-			btVector3 posA = a.m_x;
-			btVector3 posB = b.m_x;
-			btVector3 direction = (posB - posA).normalize();
-			btScalar abs_p12 = abs((posA - posB).length());
-			btScalar d = l.m_rl;
-			btScalar c = abs_p12 - d;
-
-			a.m_x += direction * c / 2;
-			b.m_x -= direction * c / 2;
-			*/
 		}
 	}
 }
 
-btCable::btCable(btSoftBodyWorldInfo* worldInfo, int node_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m) 
+btCable::btCable(btSoftBodyWorldInfo* worldInfo, int node_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
 {
 	impulses = new btVector3[2]{btVector3(0, 0, 0)};
 }
 
-void btCable::removeLink(int index) {
+void btCable::removeLink(int index)
+{
 	m_links.removeAtIndex(index);
 }
 
-void btCable::removeNode(int index) {
+void btCable::removeNode(int index)
+{
 	m_nodes.removeAtIndex(index);
 }
 
@@ -279,18 +532,4 @@ btScalar btCable::getLength()
 btVector3* btCable::getImpulses()
 {
 	return impulses;
-}
-
-btCable::DeformableNodeRigidAnchor* btCable::appendDeformableAnchor(int node, btRigidBody* body)
-{
-	btSoftBody::appendDeformableAnchor(node, body);
-	DeformableNodeRigidAnchor* defAnchor = &m_deformableAnchors[m_deformableAnchors.size() - 1];
-	return defAnchor;
-}
-
-btCable::DeformableNodeRigidAnchor* btCable::appendDeformableAnchor(int node, btMultiBodyLinkCollider* link)
-{
-	btSoftBody::appendDeformableAnchor(node, link);
-	DeformableNodeRigidAnchor* defAnchor = &m_deformableAnchors[m_deformableAnchors.size() - 1];
-	return defAnchor;
 }

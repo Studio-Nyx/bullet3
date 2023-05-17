@@ -1086,7 +1086,7 @@ public:
 	/* Solver presets														*/
 	void setSolver(eSolverPresets::_ preset);
 	/* predictMotion														*/
-	void predictMotion(btScalar dt);
+	virtual void predictMotion(btScalar dt);
 	/* solveConstraints														*/
 	virtual void solveConstraints();
 	/* staticSolve															*/

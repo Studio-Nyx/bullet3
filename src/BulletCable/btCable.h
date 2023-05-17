@@ -19,9 +19,16 @@ class btCable : public btSoftBody
 {
 private:
 	btVector3* impulses;
+	// btVector3* springsForces;
+
+	// Differents forces for the cable:
+	void addSpringForces(); // other way to add the spring & damping forces for the links
+	void addMoorDyn();
+	void addForces();
 
 public:
 
+	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
 	static btSoftBody::psolver_t getSolver(ePSolver::_ solver);
 	static void PSolve_Anchors(btSoftBody* psb, btScalar kst, btScalar ti);
@@ -41,9 +48,6 @@ public:
 	btScalar getLength();
 
 	btVector3* getImpulses();
-
-	DeformableNodeRigidAnchor* appendDeformableAnchor(int node, btRigidBody* body);
-	DeformableNodeRigidAnchor* appendDeformableAnchor(int node, btMultiBodyLinkCollider* link);
 };
 
 #endif  //_BT_CABLE_H
