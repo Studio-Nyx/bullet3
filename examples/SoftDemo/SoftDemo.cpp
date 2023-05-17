@@ -15,6 +15,21 @@ subject to the following restrictions:
 
 ///btSoftBody implementation by Nathanael Presson
 
+
+//#include "../MultiThreadedDemo/CommonRigidBodyMTBase.cpp"#include "../MultiThreadedDemo/CommonRigidBodyMTBase.h"
+//#include "../MultiThreadedDemo/CommonRigidBodyMTBase.cpp"
+
+
+
+#include "../Utils/b3ResourcePath.h"
+#include "Bullet3Common/b3FileUtils.h"
+#include "../Importers/ImportObjDemo/LoadMeshFromObj.h"
+#include "../OpenGLWindow/GLInstanceGraphicsShape.h"
+#include "../Utils/b3BulletDefaultFileIO.h"
+
+#include "../CommonInterfaces/CommonRigidBodyBase.h"
+
+
 #include "btBulletDynamicsCommon.h"
 #include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
 
@@ -35,6 +50,10 @@ subject to the following restrictions:
 
 #include "LinearMath/btAlignedObjectArray.h"
 #include "BulletSoftBody/btSoftBody.h"
+#include "BulletCable/btCable.h"
+
+#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h>
+#include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
 
 class btBroadphaseInterface;
 class btCollisionShape;
@@ -79,6 +98,7 @@ public:
 
 	btBroadphaseInterface* m_broadphase;
 
+	//btCollisionDispatcherMt* m_dispatcher;
 	btCollisionDispatcher* m_dispatcher;
 
 	btConstraintSolver* m_solver;
@@ -341,6 +361,7 @@ struct TetraBunny
 struct TetraCube
 {
 #include "cube.inl"
+
 };
 
 //
@@ -505,6 +526,7 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 {
 	//TRACEDEMO
 	pdemo->m_softBodyWorldInfo.m_sparsesdf.RemoveReferences(0);
+	
 	struct Functors
 	{
 		static btSoftBody* CtorRope(SoftDemo* pdemo, const btVector3& p)
@@ -517,12 +539,124 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 	};
 	btTransform startTransform;
 	startTransform.setIdentity();
+	//startTransform.setOrigin(btVector3(-5, 2, 0));
+	//startTransform.setOrigin(btVector3(0, 20, 0));
+
 	startTransform.setOrigin(btVector3(12, 8, 0));
-	btRigidBody* body = pdemo->createRigidBody(50, startTransform, new btBoxShape(btVector3(2, 6, 2)));
-	btSoftBody* psb0 = Functors::CtorRope(pdemo, btVector3(0, 8, -1));
-	btSoftBody* psb1 = Functors::CtorRope(pdemo, btVector3(0, 8, +1));
-	psb0->appendAnchor(psb0->m_nodes.size() - 1, body);
-	psb1->appendAnchor(psb1->m_nodes.size() - 1, body);
+	btTransform startTransformU;
+	startTransformU.setIdentity();
+	//startTransformU.setOrigin(btVector3(5, -2, 0));
+	//startTransformU.setOrigin(btVector3(10, 20, 0));
+	startTransformU.setOrigin(btVector3(12.5, 12, 0));
+
+
+	//btRigidBody* body = pdemo->createRigidBody(50, startTransform, new btBoxShape(btVector3(2, 6, 2)));
+	
+	//btRigidBody* bodyAnchorU = pdemo->createRigidBody(10, startTransformU, new btBoxShape(btVector3(1, 1, 1)));
+	//btRigidBody* body = pdemo->createRigidBody(10, startTransform, new btBoxShape(btVector3(1, 1, 1)));
+	
+
+
+	
+
+	//body->setDamping(btScalar(0.5), btScalar(0.5));
+	//btSoftBody* psb0 = Functors::CtorRope(pdemo, btVector3(0, 8, -1));
+	//btSoftBody* psb1 = Functors::CtorRope(pdemo, btVector3(0, 8, +1));
+	//psb0->appendAnchor(psb0->m_nodes.size() - 1, body);
+	//psb1->appendAnchor(psb1->m_nodes.size() - 1, body);
+	
+	// Obj 1
+	
+		/* Loading object */
+		//load our obj mesh
+		//const char* fileName = "teddy.obj";  //sphere8.obj";//sponza_closed.obj";//sphere8.obj";
+		const char* fileName = "sphere8.obj";
+		char relativeFileName[1024];
+		if (b3ResourcePath::findResourcePath(fileName, relativeFileName, 1024, 0))
+		{
+			char pathPrefix[1024];
+			b3FileUtils::extractPath(relativeFileName, pathPrefix, 1024);
+		}
+
+		b3BulletDefaultFileIO fileIO;
+		GLInstanceGraphicsShape* glmesh = LoadMeshFromObj(relativeFileName, "", &fileIO);
+		printf("[INFO] Obj loaded: Extracted %d verticed from obj file [%s]\n", glmesh->m_numvertices, fileName);
+
+		
+		btConvexHullShape* shape = new btConvexHullShape();
+		for (int i = 0; i < glmesh->m_numvertices; i++)
+		{
+			const GLInstanceVertex& v = glmesh->m_vertices->at(i);
+			float temp = v.xyzw[0];
+			btVector3 vtx(v.xyzw[0],  v.xyzw[1],  v.xyzw[2]);
+			shape->addPoint(vtx);
+		}
+		float scaling[4] = {1, 1, 1,1};
+		
+		btVector3 localScaling(scaling[0], scaling[1], scaling[2]);
+		shape->setLocalScaling(localScaling);
+		shape->optimizeConvexHull();
+		shape->initializePolyhedralFeatures();
+
+
+		//shape->setMargin(0.5);
+		//pdemo->m_collisionShapes.push_back(shape);
+
+ 		btTransform ObjTransform;
+		ObjTransform.setIdentity();
+
+		btScalar mass(100.f);
+		bool isDynamic = (mass != 0.f);
+		btVector3 localInertia(0, 0, 0);
+
+		float color[4] = {1, 1, 1, 1};
+		float orn[4] = {0, 0, 0, 1};
+		float pos[4] = {0, 3, 0, 0};
+		btVector3 position(pos[0], pos[1], pos[2]);
+		ObjTransform.setOrigin(position);
+
+		btRigidBody* bodyMesh = pdemo->createRigidBody(mass, ObjTransform, shape);
+		btRigidBody* body = pdemo->createRigidBody(0, startTransform, shape);
+		btRigidBody* bodyAnchor = pdemo->createRigidBody(mass, startTransformU, shape);
+					
+		body->getCollisionShape()->setMargin(0.005);
+		bodyAnchor->getCollisionShape()->setMargin(0.005);
+	// End of loading object
+		
+	
+		// cable init
+		const int r = 20;
+		btVector3* x = new btVector3[r];
+		btScalar* m = new btScalar[r];
+		int i;
+
+		for (i = 0; i < r; ++i)
+		{
+			const btScalar t = i / (btScalar)(r - 1);
+			x[i] = lerp(startTransformU.getOrigin() + btVector3(0,- 0.51, 0), startTransform.getOrigin() + btVector3(0, 0.5, 0), t);
+			m[i] = 1;
+		}
+
+		btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), r, x, m);
+		for (i = 1; i < r; ++i)
+		{
+			cable->appendLink(i - 1, i);
+		}
+		cable->getCollisionShape()->setMargin(0.005);
+		cable->setTotalMass(3.335);
+		cable->m_cfg.piterations = 512;
+		cable->m_cfg.kAHR = 1;
+		cable->m_cfg.kKHR = 1;
+		pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
+
+		cable->appendAnchor(0, bodyAnchor);
+		cable->appendAnchor(cable->m_nodes.size() - 1, body);
+		for (int i = 0; i < cable->m_nodes.size(); i++)
+		{
+			cable->m_nodes[i].index = i;
+		}
+	
+	
 }
 
 //
@@ -1545,7 +1679,7 @@ void (*demofncs[])(SoftDemo*) =
 void	SoftDemo::clientResetScene()
 {
 	m_azi = 0;
-	m_cameraDistance = 30.f;
+	m_cameraDistance = 10.f;
 	m_cameraTargetPosition.setValue(0,0,0);
 
 	
@@ -2027,6 +2161,72 @@ void	SoftDemo::mouseFunc(int button, int state, int x, int y)
 }
 #endif
 
+
+///
+/// btTaskSchedulerManager -- manage a number of task schedulers so we can switch between them
+///
+class btTaskSchedulerManager
+{
+	btAlignedObjectArray<btITaskScheduler*> m_taskSchedulers;
+	btAlignedObjectArray<btITaskScheduler*> m_allocatedTaskSchedulers;
+
+public:
+	btTaskSchedulerManager() {}
+	void init()
+	{
+		addTaskScheduler(btGetSequentialTaskScheduler());
+#if BT_THREADSAFE
+		if (btITaskScheduler* ts = btCreateDefaultTaskScheduler())
+		{
+			m_allocatedTaskSchedulers.push_back(ts);
+			addTaskScheduler(ts);
+		}
+		addTaskScheduler(btGetOpenMPTaskScheduler());
+		addTaskScheduler(btGetTBBTaskScheduler());
+		addTaskScheduler(btGetPPLTaskScheduler());
+		if (getNumTaskSchedulers() > 1)
+		{
+			// prefer a non-sequential scheduler if available
+			btSetTaskScheduler(m_taskSchedulers[1]);
+		}
+		else
+		{
+			btSetTaskScheduler(m_taskSchedulers[0]);
+		}
+#endif  // #if BT_THREADSAFE
+	}
+	void shutdown()
+	{
+		for (int i = 0; i < m_allocatedTaskSchedulers.size(); ++i)
+		{
+			delete m_allocatedTaskSchedulers[i];
+		}
+		m_allocatedTaskSchedulers.clear();
+	}
+
+	void addTaskScheduler(btITaskScheduler* ts)
+	{
+		if (ts)
+		{
+#if BT_THREADSAFE
+			// if initial number of threads is 0 or 1,
+			if (ts->getNumThreads() <= 1)
+			{
+				// for OpenMP, TBB, PPL set num threads to number of logical cores
+				ts->setNumThreads(ts->getMaxNumThreads());
+			}
+#endif  // #if BT_THREADSAFE
+			m_taskSchedulers.push_back(ts);
+		}
+	}
+	int getNumTaskSchedulers() const { return m_taskSchedulers.size(); }
+	btITaskScheduler* getTaskScheduler(int i) { return m_taskSchedulers[i]; }
+};
+
+static btTaskSchedulerManager gTaskSchedulerMgr;
+
+
+
 void SoftDemo::initPhysics()
 {
 	///create concave ground mesh
@@ -2112,10 +2312,17 @@ void SoftDemo::initPhysics()
 
 	m_dispatcher = 0;
 
+
+	if (gTaskSchedulerMgr.getNumTaskSchedulers() == 0)
+	{
+		gTaskSchedulerMgr.init();
+	}
+
 	///register some softbody collision algorithms on top of the default btDefaultCollisionConfiguration
 	m_collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration();
 
-	m_dispatcher = new btCollisionDispatcher(m_collisionConfiguration);
+	//m_dispatcher = new btCollisionDispatcher(m_collisionConfiguration);
+	m_dispatcher = new btCollisionDispatcherMt(m_collisionConfiguration);
 	m_softBodyWorldInfo.m_dispatcher = m_dispatcher;
 
 	////////////////////////////
@@ -2128,11 +2335,14 @@ void SoftDemo::initPhysics()
 	btVector3 worldAabbMin(-1000, -1000, -1000);
 	btVector3 worldAabbMax(1000, 1000, 1000);
 
-	m_broadphase = new btAxisSweep3(worldAabbMin, worldAabbMax, maxProxies);
+	//m_broadphase = new btAxisSweep3(worldAabbMin, worldAabbMax, maxProxies);
+
+	m_broadphase = new btDbvtBroadphase();
 
 	m_softBodyWorldInfo.m_broadphase = m_broadphase;
 
-	btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
+	//btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
+	btSequentialImpulseConstraintSolverMt* solver = new btSequentialImpulseConstraintSolverMt();
 
 	m_solver = solver;
 
@@ -2162,6 +2372,7 @@ void SoftDemo::initPhysics()
 	g_softBodyOutput = new btSoftBodySolverOutputCLtoCPU;
 #endif  //USE_AMD_OPENCL
 
+	//btDiscreteDynamicsWorld* world = new btSoftRigidDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfiguration);
 	btDiscreteDynamicsWorld* world = new btSoftRigidDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfiguration, softBodySolver);
 	m_dynamicsWorld = world;
 	m_dynamicsWorld->setInternalTickCallback(pickingPreTickCallback, this, true);
@@ -2206,7 +2417,7 @@ void SoftDemo::initPhysics()
 	motorcontrol.goal = 0;
 	motorcontrol.maxtorque = 0;
 
-	m_softBodyWorldInfo.air_density = (btScalar)1.2;
+	m_softBodyWorldInfo.air_density = (btScalar)0;
 	m_softBodyWorldInfo.water_density = 0;
 	m_softBodyWorldInfo.water_offset = 0;
 	m_softBodyWorldInfo.water_normal = btVector3(0, 0, 0);
