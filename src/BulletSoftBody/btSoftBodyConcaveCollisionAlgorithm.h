@@ -110,6 +110,10 @@ class btSoftBodyConcaveCollisionAlgorithm : public btCollisionAlgorithm
 	btSoftBodyTriangleCallback m_btSoftBodyTriangleCallback;
 
 public:
+	bool isSwapped()
+	{
+		return m_isSwapped;
+	}
 	btSoftBodyConcaveCollisionAlgorithm(const btCollisionAlgorithmConstructionInfo& ci, const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, bool isSwapped);
 
 	virtual ~btSoftBodyConcaveCollisionAlgorithm();

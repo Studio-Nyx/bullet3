@@ -83,6 +83,11 @@ btConvexConcaveCollisionAlgorithm : public btActivatingCollisionAlgorithm
 public:
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
+	bool isSwapped()
+	{
+		return m_isSwapped;
+	}
+
 	btConvexConcaveCollisionAlgorithm(const btCollisionAlgorithmConstructionInfo& ci, const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, bool isSwapped);
 
 	virtual ~btConvexConcaveCollisionAlgorithm();

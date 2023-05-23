@@ -202,11 +202,6 @@ struct btBridgedManifoldResult : public btManifoldResult
 
 	virtual void addContactPoint(const btVector3& normalOnBInWorld, const btVector3& pointInWorld, btScalar depth)
 	{
-		ofstream myfilee;
-		myfilee.open("AA.txt");
-		myfilee << "Here";
-		myfilee.close();
-
 		bool isSwapped = m_manifoldPtr->getBody0() != m_body0Wrap->getCollisionObject();
 		btVector3 pointA = pointInWorld + normalOnBInWorld * depth;
 		btVector3 localA;
@@ -247,6 +242,7 @@ struct btBridgedManifoldResult : public btManifoldResult
 		//experimental feature info, for per-triangle material etc.
 		const btCollisionObjectWrapper* obj0Wrap = isSwapped ? m_body1Wrap : m_body0Wrap;
 		const btCollisionObjectWrapper* obj1Wrap = isSwapped ? m_body0Wrap : m_body1Wrap;
+
 		m_resultCallback.addSingleResult(newPt, obj0Wrap, newPt.m_partId0, newPt.m_index0, obj1Wrap, newPt.m_partId1, newPt.m_index1);
 	}
 };
@@ -919,6 +915,31 @@ void btCable::setCollisionShapeNode(btCollisionShape* nodeShape) {
 }
 
 
+struct MyContactResultCallback : public btCollisionWorld::ContactResultCallback
+{
+	bool m_haveContact;
+	btScalar m_margin;
+	btScalar m_dist = 10000000.0;
+	btVector3 norm;
+	bool swap = false;
+	MyContactResultCallback(float margin) : m_haveContact(false), m_margin(margin), norm(btVector3(0, 0, 0))
+	{
+	}
+	virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1)
+	{
+		if (cp.getDistance() <= m_margin)
+		{
+			m_haveContact = true;
+			if (cp.getDistance() < m_dist)
+			{
+				m_dist = cp.getDistance();
+				norm = cp.m_normalWorldOnB;
+			}
+		}
+		return 1.f;
+	}
+};
+
 bool btCable::checkContact(const btCollisionObjectWrapper* colObjWrap,
 							  const btVector3& x,
 							  btScalar margin,
@@ -927,33 +948,9 @@ bool btCable::checkContact(const btCollisionObjectWrapper* colObjWrap,
 	btVector3 nrm;
 	const btCollisionShape* shp = colObjWrap->getCollisionShape();
 	const btCollisionObject* obj = colObjWrap->getCollisionObject();
-	btCollisionObject tempo = btCollisionObject(*obj);
+	btCollisionObject colObjRef = btCollisionObject(*obj);
 
 	const btTransform& wtr = colObjWrap->getWorldTransform();
-	
-	struct MyContactResultCallback : public btCollisionWorld::ContactResultCallback
-	{
-		bool m_connected;
-		btScalar m_margin;
-		btScalar m_dist=10000000.0;
-		btVector3 norm;
-		MyContactResultCallback(float margin) : m_connected(false), m_margin(margin), norm(btVector3(0,0,0))
-		{
-		}
-		virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1)
-		{
-			if (cp.getDistance() <= m_margin)
-			{
-				m_connected = true;
-				if (cp.getDistance() < m_dist)
-				{
-					m_dist = cp.getDistance() - m_margin;
-					norm = cp.m_normalWorldOnB;
-				}	 
-			}
-			return 1.f;
-		} 
-	};
  
 	MyContactResultCallback result(margin);
 
@@ -979,14 +976,17 @@ bool btCable::checkContact(const btCollisionObjectWrapper* colObjWrap,
 	nodeShape.setWorldTransform(temp);
 	nodeShape.setCollisionShape(new btSphereShape(margin));
 	
-	checkCollide(&nodeShape, &tempo, result);
+	bool swap = checkCollide(&nodeShape, &colObjRef, result);
 	
-	//world->contactPairTest(&nodeShape, &tempo, result);
-	
-	if (result.m_connected)
+	if (result.m_haveContact)
 	{		
 		cti.m_colObj = colObjWrap->getCollisionObject();
-		cti.m_normal = result.norm;
+		
+		if (swap)
+			cti.m_normal = -result.norm;
+		else
+			cti.m_normal = result.norm;
+
 		cti.m_offset = -btDot(cti.m_normal, x - cti.m_normal * result.m_dist);		
 		return (true);
 	}
@@ -999,37 +999,31 @@ void btCable::setWorldRef(btCollisionWorld* colWorld)
 	this->world = colWorld;
 }
 
-void btCable::checkCollide(btCollisionObject* colObjA, btCollisionObject* colObjB, btCollisionWorld::ContactResultCallback& resultCallback) const 
+bool btCable::checkCollide(btCollisionObject* colObjA, btCollisionObject* colObjB, btCollisionWorld::ContactResultCallback& resultCallback) const 
 {	
 	btCollisionObjectWrapper obA(0, colObjA->getCollisionShape(), colObjA, colObjA->getWorldTransform(), -1, -1);
 	btCollisionObjectWrapper obB(0, colObjB->getCollisionShape(), colObjB, colObjB->getWorldTransform(), -1, -1);
-	
-	//btCollisionAlgorithm* algorithm = m_worldInfo->m_dispatcher->findAlgorithm(&obA, &obB, 0, BT_CLOSEST_POINT_ALGORITHMS);
-	
-	/*
-	btCollisionAlgorithmConstructionInfo ci;
-	ci.m_dispatcher1 = world->getDispatcher();
-
-	void* membis = ci.m_dispatcher1->allocateCollisionAlgorithm(sizeof(btConvexConvexAlgorithm));
-	//btCollisionAlgorithmCreateFunc *m_convexConvexCreateFunc = new (mem) btConvexConvexAlgorithm::CreateFunc(m_pdSolver);
-	//default CreationFunctions, filling the m_doubleDispatch table
+	bool swap=false;
 		
-	btCollisionAlgorithm* Tempalgorithm = new (membis) btConvexConvexAlgorithm(tempManiforld, ci, &obA, &obB, m_pdSolver, 3, 0);
-	*/
 	btCollisionAlgorithm* Tempalgorithm = m_worldInfo->m_dispatcher->findAlgorithm(&obA, &obB, tempManiforld, BT_CLOSEST_POINT_ALGORITHMS);
 	
 	if (Tempalgorithm)
 	{
-		// Pass here
+		swap = Tempalgorithm->isSwapped();
+		if (swap)
+			printf("");
+
 		btBridgedManifoldResult contactPointResult(&obA, &obB, resultCallback);
 		contactPointResult.m_closestPointDistanceThreshold = resultCallback.m_closestDistanceThreshold;
 		//discrete collision detection query
 		Tempalgorithm->processCollision(&obA, &obB, world->getDispatchInfo(), &contactPointResult);
+		
+		
 		Tempalgorithm->~btCollisionAlgorithm();
 		m_worldInfo->m_dispatcher->freeCollisionAlgorithm(Tempalgorithm);
 	}
 	tempManiforld->clearManifold();
-	
+	return swap;
 }
 
 

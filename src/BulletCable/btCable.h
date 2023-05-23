@@ -65,7 +65,7 @@ public:
 	void setCollisionShapeNode(btCollisionShape* nodeShape);
 
 	void setWorldRef(btCollisionWorld* colWorld);
-	void btCable::checkCollide(btCollisionObject* colObjA, btCollisionObject* colObjB, btCollisionWorld::ContactResultCallback& resultCallback) const;
+	bool checkCollide(btCollisionObject* colObjA, btCollisionObject* colObjB, btCollisionWorld::ContactResultCallback& resultCallback) const;
 };
 
 #endif  //_BT_CABLE_H

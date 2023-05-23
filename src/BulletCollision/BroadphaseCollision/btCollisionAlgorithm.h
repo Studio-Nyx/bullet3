@@ -58,7 +58,9 @@ protected:
 protected:
 	//	int	getDispatcherId();
 
+
 public:
+
 	btCollisionAlgorithm(){};
 
 	btCollisionAlgorithm(const btCollisionAlgorithmConstructionInfo& ci);
@@ -70,6 +72,8 @@ public:
 	virtual btScalar calculateTimeOfImpact(btCollisionObject* body0, btCollisionObject* body1, const btDispatcherInfo& dispatchInfo, btManifoldResult* resultOut) = 0;
 
 	virtual void getAllContactManifolds(btManifoldArray& manifoldArray) = 0;
+
+	virtual bool isSwapped();
 };
 
 #endif  //BT_COLLISION_ALGORITHM_H

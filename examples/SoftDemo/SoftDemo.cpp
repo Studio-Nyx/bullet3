@@ -554,10 +554,6 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 	
 	//btRigidBody* bodyAnchorU = pdemo->createRigidBody(10, startTransformU, new btBoxShape(btVector3(1, 1, 1)));
 	//btRigidBody* body = pdemo->createRigidBody(10, startTransform, new btBoxShape(btVector3(1, 1, 1)));
-	
-
-
-	
 
 	//body->setDamping(btScalar(0.5), btScalar(0.5));
 	//btSoftBody* psb0 = Functors::CtorRope(pdemo, btVector3(0, 8, -1));
@@ -565,11 +561,10 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 	//psb0->appendAnchor(psb0->m_nodes.size() - 1, body);
 	//psb1->appendAnchor(psb1->m_nodes.size() - 1, body);
 	
-	// Obj 1
+	
 	
 		/* Loading object */
 		//load our obj mesh
-		//const char* fileName = "teddy.obj";  //sphere8.obj";//sponza_closed.obj";//sphere8.obj";
 		const char* fileName = "sphere8.obj";
 		char relativeFileName[1024];
 		if (b3ResourcePath::findResourcePath(fileName, relativeFileName, 1024, 0))
@@ -582,7 +577,9 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 		GLInstanceGraphicsShape* glmesh = LoadMeshFromObj(relativeFileName, "", &fileIO);
 		printf("[INFO] Obj loaded: Extracted %d verticed from obj file [%s]\n", glmesh->m_numvertices, fileName);
 
+
 		
+
 		btConvexHullShape* shape = new btConvexHullShape();
 		for (int i = 0; i < glmesh->m_numvertices; i++)
 		{
@@ -591,14 +588,23 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 			btVector3 vtx(v.xyzw[0],  v.xyzw[1],  v.xyzw[2]);
 			shape->addPoint(vtx);
 		}
-		float scaling[4] = {1, 1, 1,1};
-		
-		btVector3 localScaling(scaling[0], scaling[1], scaling[2]);
-		shape->setLocalScaling(localScaling);
+		shape->setLocalScaling(btVector3(2, 2, 2));
 		shape->optimizeConvexHull();
-		shape->initializePolyhedralFeatures();
+		shape->initializePolyhedralFeatures();		
+		
 
 
+		btConvexHullShape* shapebis = new btConvexHullShape();
+		for (int i = 0; i < glmesh->m_numvertices; i++)
+		{
+			const GLInstanceVertex& v = glmesh->m_vertices->at(i);
+			float temp = v.xyzw[0];
+			btVector3 vtx(v.xyzw[0], v.xyzw[1], v.xyzw[2]);
+			shapebis->addPoint(vtx);
+		}
+		shapebis->optimizeConvexHull();
+		shapebis->initializePolyhedralFeatures();	
+		
 		//shape->setMargin(0.5);
 		//pdemo->m_collisionShapes.push_back(shape);
 
@@ -609,53 +615,59 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 		bool isDynamic = (mass != 0.f);
 		btVector3 localInertia(0, 0, 0);
 
-		float color[4] = {1, 1, 1, 1};
-		float orn[4] = {0, 0, 0, 1};
-		float pos[4] = {0, 3, 0, 0};
-		btVector3 position(pos[0], pos[1], pos[2]);
-		ObjTransform.setOrigin(position);
-
-		btRigidBody* bodyMesh = pdemo->createRigidBody(mass, ObjTransform, shape);
-		btRigidBody* body = pdemo->createRigidBody(0, startTransform, shape);
-		btRigidBody* bodyAnchor = pdemo->createRigidBody(mass, startTransformU, shape);
-					
-		body->getCollisionShape()->setMargin(0.005);
-		bodyAnchor->getCollisionShape()->setMargin(0.005);
-	// End of loading object
 		
-	
-		// cable init
-		const int r = 20;
-		btVector3* x = new btVector3[r];
-		btScalar* m = new btScalar[r];
-		int i;
+		btVector3 posBouleCompound = btVector3(5, 10, 0);
+		btCompoundShape* cyl1 = new btCompoundShape();
+		
+		cyl1->addChildShape(btTransform::getIdentity(), shapebis);
+		cyl1->calculateLocalInertia(mass, localInertia);
+		btRigidBody::btRigidBodyConstructionInfo ciB(10, 0, cyl1, localInertia);
+		ciB.m_startWorldTransform.setOrigin(posBouleCompound);
 
-		for (i = 0; i < r; ++i)
-		{
-			const btScalar t = i / (btScalar)(r - 1);
-			x[i] = lerp(startTransformU.getOrigin() + btVector3(0,- 0.51, 0), startTransform.getOrigin() + btVector3(0, 0.5, 0), t);
-			m[i] = 1;
-		}
+		btRigidBody* bouleRouge = new btRigidBody(ciB);
+		pdemo->m_dynamicsWorld->addRigidBody(bouleRouge);
+		
+		btRigidBody* bouleBleu = pdemo->createRigidBody(10, startTransformU, shape);
+		//btRigidBody* bouleVerte = pdemo->createRigidBody(0, startTransform, shape);
+		
+					
+		//bouleVerte->getCollisionShape()->setMargin(0.005);
+		bouleBleu->getCollisionShape()->setMargin(0.005);
+		// End of loading object
+		
+	{
+			// cable init
+			const int r = 50;
+			btVector3* x = new btVector3[r];
+			btScalar* m = new btScalar[r];
+			int i;
 
-		btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), r, x, m);
-		for (i = 1; i < r; ++i)
-		{
-			cable->appendLink(i - 1, i);
-		}
-		cable->getCollisionShape()->setMargin(0.005);
-		cable->setTotalMass(3.335);
-		cable->m_cfg.piterations = 512;
-		cable->m_cfg.kAHR = 1;
-		cable->m_cfg.kKHR = 1;
-		pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
+			for (i = 0; i < r; ++i)
+			{
+				const btScalar t = i / (btScalar)(r - 1);
+				x[i] = lerp(startTransformU.getOrigin() + btVector3(0, -1, 0), posBouleCompound + btVector3(0, 0.5, 0), t);
+				m[i] = 1;
+			}
 
-		cable->appendAnchor(0, bodyAnchor);
-		cable->appendAnchor(cable->m_nodes.size() - 1, body);
-		for (int i = 0; i < cable->m_nodes.size(); i++)
-		{
-			cable->m_nodes[i].index = i;
+			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), r, x, m);
+			for (i = 1; i < r; ++i)
+			{
+				cable->appendLink(i - 1, i);
+			}
+			cable->getCollisionShape()->setMargin(0.005);
+			cable->setTotalMass(3.335);
+			cable->m_cfg.piterations = 512;
+			cable->m_cfg.kAHR = 1;
+			cable->m_cfg.kKHR = 1;
+			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
+
+			cable->appendAnchor(0, bouleBleu);
+			cable->appendAnchor(cable->m_nodes.size() - 1, bouleRouge);
+			for (int i = 0; i < cable->m_nodes.size(); i++)
+			{
+				cable->m_nodes[i].index = i;
+			}
 		}
-	
 	
 }
 

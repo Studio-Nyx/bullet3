@@ -42,7 +42,8 @@ class btCompoundCollisionAlgorithm : public btActivatingCollisionAlgorithm
 
 protected:
 	btAlignedObjectArray<btCollisionAlgorithm*> m_childCollisionAlgorithms;
-	bool m_isSwapped;
+    bool m_isSwapped;
+	
 
 	class btPersistentManifold* m_sharedManifold;
 	bool m_ownsManifold;
@@ -55,8 +56,12 @@ protected:
 
 public:
 	btCompoundCollisionAlgorithm(const btCollisionAlgorithmConstructionInfo& ci, const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, bool isSwapped);
-
+	
 	virtual ~btCompoundCollisionAlgorithm();
+
+	bool isSwapped() {
+		return m_isSwapped;
+	}
 
 	btCollisionAlgorithm* getChildAlgorithm(int n) const
 	{

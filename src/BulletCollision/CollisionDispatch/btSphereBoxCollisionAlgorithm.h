@@ -33,6 +33,10 @@ class btSphereBoxCollisionAlgorithm : public btActivatingCollisionAlgorithm
 	bool m_isSwapped;
 
 public:
+	bool isSwapped()
+	{
+		return m_isSwapped;
+	}
 	btSphereBoxCollisionAlgorithm(btPersistentManifold* mf, const btCollisionAlgorithmConstructionInfo& ci, const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, bool isSwapped);
 
 	virtual ~btSphereBoxCollisionAlgorithm();

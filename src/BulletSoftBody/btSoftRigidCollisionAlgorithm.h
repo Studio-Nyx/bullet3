@@ -38,6 +38,11 @@ class btSoftRigidCollisionAlgorithm : public btCollisionAlgorithm
 	bool m_isSwapped;
 
 public:
+	bool isSwapped()
+	{
+		return m_isSwapped;
+	}
+
 	btSoftRigidCollisionAlgorithm(btPersistentManifold* mf, const btCollisionAlgorithmConstructionInfo& ci, const btCollisionObjectWrapper* col0, const btCollisionObjectWrapper* col1Wrap, bool isSwapped);
 
 	virtual ~btSoftRigidCollisionAlgorithm();

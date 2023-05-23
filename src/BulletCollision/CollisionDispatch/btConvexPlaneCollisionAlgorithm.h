@@ -35,6 +35,10 @@ class btConvexPlaneCollisionAlgorithm : public btCollisionAlgorithm
 	int m_minimumPointsPerturbationThreshold;
 
 public:
+	bool isSwapped()
+	{
+		return m_isSwapped;
+	}
 	btConvexPlaneCollisionAlgorithm(btPersistentManifold* mf, const btCollisionAlgorithmConstructionInfo& ci, const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, bool isSwapped, int numPerturbationIterations, int minimumPointsPerturbationThreshold);
 
 	virtual ~btConvexPlaneCollisionAlgorithm();
