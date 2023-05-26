@@ -2070,7 +2070,7 @@ bool btSoftBody::rayFaceTest(const btVector3& rayFrom,
 	return (rayFaceTest(rayFrom, rayTo, results.fraction, results.index) != 0);
 }
 
-//
+// TODO: dériver cette fonction pour l'enlever les Scontacts
 void btSoftBody::setSolver(eSolverPresets::_ preset)
 {
 	m_cfg.m_vsequence.clear();
@@ -2081,7 +2081,7 @@ void btSoftBody::setSolver(eSolverPresets::_ preset)
 		case eSolverPresets::Positions:
 			m_cfg.m_psequence.push_back(ePSolver::Anchors);
 			m_cfg.m_psequence.push_back(ePSolver::RContacts);
-			m_cfg.m_psequence.push_back(ePSolver::SContacts);
+			// m_cfg.m_psequence.push_back(ePSolver::SContacts);
 			m_cfg.m_psequence.push_back(ePSolver::Linear);
 			break;
 		case eSolverPresets::Velocities:
