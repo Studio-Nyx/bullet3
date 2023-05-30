@@ -1236,7 +1236,7 @@ void OpenGLExampleBrowser::update(float deltaTime)
 			}
 			else
 			{
-				sCurrentDemo->stepSimulation(deltaTime);  //1./60.f);
+				sCurrentDemo->stepSimulation(1./60.f);
 			}
 		}
 

@@ -2079,10 +2079,18 @@ void btSoftBody::setSolver(eSolverPresets::_ preset)
 	switch (preset)
 	{
 		case eSolverPresets::Positions:
+			/*
 			m_cfg.m_psequence.push_back(ePSolver::Anchors);
 			m_cfg.m_psequence.push_back(ePSolver::RContacts);
 			// m_cfg.m_psequence.push_back(ePSolver::SContacts);
 			m_cfg.m_psequence.push_back(ePSolver::Linear);
+			*/
+			
+			m_cfg.m_psequence.push_back(ePSolver::Anchors);
+			m_cfg.m_psequence.push_back(ePSolver::Linear);
+			m_cfg.m_psequence.push_back(ePSolver::RContacts);
+			
+
 			break;
 		case eSolverPresets::Velocities:
 			m_cfg.m_vsequence.push_back(eVSolver::Linear);

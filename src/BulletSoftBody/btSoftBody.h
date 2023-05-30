@@ -17,6 +17,7 @@ subject to the following restrictions:
 #ifndef _BT_SOFT_BODY_H
 #define _BT_SOFT_BODY_H
 
+
 #include "LinearMath/btAlignedObjectArray.h"
 #include "LinearMath/btTransform.h"
 #include "LinearMath/btIDebugDraw.h"
@@ -223,11 +224,13 @@ public:
 	/* sCti is Softbody contact info	*/
 	struct sCti
 	{
+		btVector3 m_contactManifoldPos;    /* Contact manifold used in cableCollision */
 		const btCollisionObject* m_colObj; /* Rigid body			        */
 		btVector3 m_normal;                /* Outward normal		        */
 		mutable btVector3 m_impulse;	   /* Applied impulse        	    */
 		btScalar m_offset;                 /* Offset from origin	        */
 		btVector3 m_bary;                  /* Barycentric weights for faces */
+		
 		sCti() : m_impulse(0, 0, 0) {}
 	};
 

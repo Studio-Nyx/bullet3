@@ -115,10 +115,10 @@ public:
 	virtual void resetCamera()
 	{
 		//@todo depends on current_demo?
-		float dist = 45;
+		float dist = 10;
 		float pitch = -31;
 		float yaw = 27;
-		float targetPos[3] = {10 - 1, 0};
+		float targetPos[3] = {10,2,0};
 		m_guiHelper->resetCamera(dist, yaw, pitch, targetPos[0], targetPos[1], targetPos[2]);
 	}
 
@@ -542,7 +542,7 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 	//startTransform.setOrigin(btVector3(-5, 2, 0));
 	//startTransform.setOrigin(btVector3(0, 20, 0));
 
-	startTransform.setOrigin(btVector3(12, 8, 0));
+	startTransform.setOrigin(btVector3(10, 5, 0));
 	btTransform startTransformU;
 	startTransformU.setIdentity();
 	//startTransformU.setOrigin(btVector3(5, -2, 0));
@@ -563,111 +563,134 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 	
 	
 	
-		/* Loading object */
-		//load our obj mesh
-		const char* fileName = "sphere8.obj";
-		char relativeFileName[1024];
-		if (b3ResourcePath::findResourcePath(fileName, relativeFileName, 1024, 0))
-		{
-			char pathPrefix[1024];
-			b3FileUtils::extractPath(relativeFileName, pathPrefix, 1024);
-		}
+	/* Loading object */
+	//load our obj mesh
+	const char* fileName = "sphere8.obj";
+	char relativeFileName[1024];
+	if (b3ResourcePath::findResourcePath(fileName, relativeFileName, 1024, 0))
+	{
+		char pathPrefix[1024];
+		b3FileUtils::extractPath(relativeFileName, pathPrefix, 1024);
+	}
 
-		b3BulletDefaultFileIO fileIO;
-		GLInstanceGraphicsShape* glmesh = LoadMeshFromObj(relativeFileName, "", &fileIO);
-		printf("[INFO] Obj loaded: Extracted %d verticed from obj file [%s]\n", glmesh->m_numvertices, fileName);
+	b3BulletDefaultFileIO fileIO;
+	GLInstanceGraphicsShape* glmesh = LoadMeshFromObj(relativeFileName, "", &fileIO);
+	printf("[INFO] Obj loaded: Extracted %d verticed from obj file [%s]\n", glmesh->m_numvertices, fileName);
 
 
-		
+	
 
-		btConvexHullShape* shape = new btConvexHullShape();
-		for (int i = 0; i < glmesh->m_numvertices; i++)
+	btConvexHullShape* shape = new btConvexHullShape();
+	for (int i = 0; i < glmesh->m_numvertices; i++)
 		{
 			const GLInstanceVertex& v = glmesh->m_vertices->at(i);
 			float temp = v.xyzw[0];
 			btVector3 vtx(v.xyzw[0],  v.xyzw[1],  v.xyzw[2]);
 			shape->addPoint(vtx);
 		}
-		shape->setLocalScaling(btVector3(2, 2, 2));
-		shape->optimizeConvexHull();
-		shape->initializePolyhedralFeatures();		
-		
+	shape->setLocalScaling(btVector3(2, 2, 2));
+	shape->optimizeConvexHull();
+	shape->initializePolyhedralFeatures();		
+	
 
 
-		btConvexHullShape* shapebis = new btConvexHullShape();
-		for (int i = 0; i < glmesh->m_numvertices; i++)
+	btConvexHullShape* shapebis = new btConvexHullShape();
+	for (int i = 0; i < glmesh->m_numvertices; i++)
 		{
 			const GLInstanceVertex& v = glmesh->m_vertices->at(i);
 			float temp = v.xyzw[0];
 			btVector3 vtx(v.xyzw[0], v.xyzw[1], v.xyzw[2]);
 			shapebis->addPoint(vtx);
 		}
-		shapebis->optimizeConvexHull();
-		shapebis->initializePolyhedralFeatures();	
-		
-		//shape->setMargin(0.5);
-		//pdemo->m_collisionShapes.push_back(shape);
+	shapebis->optimizeConvexHull();
+	shapebis->initializePolyhedralFeatures();	
+	
+	shapebis->setMargin(0);
+	//pdemo->m_collisionShapes.push_back(shape);
 
- 		btTransform ObjTransform;
-		ObjTransform.setIdentity();
+ 	btTransform ObjTransform;
+	ObjTransform.setIdentity();
 
-		btScalar mass(100.f);
-		bool isDynamic = (mass != 0.f);
-		btVector3 localInertia(0, 0, 0);
+	btScalar mass(10.f);
+	bool isDynamic = (mass != 0.f);
+	btVector3 localInertia(0, 0, 0);
 
-		
-		btVector3 posBouleCompound = btVector3(5, 10, 0);
-		btCompoundShape* cyl1 = new btCompoundShape();
-		
-		cyl1->addChildShape(btTransform::getIdentity(), shapebis);
-		cyl1->calculateLocalInertia(mass, localInertia);
-		btRigidBody::btRigidBodyConstructionInfo ciB(10, 0, cyl1, localInertia);
-		ciB.m_startWorldTransform.setOrigin(posBouleCompound);
+	
+	btVector3 posBouleCompound = btVector3(5, 10, 0);
+	btCompoundShape* cyl1 = new btCompoundShape();
+	
+	cyl1->addChildShape(btTransform::getIdentity(), shapebis);
+	cyl1->calculateLocalInertia(mass, localInertia);
+	btRigidBody::btRigidBodyConstructionInfo ciB(mass, 0, cyl1, localInertia);
+	ciB.m_startWorldTransform.setOrigin(posBouleCompound);
 
-		btRigidBody* bouleRouge = new btRigidBody(ciB);
-		pdemo->m_dynamicsWorld->addRigidBody(bouleRouge);
-		
-		btRigidBody* bouleBleu = pdemo->createRigidBody(10, startTransformU, shape);
-		//btRigidBody* bouleVerte = pdemo->createRigidBody(0, startTransform, shape);
-		
-					
-		//bouleVerte->getCollisionShape()->setMargin(0.005);
-		bouleBleu->getCollisionShape()->setMargin(0.005);
-		// End of loading object
-		
+	btRigidBody* bouleRouge = new btRigidBody(ciB);
+	pdemo->m_dynamicsWorld->addRigidBody(bouleRouge);
+	btTransform cub1 =  btTransform();
+	cub1.setIdentity();
+	cub1.setOrigin(startTransform.getOrigin() + btVector3(0, 1, 1.5));
+	btTransform cub2 =  btTransform();
+	cub2.setIdentity();
+	cub2.setOrigin(startTransform.getOrigin() + btVector3(0, 1, -1.5));
+	
+
+	
+	//btRigidBody* bouleBleu = pdemo->createRigidBody(mass, startTransformU, shape);
+	btRigidBody* bouleBleu = pdemo->createRigidBody(mass, startTransformU, new btSphereShape(1));
+	//btRigidBody* carreVert = pdemo->createRigidBody(0, startTransform, new btSphereShape(1));
+	btRigidBody* carreVert = pdemo->createRigidBody(0, startTransform, new btBoxShape(btVector3(1, 1, 1)));
+	btRigidBody* carreVertL = pdemo->createRigidBody(0, cub1, new btBoxShape(btVector3(1, 1, 1)));
+	btRigidBody* carreVertR = pdemo->createRigidBody(0, cub2, new btBoxShape(btVector3(1, 1, 1)));
+	//btRigidBody* bouleVerte = pdemo->createRigidBody(0, startTransform, shape);
+				
+	bouleBleu->getCollisionShape()->setMargin(0);
+	bouleRouge->getCollisionShape()->setMargin(0);
+	// End of loading object
+	bouleRouge->setDamping(0.1, 0.1);
+	bouleBleu->setDamping(0.1, 0.1);
+
+	bouleRouge->setFriction(1);
+	bouleBleu->setFriction(1);
+	//carreVert->setFriction(1);
+	
 	{
-			// cable init
-			const int r = 50;
-			btVector3* x = new btVector3[r];
-			btScalar* m = new btScalar[r];
-			int i;
+		// cable init
+		const int r = 50;
+		btVector3* x = new btVector3[r];
+		btScalar* m = new btScalar[r];
+		int i;
 
-			for (i = 0; i < r; ++i)
-			{
-				const btScalar t = i / (btScalar)(r - 1);
-				x[i] = lerp(startTransformU.getOrigin() + btVector3(0, -1, 0), posBouleCompound + btVector3(0, 0.5, 0), t);
-				m[i] = 1;
-			}
-
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), r, x, m);
-			for (i = 1; i < r; ++i)
-			{
-				cable->appendLink(i - 1, i);
-			}
-			cable->getCollisionShape()->setMargin(0.005);
-			cable->setTotalMass(3.335);
-			cable->m_cfg.piterations = 512;
-			cable->m_cfg.kAHR = 1;
-			cable->m_cfg.kKHR = 1;
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-
-			cable->appendAnchor(0, bouleBleu);
-			cable->appendAnchor(cable->m_nodes.size() - 1, bouleRouge);
-			for (int i = 0; i < cable->m_nodes.size(); i++)
-			{
-				cable->m_nodes[i].index = i;
-			}
+		for (i = 0; i < r; ++i)
+		{
+			const btScalar t = i / (btScalar)(r - 1);
+			x[i] = lerp(startTransformU.getOrigin() + btVector3(0, -1, 0), posBouleCompound + btVector3(0, 0.5, 0), t);
+			m[i] = 1;
 		}
+
+
+		btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), r, x, m);
+		for (i = 1; i < r; ++i)
+		{
+			cable->appendLink(i - 1, i);
+		}
+		cable->getCollisionShape()->setMargin(0.005);
+		cable->setTotalMass(3.335);
+		cable->m_cfg.piterations =1000;
+		cable->m_cfg.kAHR = 1;
+		cable->m_cfg.kKHR = 1;
+		cable->m_cfg.kCHR = 1;
+		cable->setContactStiffnessAndDamping(1,0.2);
+		cable->m_cfg.kDF = 1;
+		
+		pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
+
+		//cable->appendAnchor(0, bouleBleu);
+		cable->appendAnchor(cable->m_nodes.size() - 1, bouleRouge);
+		for (int i = 0; i < cable->m_nodes.size(); i++)
+		{
+			cable->m_nodes[i].index = i;
+		}
+	}
 	
 }
 
@@ -1771,8 +1794,8 @@ void SoftDemo::clientMoveAndDisplay()
 		//	dt = 1.0/420.f;
 
 		int numSimSteps;
+		//numSimSteps = m_dynamicsWorld->stepSimulation(dt);
 		numSimSteps = m_dynamicsWorld->stepSimulation(dt);
-		//numSimSteps = m_dynamicsWorld->stepSimulation(dt,10,1./240.f);
 
 #ifdef VERBOSE_TIMESTEPPING_CONSOLEOUTPUT
 		if (!numSimSteps)

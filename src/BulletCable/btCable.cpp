@@ -604,7 +604,7 @@ void btCable::PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti)
 		const sCti& cti = c.m_cti;
 		if (cti.m_colObj->hasContactResponse() && c.m_node->m_battach == 0)  // Collision with anchor disable
 		{
-			btVector3 va(0, 0, 0);
+			btVector3 vRb(0, 0, 0);
 			btRigidBody* rigidCol = 0;
 			btMultiBodyLinkCollider* multibodyLinkCol = 0;
 			btScalar* deltaV = NULL;
@@ -612,7 +612,7 @@ void btCable::PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti)
 			if (cti.m_colObj->getInternalType() == btCollisionObject::CO_RIGID_BODY)
 			{
 				rigidCol = (btRigidBody*)btRigidBody::upcast(cti.m_colObj);
-				va = rigidCol ? rigidCol->getVelocityInLocalPoint(c.m_c1) * dt : btVector3(0, 0, 0);
+				vRb = rigidCol ? rigidCol->getVelocityInLocalPoint(c.m_c1) * dt : btVector3(0, 0, 0);
 			}
 			else if (cti.m_colObj->getInternalType() == btCollisionObject::CO_FEATHERSTONE_LINK)
 			{
@@ -633,20 +633,47 @@ void btCable::PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti)
 					{
 						vel += multibodyLinkCol->m_multiBody->getVelocityVector()[j] * jac[j];
 					}
-					va = cti.m_normal * vel * dt;
+					vRb = cti.m_normal * vel * dt;
 				}
 			}
 
-			const btVector3 vb = c.m_node->m_x - c.m_node->m_q;
-			const btVector3 vr = vb - va;
+			const btVector3 vNode = c.m_node->m_x - c.m_node->m_q;
+			const btVector3 vr = vNode - vRb;
 			const btScalar dn = btDot(vr, cti.m_normal);
+			
 			if (dn <= SIMD_EPSILON)
 			{
-				const btScalar dp = btMin((btDot(c.m_node->m_x, cti.m_normal) + cti.m_offset), mrg);
+				//btVector3 deltaPosition = cti.contactManifold.m_positionWorldOnB;
+				//const btScalar dp = btMin((btDot(c.m_node->m_x, cti.m_normal) + cti.m_offset), mrg);
+				btVector3 pos = c.m_node->m_x;
+				
+				btVector3 posOnSurface = cti.m_contactManifoldPos + cti.m_normal*mrg;
+				btVector3 deltaPos = pos - posOnSurface; 
+				btScalar dp = btDot(c.m_node->m_x, cti.m_normal) + cti.m_offset;
 				const btVector3 fv = vr - (cti.m_normal * dn);
+
 				// c0 is the impulse matrix, c3 is 1 - the friction coefficient or 0, c4 is the contact hardness coefficient
-				const btVector3 impulse = c.m_c0 * ((vr - (fv * c.m_c3) + (cti.m_normal * (dp * c.m_c4))) * kst);
-				c.m_node->m_x -= impulse * c.m_c2;
+				//const btVector3 impulse = c.m_c0 * ((vr - (fv * c.m_c3) + (cti.m_normal * (dp * c.m_c4))) * kst);
+				const btVector3 impulse = c.m_c0 * ((vr - (fv * c.m_c3) ));
+
+				// Friction correction value
+				btVector3 frictionValue = impulse* c.m_c2;
+				// Penetration correction
+				//btVector3 newposDist = cti.m_normal * dp;
+				btVector3 newposDist = cti.m_normal * dp;
+				// Updade factor (friction + penetration correction)
+				btVector3 updatePos = frictionValue + newposDist;
+
+
+				
+				c.m_node->m_x -= updatePos;
+				
+				//c.m_node->m_x -= newposDist;
+				//c.m_node->m_x = posOnSurface;
+				//c.m_node->m_x -= frictionValue;
+				//c.m_node->m_x -= impulse * c.m_c2;
+				//btVector3 posPost = c.m_node->m_x;
+				
 
 				if (cti.m_colObj->getInternalType() == btCollisionObject::CO_RIGID_BODY)
 				{
@@ -782,6 +809,7 @@ struct MyContactResultCallback : public btCollisionWorld::ContactResultCallback
 	btScalar m_margin;
 	btScalar m_dist = 10000000.0;
 	btVector3 norm;
+	btManifoldPoint* manifold;
 	bool swap = false;
 	MyContactResultCallback(float margin) : m_haveContact(false), m_margin(margin), norm(btVector3(0, 0, 0)){}
 	virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1)
@@ -794,6 +822,9 @@ struct MyContactResultCallback : public btCollisionWorld::ContactResultCallback
 			{
 				m_dist = cp.getDistance();
 				norm = cp.m_normalWorldOnB;
+				// Obj A = Autre
+				// OBJ B = Node
+				manifold = &cp; 
 			}
 		}
 		return 1.f;
@@ -845,9 +876,11 @@ bool btCable::checkContact(const btCollisionObjectWrapper* colObjWrap,
 			cti.m_normal = -result.norm;
 		else
 			cti.m_normal = result.norm;
+		
 		cti.m_offset = -btDot(cti.m_normal, x - cti.m_normal * result.m_dist);	
-
-		return true;
+		// Contact point On the node shape
+		cti.m_contactManifoldPos = result.manifold->getPositionWorldOnB();
+		return (true);
 	}
 	return false;
 }
@@ -863,7 +896,9 @@ bool btCable::checkCollide(btCollisionObject* colObjA, btCollisionObject* colObj
 	btCollisionObjectWrapper obB(0, colObjB->getCollisionShape(), colObjB, colObjB->getWorldTransform(), -1, -1);
 	bool swap = false;
 		
-	btCollisionAlgorithm* Tempalgorithm = m_worldInfo->m_dispatcher->findAlgorithm(&obA, &obB, tempManiforld, BT_CLOSEST_POINT_ALGORITHMS);
+	//btCollisionAlgorithm* Tempalgorithm = m_worldInfo->m_dispatcher->findAlgorithm(&obA, &obB, tempManiforld, BT_CLOSEST_POINT_ALGORITHMS);
+	btCollisionAlgorithm* Tempalgorithm = m_worldInfo->m_dispatcher->findAlgorithm(&obA, &obB, tempManiforld, BT_CONTACT_POINT_ALGORITHMS);
+	
 	if (Tempalgorithm)
 	{
 		swap = Tempalgorithm->isSwapped();
