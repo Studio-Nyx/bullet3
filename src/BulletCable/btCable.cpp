@@ -207,7 +207,17 @@ void btCable::solveConstraints() {
 void btCable::solveConstraints()
 {
 	int i, ni;
-
+	// Set the collision Object List
+	collisionObjPos.clear();
+	for (int i = 0; i < m_rcontacts.size(); i++)
+	{
+		//btCollisionObject obj = btCollisionObject( *(m_rcontacts.at(i).m_cti.m_colObj));
+		int colObjPos = m_rcontacts.at(i).m_cti.m_colObj->getWorldArrayIndex();
+		if (!alreadyHaveContact(colObjPos))
+		{
+			collisionObjPos.push_back(colObjPos);
+		}
+	}
 	// Prepare links
 	for (i = 0, ni = m_links.size(); i < ni; ++i)
 	{
@@ -251,9 +261,11 @@ void btCable::solveConstraints()
 			n.m_f = btVector3(0, 0, 0);
 		}
 	}
-
+	
+	/*
 	for (i = 0; i < m_nodes.size(); ++i)
 		positionNodes[i] = m_nodes[i].m_x;
+		*/
 }
 
 void btCable::predictMotion(btScalar dt)
@@ -307,11 +319,11 @@ void btCable::predictMotion(btScalar dt)
 					   n.m_v * m_sst.velmrg,
 					   m_sst.updmrg);
 	}
-
+	btCollisionObject* obj = this->world->getCollisionObjectArray()[0];
 	// Clear contacts
 	m_rcontacts.resize(0);
 	m_scontacts.resize(0);
-
+	
 	// Optimize dbvt's
 	m_ndbvt.optimizeIncremental(1);
 	m_fdbvt.optimizeIncremental(1);
@@ -467,7 +479,7 @@ void btCable::PSolve_Anchors(btSoftBody* psb, btScalar kst, btScalar ti)
 void btCable::PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti)
 {
 	btCable* cable = (btCable*)psb;
-	int method = 0;
+	int method = 4;
 
 	BT_PROFILE("PSolve_Links");
 	for (int i = 0; i < psb->m_links.size(); ++i)
@@ -546,12 +558,15 @@ void btCable::PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti)
 					case 4:
 					{
 						btScalar k = ((l.m_c1 - len) / (l.m_c0 * (l.m_c1 + len))) * kst;
-						if (a.m_n != btVector3(0, 0, 0))
+						if (cable->blackHoleIsActive)
 						{
 							// BlackHole method (use the node's normal)
-							btVector3 dirBlackHole = a.m_n - a.m_x;
-							btScalar forceBlackHole = 1 / dirBlackHole.length();
-							a.m_x -= dirBlackHole * forceBlackHole * k;
+							btVector3 dirBlackHole = cable->blackHolePos - a.m_x;
+							if (dirBlackHole.length() <0.5)
+							{
+								btScalar forceBlackHole = 1 / dirBlackHole.length();
+								a.m_x -= dirBlackHole * forceBlackHole * k*10;
+							}	
 						}
 						a.m_x -= (del * (k * a.m_im));
 						b.m_x += (del * (k * b.m_im));
@@ -659,8 +674,8 @@ void btCable::PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti)
 				// Friction correction value
 				btVector3 frictionValue = impulse* c.m_c2;
 				// Penetration correction
-				//btVector3 newposDist = cti.m_normal * dp;
 				btVector3 newposDist = cti.m_normal * dp;
+				//btVector3 newposDist = cti.m_normal * dp;
 				// Updade factor (friction + penetration correction)
 				btVector3 updatePos = frictionValue + newposDist;
 
@@ -856,7 +871,7 @@ bool btCable::checkContact(const btCollisionObjectWrapper* colObjWrap,
 		cti.m_offset = -btDot(cti.m_normal, x - cti.m_normal * dst);
 		return (true);
 	}*/
-
+	//cable->collisionObjectList.add();
 	const btCollisionObject* obj = colObjWrap->getCollisionObject();
 	btCollisionObject colObjRef = btCollisionObject(*obj);
 	MyContactResultCallback result(margin);
@@ -884,6 +899,32 @@ bool btCable::checkContact(const btCollisionObjectWrapper* colObjWrap,
 	}
 	return false;
 }
+/*
+bool btCable::alreadyHaveContact(btCollisionObject obj)const
+{
+	for (int i = 0; i < collisionList.size(); i++)
+	{
+		if (collisionList.at(i).getWorldArrayIndex() == obj.getWorldArrayIndex())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+*/
+
+bool btCable::alreadyHaveContact(int objPos) const
+{
+	for (int i = 0; i < collisionObjPos.size(); i++)
+	{
+		if (collisionObjPos.at(i) == objPos)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 
 void btCable::setWorldRef(btCollisionWorld* colWorld)
 {
@@ -924,4 +965,23 @@ btVector3 btCable::getImpulse(int index)
 	return impulses[index];
 }
 
+bool btCable::checkIfCollisionWithWorldArrayPos(int objWorldArrayPos) {
+	
+	for (int i = 0; i < collisionObjPos.size(); i++)
+	{
+		//myfile << " - " << collisionObjPos.at(i) << "\n"; 
+		if (collisionObjPos.at(i) == objWorldArrayPos)
+		{
+			return true;
+		}
+	}
+	//myfile.close();
+	return false;
+}
+
+void btCable::setBlackHolePos(bool activeState, btVector3 pos)
+{
+	this->blackHolePos = pos;
+	this->blackHoleIsActive = activeState;
+}
 
