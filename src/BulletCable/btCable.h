@@ -33,14 +33,20 @@ private:
 	btCollisionWorld* world;
 	btPersistentManifold* tempManiforld = new btPersistentManifold();
 	btConvexPenetrationDepthSolver* m_pdSolver;
-	static void doContact(btSoftBody* psb, btScalar kst);
 	// Differents forces for the cable:
 	void addForces();
 	//std::vector<btCollisionObject> collisionList;
 	std::vector<int> collisionObjPos;
 
+	btVector3 VectorByQuaternion(btVector3 v, btQuaternion q);
+	btQuaternion ComputeQuaternion(btVector3 v);
+
+	void pin();
+	void pinConstraint();
+	void distanceConstraint();
+	void LRAConstraint(int level, bool isKinematic);
+
 public:
-	
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
 
 	void predictMotion(btScalar dt) override;
@@ -75,7 +81,6 @@ public:
 	btVector3 getImpulse(int index);
 	bool checkIfCollisionWithWorldArrayPos(int objWorldArrayPos);
 	void setBlackHolePos(bool activeState, btVector3 pos);
-
 };
 
 #endif  //_BT_CABLE_H

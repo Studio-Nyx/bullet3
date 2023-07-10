@@ -512,8 +512,8 @@ static void Init_Ropes(SoftDemo* pdemo)
 														btVector3(10, 0, i * 0.25),
 														16,
 														1 + 2);
-		psb->m_cfg.piterations = 4;
-		psb->m_materials[0]->m_kLST = 0.1 + (i / (btScalar)(n - 1)) * 0.9;
+		psb->m_cfg.piterations = 40;
+		psb->m_materials[0]->m_kLST = 1;
 		psb->setTotalMass(20);
 		pdemo->getSoftDynamicsWorld()->addSoftBody(psb);
 	}
@@ -611,11 +611,10 @@ static void Init_RopeAttach(SoftDemo* pdemo)
  	btTransform ObjTransform;
 	ObjTransform.setIdentity();
 
-	btScalar mass(10.f);
+	btScalar mass(10);
 	bool isDynamic = (mass != 0.f);
 	btVector3 localInertia(0, 0, 0);
 
-	
 	btVector3 posBouleCompound = btVector3(5, 10, 0);
 	btCompoundShape* cyl1 = new btCompoundShape();
 	
@@ -633,21 +632,20 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 	cub2.setIdentity();
 	cub2.setOrigin(startTransform.getOrigin() + btVector3(0, 1, -1.5));
 	
-
+	btRigidBody* bouleBleu = pdemo->createRigidBody(1000000, startTransformU, shape);
 	
-	//btRigidBody* bouleBleu = pdemo->createRigidBody(mass, startTransformU, shape);
-	btRigidBody* bouleBleu = pdemo->createRigidBody(mass, startTransformU, new btSphereShape(1));
-	//btRigidBody* carreVert = pdemo->createRigidBody(0, startTransform, new btSphereShape(1));
-	btRigidBody* carreVert = pdemo->createRigidBody(0, startTransform, new btBoxShape(btVector3(1, 1, 1)));
-	btRigidBody* carreVertL = pdemo->createRigidBody(0, cub1, new btBoxShape(btVector3(1, 1, 1)));
-	btRigidBody* carreVertR = pdemo->createRigidBody(0, cub2, new btBoxShape(btVector3(1, 1, 1)));
-	//btRigidBody* bouleVerte = pdemo->createRigidBody(0, startTransform, shape);
+	// btRigidBody* bouleBleu = pdemo->createRigidBody(mass, startTransformU, new btSphereShape(1));
+	// btRigidBody* carreVert = pdemo->createRigidBody(0, startTransform, new btSphereShape(1));
+	// btRigidBody* carreVert = pdemo->createRigidBody(0, startTransform, new btBoxShape(btVector3(1, 1, 1)));
+	// btRigidBody* carreVertL = pdemo->createRigidBody(0, cub1, new btBoxShape(btVector3(1, 1, 1)));
+	// btRigidBody* carreVertR = pdemo->createRigidBody(0, cub2, new btBoxShape(btVector3(1, 1, 1)));
+	// btRigidBody* bouleVerte = pdemo->createRigidBody(0, startTransform, shape);
 				
 	bouleBleu->getCollisionShape()->setMargin(0);
 	bouleRouge->getCollisionShape()->setMargin(0);
 	// End of loading object
-	bouleRouge->setDamping(0.1, 0.1);
-	bouleBleu->setDamping(0.1, 0.1);
+	bouleRouge->setDamping(0.25, 0.25);
+	bouleBleu->setDamping(0.25, 0.25);
 
 	bouleRouge->setFriction(1);
 	bouleBleu->setFriction(1);
@@ -655,7 +653,7 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 	
 	{
 		// cable init
-		const int r = 50;
+		const int r = 80;
 		btVector3* x = new btVector3[r];
 		btScalar* m = new btScalar[r];
 		int i;
@@ -663,7 +661,7 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 		for (i = 0; i < r; ++i)
 		{
 			const btScalar t = i / (btScalar)(r - 1);
-			x[i] = lerp(startTransformU.getOrigin() + btVector3(0, -1, 0), posBouleCompound + btVector3(0, 0.5, 0), t);
+			x[i] = lerp(startTransformU.getOrigin() + btVector3(0, -1, 0), posBouleCompound + btVector3(0, -0.5, 0), t);
 			m[i] = 1;
 		}
 
@@ -673,25 +671,26 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 		{
 			cable->appendLink(i - 1, i);
 		}
-		cable->getCollisionShape()->setMargin(0.005);
-		cable->setTotalMass(3.335);
-		cable->m_cfg.piterations =1000;
+		cable->getCollisionShape()->setMargin(0.004);
+		cable->setTotalMass(5);
+		cable->m_cfg.piterations = 10;
 		cable->m_cfg.kAHR = 1;
 		cable->m_cfg.kKHR = 1;
 		cable->m_cfg.kCHR = 1;
 		cable->setContactStiffnessAndDamping(1,0.2);
 		cable->m_cfg.kDF = 1;
+		cable->m_cfg.kDP = 0.01;
 		
 		pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
 
-		//cable->appendAnchor(0, bouleBleu);
+		cable->appendAnchor(0, bouleBleu);
 		cable->appendAnchor(cable->m_nodes.size() - 1, bouleRouge);
+
 		for (int i = 0; i < cable->m_nodes.size(); i++)
 		{
 			cable->m_nodes[i].index = i;
 		}
 	}
-	
 }
 
 //
