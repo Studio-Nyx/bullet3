@@ -99,6 +99,9 @@ void btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 
 void btRigidBody::predictIntegratedTransform(btScalar timeStep, btTransform& predictedTransform)
 {
+	if (m_linearVelocity.length() > m_maxLinearVelocity && m_maxLinearVelocity > 0)
+		m_linearVelocity = m_linearVelocity.normalized() * m_maxLinearVelocity; 
+
 	btTransformUtil::integrateTransform(m_worldTransform, m_linearVelocity, m_angularVelocity, timeStep, predictedTransform);
 }
 

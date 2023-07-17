@@ -63,6 +63,7 @@ class btRigidBody : public btCollisionObject
 	btVector3 m_angularVelocity;
 	btScalar m_inverseMass;
 	btVector3 m_linearFactor;
+	btScalar m_maxLinearVelocity = 0;
 
 	btVector3 m_gravity;
 	btVector3 m_gravity_acceleration;
@@ -628,6 +629,10 @@ public:
 	virtual const char* serialize(void* dataBuffer, class btSerializer* serializer) const;
 
 	virtual void serializeSingleObject(class btSerializer* serializer) const;
+
+	void setMaxLinearVelocity(btScalar maxL) {
+		m_maxLinearVelocity = maxL;
+	}
 };
 
 //@todo add m_optionalMotionState and m_constraintRefs to btRigidBodyData

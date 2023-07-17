@@ -44,7 +44,7 @@ private:
 	void pin();
 	void pinConstraint();
 	void distanceConstraint();
-	void LRAConstraint(int level, bool isKinematic);
+	void LRAConstraint(int level);
 
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);

@@ -209,7 +209,8 @@ void btCable::solveConstraints()
 	for (int i = 0; i < m_cfg.piterations; ++i)
 	{
 		getSolver(btSoftBody::ePSolver::Anchors)(this, 1, 0);
-		distanceConstraint();
+		// pinConstraint();
+		// distanceConstraint();
 		getSolver(btSoftBody::ePSolver::Linear)(this, 1, 0);
 		getSolver(btSoftBody::ePSolver::RContacts)(this, 1, 0);
 	}
@@ -221,6 +222,9 @@ void btCable::solveConstraints()
 		n.m_v = (n.m_x - n.m_q) * vc;
 		n.m_f = btVector3(0, 0, 0);
 	}
+
+	// LRAConstraint(1);
+	// pin();
 }
 
 void btCable::pin() {
@@ -229,9 +233,12 @@ void btCable::pin() {
 		Anchor& a = m_anchors[i];
 		Node* n = a.m_node;
 		btRigidBody* body = a.m_body;
+		btTransform tr = body->getWorldTransform();
 
 		btVector3 wa = body->getCenterOfMassPosition() + a.m_c1;
 		n->m_x = wa;
+		// tr.setOrigin(n->m_x - wa);
+		// a.m_node->m_v = body->getVelocityInLocalPoint(a.m_c1);
 	}
 }
 
@@ -246,6 +253,7 @@ btQuaternion btCable::ComputeQuaternion(btVector3 v)
 	return btQuaternion(delta * cos(delta / 2), v.x() * sin(delta / 2), v.y() * sin(delta / 2), v.z() * sin(delta / 2)) * (1/delta);
 }
 
+/*
 void btCable::pinConstraint()
 {
 	for (int i = 0; i < m_anchors.size(); ++i)
@@ -300,10 +308,80 @@ void btCable::pinConstraint()
 		body->setWorldTransform(tr);
 	}
 }
+*/
+
+void btCable::pinConstraint()
+{
+	for (int i = 0; i < m_anchors.size(); ++i)
+	{
+		if (m_anchors[i].m_body->getMass() == 0)
+		{
+			continue;
+		}
+		// 7.0: Parameters
+		Anchor* anchor = &m_anchors[i];
+		btRigidBody* body = anchor->m_body;
+		btTransform tr = body->getWorldTransform();
+		// World pos body
+		btVector3 xa = body->getCenterOfMassPosition();
+		//local oriented anchor
+		btVector3 ra = anchor->m_c1;
+		btQuaternion q = body->getOrientation();
+		btQuaternion qc = btQuaternion(q.w(), -q.x(), -q.y(), -q.z());
+		Node* a = anchor->m_node;
+		// 7.1: Positions
+		// Anchor world pos
+		btVector3 xapin = xa + ra;
+		// Anchor node position
+		btVector3 xbpin = a->m_x;
+		btVector3 deltaPosition = xapin - xbpin;
+		if (deltaPosition.length() < 0.001)
+			continue;
+		// 7.2: Normalized xAB
+		btVector3 deltaXNormBodyA = VectorByQuaternion(deltaPosition.normalized(), qc);
+		// 7.3: Compute jx
+		btScalar xdotbodyA = deltaXNormBodyA.dot(body->getInvInertiaTensorWorld() * ra.cross(ra.cross(deltaXNormBodyA)));
+		btScalar jx = -1 / (body->getInvMass() + a->m_im + xdotbodyA);
+
+		btVector3 jaBody = VectorByQuaternion(jx * deltaPosition, qc);
+		//auto deltaQa = ComputeQuaternion(q * (body->getInvInertiaTensorWorld()*(ra*jaBody))*qc);
+
+		btQuaternion deltaQuaternion = ComputeQuaternion(VectorByQuaternion(body->getInvInertiaTensorWorld() * ra.cross(jaBody), q));
+		//btQuaternion deltaQuaternion = btQuaternion();
+		btVector3 vapin = body->getVelocityInLocalPoint(anchor->m_c1);
+		btVector3 vbpin = (a->m_x - a->m_q) * m_sst.isdt;  // chekc this
+		//btVector3 vbpin = a->m_v;  // check this
+
+		btVector3 vAB = vapin - vbpin;
+		//btVector3 vAB = vapin;
+		//if (vAB.length() < 1.0e-6f) continue;
+
+		btVector3 vbodyA = VectorByQuaternion(vAB.normalized(), qc);
+		btScalar vdotbodyA = vbodyA.dot(body->getInvInertiaTensorWorld() * (ra.cross(vbodyA).cross(ra)));
+		//btScalar jv = -1 / ( a->m_im + vdotbodyA);
+		btScalar jv = -1 / (body->getInvMass() + a->m_im + vdotbodyA);
+		btVector3 deltaVelA = jv * a->m_im * vAB;
+
+		tr.setOrigin(a->m_x - ra);
+		const btVector3 wa = tr * anchor->m_local;
+		const btScalar kAHR = m_cfg.kAHR;
+		const btScalar dt = m_sst.sdt;
+		const btVector3 va = anchor->m_body->getVelocityInLocalPoint(anchor->m_c1) * dt;
+		a->m_v = anchor->m_body->getVelocityInLocalPoint(anchor->m_c1);
+		const btVector3 vb = a->m_x - a->m_q;
+		//const btVector3 vb = btVector3 (0,0,0);
+		//const btVector3 vb = a->m_v ;
+		const btVector3 vr = (va - vb) + (wa - a->m_x) * kAHR;
+		const btVector3 impulse = anchor->m_c0 * vr * anchor->m_influence;
+		anchor->m_body->applyTorqueImpulse(anchor->m_c1.cross(-impulse));
+
+		body->setWorldTransform(tr);
+	}
+}
 
 void btCable::distanceConstraint()
 {
-	for (int i = 0; i < m_links.size(); ++i)
+	for (int i = m_links.size() - 1; i >= 0; --i)
 	{
 		Link& l = m_links[i];
 		Node& a = *l.m_n[0];
@@ -318,6 +396,7 @@ void btCable::distanceConstraint()
 	}
 }
 
+/*
 void btCable::LRAConstraint(int level, bool stable)
 {
 	btScalar rl = m_links[0].m_rl;
@@ -370,6 +449,92 @@ void btCable::LRAConstraint(int level, bool stable)
 	}
 
 	delete[] di;
+}
+*/
+
+void btCable::LRAConstraint(int level)
+{
+	btScalar rl = m_links[0].m_rl;
+	int size = m_nodes.size();
+
+	int stablePointIndex = 0;
+	// choose start body
+	if (m_anchors[0].m_body->getMass() != 0)
+	{
+		btScalar topMass = m_anchors[0].m_body->getMass();
+		for (int i = 1; i < m_anchors.size(); i++)
+		{
+			if (m_anchors[i].m_body->getMass() == 0)
+			{
+				stablePointIndex = m_anchors[i].m_node->index;
+				break;
+			}
+			else if (m_anchors[i].m_body->getMass() > topMass)
+			{
+				stablePointIndex = m_anchors[i].m_node->index;
+				topMass = m_anchors[i].m_body->getMass();
+			}
+		}
+	}
+	//cout << "StablePointIndex : " << stablePointIndex << endl;
+
+	if (stablePointIndex > 0)
+	{
+		for (int j = stablePointIndex; j > 0; j--)
+		{
+			Node& n = m_nodes[j];
+			for (int l = 0; l <= level; l++)
+			{
+				int temp = pow(2, l);
+				btScalar distMax = rl * temp;
+				int indexToCheck = j - temp;
+				if (indexToCheck >= 0)
+				{
+					Node& left = m_nodes[indexToCheck];
+					//btVector3 deltaPos = n.m_x - right.m_x;  //right To N
+					btVector3 AB = left.m_x - n.m_x;
+					btScalar ABLength = AB.length();
+					if (AB.length() > distMax)
+					{
+						btVector3 ABNormalized = AB.normalized();
+						btVector3 PosLocal = ABNormalized * distMax;
+						btVector3 newpos = n.m_x + PosLocal;
+						btVector3 deltaPos = newpos - left.m_x;
+						left.m_x = newpos;
+					}
+				}
+			}
+		}
+	}
+	// Apply LRA right Side
+	if (stablePointIndex < m_nodes.size() - 1)
+	{
+		for (int j = stablePointIndex; j < m_nodes.size() - 1; j++)
+		{
+			Node& n = m_nodes[j];
+			for (int l = 0; l <= level; l++)
+			{
+				int temp = pow(2, l);
+				btScalar distMax = rl * temp;
+				int indexToCheck = j + temp;
+				if (indexToCheck < m_nodes.size())
+				{
+					Node& right = m_nodes[indexToCheck];
+					//btVector3 deltaPos = n.m_x - right.m_x;  //right To N
+					btVector3 AB = right.m_x - n.m_x;
+					auto ABLength = AB.length();
+					if (AB.length() > distMax)
+					{
+						auto ABNormalized = AB.normalized();
+						btVector3 PosLocal = ABNormalized * distMax;
+						btVector3 newpos = n.m_x + PosLocal;
+						btVector3 deltaPos = newpos - right.m_x;
+						right.m_x = newpos;
+					}
+				}
+			}
+		}
+	}
 }
 
 /*
