@@ -206,14 +206,19 @@ void btCable::solveConstraints()
 	//		pinConstraint();
 	// Collisions: 
 	//		getSolver(btSoftBody::ePSolver::RContacts)(this, 1, 0);
-	for (int i = 0; i < m_cfg.piterations; ++i)
+
+	ni = m_links.size();
+	for (int i = 0; i < this->m_cfg.piterations; ++i)
 	{
 		getSolver(btSoftBody::ePSolver::Anchors)(this, 1, 0);
-		// pinConstraint();
-		// distanceConstraint();
-		getSolver(btSoftBody::ePSolver::Linear)(this, 1, 0);
+		//bendingConstraintAngle();
+
+		distanceConstraint();
+		bendingConstraintDistance();
+
 		getSolver(btSoftBody::ePSolver::RContacts)(this, 1, 0);
 	}
+
 
 	const btScalar vc = m_sst.isdt * (1 - m_cfg.kDP);
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
@@ -241,6 +246,318 @@ void btCable::pin() {
 		// a.m_node->m_v = body->getVelocityInLocalPoint(a.m_c1);
 	}
 }
+
+// Compute bending constraint for three consecutive particles p1, p2, p3
+/*
+	
+	Vector3 normal1 = delta1.cross(delta2);
+	normal1.normalize();
+	Vector3 normal2 = -normal1;
+	float currentAngle = acos(delta1.dot(delta2) / (delta1.norm() * delta2.norm()));
+	float constraintValue = currentAngle - restAngle;
+	// Calculate gradients of the constraint function
+	Vector3 grad1 = (delta1 / delta1.norm() - delta1.dot(delta2) / (delta1.norm() * delta2.norm()) * delta2 / delta2.norm()).normalized();
+	Vector3 grad2 = (delta2 / delta2.norm() - delta1.dot(delta2) / (delta1.norm() * delta2.norm()) * delta1 / delta1.norm()).normalized();
+	// Compute Lagrange multiplier
+	float lambda = -stiffness * constraintValue / (grad1.squaredNorm() * p1.invMass + 2 * (grad1.dot(grad2)) * p2.invMass + grad2.squaredNorm() * p3.invMass);
+	// Apply corrections
+	p1.position += lambda * grad1 * p1.invMass;
+	p2.position -= lambda * (grad1 + grad2) * p2.invMass;
+	p3.position += lambda * grad2 * p3.invMass;
+}*/
+
+void btCable::bendingConstraintDistance() {
+
+	int size = m_nodes.size();
+
+	/*
+	{
+		
+		btVector3 before = m_anchors[0].m_body->getCenterOfMassPosition();  // Node before;
+		Node* current = m_links[0].m_n[0];     // Current Node
+		Node* after = m_links[0].m_n[1];       // Node After
+		btVector3 delta1 = current->m_x - before;
+		btVector3 delta2 = after->m_x - current->m_x;
+		float stiffness = this->bendingStiffness;
+		float iterationFactor = (1.0 / m_cfg.piterations) * m_cfg.piterations * stiffness * stiffness;
+
+		btScalar dot = delta1.normalized().dot(delta2.normalized());
+
+		if (dot < -1.0f) dot = -1.0f;
+		if (dot > 1.0f) dot = 1.0f;
+		btScalar phi = acos(dot);
+		auto angleMax = this->maxAngle;  // PI/4
+		if (phi > angleMax)
+			stiffness = stiffness;
+		else
+			stiffness = phi * stiffness / angleMax;
+
+		// DHat
+
+		{
+			btVector3 r = after->m_x - before;
+			btScalar minLength = m_links[0].m_rl / 2;
+
+			btScalar rr = r.length2();
+			btScalar d2 = btDot(delta2, r);
+			btScalar d1 = btDot(delta1, r);
+			btClamp(d2, 0.0, rr);
+			btClamp(d1, 0.0, rr);
+			btScalar alpha1 = d2 / rr;
+			btScalar alpha2 = d1 / rr;
+
+			btVector3 d = alpha1 * before + alpha2 * after->m_x - current->m_x;
+			btScalar dLen = d.length();
+
+			if (dLen < DBL_EPSILON)
+			{
+				
+			}
+			else
+			{
+				btVector3 dNorm = d.normalized();
+				btVector3 J1 = alpha1 * dNorm;
+				btVector3 J2 = -dNorm;
+				btVector3 J3 = alpha2 * dNorm;
+				btScalar sum = current->m_im + after->m_im * alpha2 * alpha2;
+				if (sum <= DBL_EPSILON)
+				{
+					
+				}
+				else
+				{
+					btScalar C = dLen;
+					btScalar mass = 1.0 / sum;
+
+					btScalar impulse = -stiffness * mass * C * iterationFactor;
+
+					current->m_x += (current->m_im * impulse) * J2;
+					after->m_x += (after->m_im * impulse) * J3;
+				}
+				
+			}
+
+			
+		}
+	
+	}*/
+
+	for (int i = 1; i < this->m_links.size(); ++i)
+	{
+		Node* before = m_links[i - 1].m_n[0];  // Node before;
+		Node* current = m_links[i].m_n[0];     // Current Node 
+		Node* after = m_links[i].m_n[1];       // Node After
+		btVector3 delta1 = current->m_x - before->m_x;
+		btVector3 delta2 = after->m_x - current->m_x;
+		float stiffness = this->bendingStiffness;
+		float iterationFactor = (1.0 / m_cfg.piterations) * m_cfg.piterations * stiffness * stiffness;
+
+		btScalar dot = delta1.normalized().dot(delta2.normalized());
+
+		if (dot < -1.0f) dot = -1.0f;
+		if (dot > 1.0f) dot = 1.0f;
+		btScalar phi = acos(dot);
+		auto angleMax = this->maxAngle ; 
+		if (phi > angleMax)
+			stiffness = stiffness;
+		else
+			stiffness = phi * stiffness / angleMax;
+
+		
+		
+		// DHat 
+		
+		{
+			btVector3 r = after->m_x - before->m_x;
+			btScalar minLength = m_links[i].m_rl / 2;
+			
+			btScalar rr = r.length2();
+			btScalar d2 = btDot(delta2, r);
+			btScalar d1 = btDot(delta1, r);
+			btClamp(d2, 0.0, rr);
+			btClamp(d1, 0.0, rr);
+			btScalar alpha1 = d2 / rr;
+			btScalar alpha2 = d1 / rr;
+			
+			btVector3 d = alpha1 * before->m_x + alpha2 * after->m_x - current->m_x;
+			btScalar dLen = d.length();
+
+			if (dLen < DBL_EPSILON)
+			{
+				continue;
+			}
+			
+			btVector3 dNorm = d.normalized();
+			btVector3 J1 = alpha1 * dNorm;
+			btVector3 J2 = -dNorm;
+			btVector3 J3 = alpha2 * dNorm;
+			btScalar sum = before->m_im * alpha1 * alpha1 + current->m_im + after->m_im * alpha2 * alpha2;
+			if (sum <= DBL_EPSILON)
+			{
+				continue;
+			}
+			btScalar C = dLen;
+			btScalar mass = 1.0 / sum;
+			
+			btScalar impulse = -stiffness * mass * C * iterationFactor;
+
+			before->m_x += (before->m_im * impulse) * J1;
+			current->m_x += (current->m_im * impulse) * J2;
+			after->m_x += (after->m_im * impulse) * J3;
+		}
+
+		//Solve Triangle PBD 
+		/*
+		float stiffness = 0.5;
+		// Triangle bending model
+		float W = before->m_im + after->m_im + 2.0f * current->m_im;
+		float invW = stiffness / W;
+
+		btVector3 somPos = current->m_x + before->m_x + after->m_x;
+		btVector3 d = current->m_x - 0.33 * somPos;
+
+		btVector3 db0 = 2.0f * before->m_im * invW * d;
+		btVector3 dv = -4.0f * current->m_im * invW * d;
+		btVector3 db1 = 2.0f * after->m_im * invW * d;
+
+		before->m_x += db0;
+		current->m_x += dv;
+		after->m_x += db1; */
+
+
+		// PBD distance
+		/*
+		
+		Link a = m_links[i - 1];
+		Link b = m_links[i];
+		btVector3 diag = after->m_x - before->m_x;
+		btScalar l = diag.length();
+		float sumMass = after->m_im + before->m_im;
+		before->m_x -= stiffness * before->m_im / sumMass * (a.m_rl + b.m_rl - l) * diag;
+		after->m_x += stiffness * after->m_im / sumMass * (a.m_rl + b.m_rl - l) * diag;
+		*/
+
+		/*
+		btVector3 normal1 = delta1.cross(delta2).normalized();
+		btVector3 normal2 = -normal1;
+		auto t =delta1.dot(delta2)/(delta1.norm() * delta2.norm());
+		float currentAngle;
+		if (t > 1)
+			currentAngle = SIMD_PI;
+		else if (t < -1)
+			currentAngle = SIMD_PI;
+		else
+			currentAngle = acos(delta1.dot(delta2) / (delta1.norm() * delta2.norm()));
+		float constraintValue = currentAngle - SIMD_PI;
+
+		// Calculate gradients of the constraint function
+		btVector3 grad1 = (delta1 / delta1.norm() - delta1.dot(delta2) / (delta1.norm() * delta2.norm()) * delta2 / delta2.norm()).normalized();
+		btVector3 grad2 = (delta2 / delta2.norm() - delta1.dot(delta2) / (delta1.norm() * delta2.norm()) * delta1 / delta1.norm()).normalized();
+
+		auto temp = grad1.dot(grad2);
+		auto denom = (grad1.length2() * before->m_im + 2 * temp * current->m_im + grad2.length2() * after->m_im);
+		if (grad1.dot(grad2) < 0.0001) continue;
+		// Compute Lagrange multiplier
+		float lambda = -0.5 * constraintValue / (grad1.length2() * before->m_im + 2 * (grad1.dot(grad2)) * current->m_im + grad2.length2() * after->m_im);
+		// Apply corrections
+		before->m_x += lambda * grad1 * before->m_im;
+		current->m_x -= lambda * (grad1 + grad2) * current->m_im;
+		after->m_x += lambda * grad2 * after->m_im;
+		*/
+		/*
+		btScalar phi0 = SIMD_PI; 
+		btScalar d = (after->m_x - before->m_x).length();
+		btScalar sumMass = before->m_im + current->m_im + after->m_im;
+		btScalar summNorm  = after->m_x.length2() + before->m_x.length2() + current->m_x.length2();
+		float massRatio = 3 * current->m_im / sumMass;
+		btScalar racine = sqrt((1 - d)*(1-d));
+		btScalar angle = btAcos(d);
+		btScalar numerator = racine * angle - phi0;
+		btVector3 deltaPi = -massRatio * numerator / summNorm * current->m_x;
+		*/
+
+	}
+}
+
+void btCable::bendingConstraintAngle()
+{
+	int size = m_nodes.size();
+
+	for (int i = 1; i < this->m_links.size(); ++i)
+	{
+		Node* before = m_links[i - 1].m_n[0];  // Node before;
+		Node* current = m_links[i].m_n[0];     // Current Node
+		Node* after = m_links[i].m_n[1];       // Node After
+
+		 
+		btVector3 p0 = before->m_x;
+		btVector3 p1 = after->m_x;
+		btVector3 p2 = current->m_x;
+
+		btScalar phiZero = 0;
+
+		float stiffness = 1;
+		
+
+		btVector3 axeTan = (p0-p2).cross(p1-p2);
+		if (axeTan.length() < DBL_EPSILON)
+			continue;
+		axeTan=axeTan.normalized();
+
+		btVector3 p3 = p2 + axeTan*min(m_links[i - 1].m_rl,m_links[i].m_rl)*0.5;
+
+		btVector3 e = p3 - p2;
+		btScalar elen = e.length();
+		btScalar invElen = 1.0/elen;
+
+		btVector3 n1 = (p2-p0).cross(p3-p0);
+		btVector3 n2 = (p3-p1).cross(p2-p1);
+
+		n1 /= n1.length2();
+		n2 /= n2.length2();
+
+		btVector3 d0 = elen*n1 ;
+		btVector3 d1 = elen*n2 ;
+		btVector3 d2 = (p0 - p3).dot(e) * invElen * n1 + (p1 - p3).dot(e) * invElen * n2;
+		btVector3 d3 = (p2 - p0).dot(e) * invElen * n1 + (p2 - p1).dot(e) * invElen * n2;
+
+		n1 = n1.normalized();
+		n2=n2.normalized();
+
+
+		btScalar dot = n1.dot(n2);
+
+		if (dot < -1.0f) dot = -1.0f;
+		if (dot > 1.0f) dot = 1.0f;
+		btScalar phi = acos(dot);	
+
+		btScalar invMass = current->m_im;
+
+		btScalar lambda = invMass * d0.length2() +
+						  invMass * d1.length2() +
+						  invMass * d2.length2() +
+						  invMass * d3.length2();
+
+		//stiffness = 1 - pow((1 - stiffness), this->m_cfg.piterations);
+
+		lambda = (phi-phiZero) / lambda * stiffness;
+
+		if (abs(lambda) <= FLT_EPSILON)
+			continue;	
+
+		if (n1.cross(n2).dot(e) > 0.0f)
+			lambda = -lambda;	
+
+		before->m_x += -invMass * lambda * d0;
+		after->m_x += -invMass * lambda * d1;
+		current->m_x += -invMass * lambda * d2;
+
+	}
+	
+}
+
+
+
 
 btVector3 btCable::VectorByQuaternion(btVector3 v, btQuaternion q) {
 	btVector3 u = btVector3(q.x(), q.y(), q.z());
@@ -383,6 +700,7 @@ void btCable::distanceConstraint()
 {
 	for (int i = m_links.size() - 1; i >= 0; --i)
 	{
+		/*
 		Link& l = m_links[i];
 		Node& a = *l.m_n[0];
 		Node& b = *l.m_n[1];
@@ -392,7 +710,24 @@ void btCable::distanceConstraint()
 		btVector3 errAB = k * (normAB - l.m_rl) * ((1 / normAB) * AB);
 
 		a.m_x += 0.5 * errAB;
-		b.m_x -= 0.5 * errAB;
+		b.m_x -= 0.5 * errAB;*/
+
+		Link& l = m_links[i];
+		Node& a = *l.m_n[0];
+		Node& b = *l.m_n[1];
+		btVector3 AB = b.m_x - a.m_x;
+		btScalar normAB = AB.length();
+		btScalar k = 0.1;
+		btVector3 errAB = k * (normAB - l.m_rl) * ((1 / normAB) * AB);
+
+		btScalar sumInvMass = a.m_im + b.m_im;
+
+		btVector3 deltap1 = a.m_im / sumInvMass * (AB.length() - l.m_rl) * AB.normalized();
+		btVector3 deltap2 = b.m_im / sumInvMass * (AB.length() - l.m_rl) * AB.normalized();
+
+		a.m_x += deltap1;
+		b.m_x -= deltap2;
+
 	}
 }
 
@@ -1379,3 +1714,15 @@ void btCable::setBlackHolePos(bool activeState, btVector3 pos)
 	this->blackHoleIsActive = activeState;
 }
 
+void btCable::setBendingMaxAngle(btScalar angle){
+	this->maxAngle = angle;
+}
+btScalar btCable::getBendingMaxAngle() {
+	return maxAngle;
+}
+void btCable::setBendingStiffness(btScalar stiffness) {
+	this->bendingStiffness = stiffness;
+}
+btScalar btCable::getBendingStiffness() {
+	return this->bendingStiffness;
+}

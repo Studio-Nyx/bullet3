@@ -4,6 +4,7 @@
 #include "LinearMath/btTransform.h"
 #include "LinearMath/btIDebugDraw.h"
 #include "LinearMath/btVector3.h"
+#include "LinearMath/btMinMax.h"
 #include "BulletDynamics/Dynamics/btRigidBody.h"
 
 #include "BulletCollision/CollisionShapes/btConcaveShape.h"
@@ -38,6 +39,10 @@ private:
 	//std::vector<btCollisionObject> collisionList;
 	std::vector<int> collisionObjPos;
 
+	btScalar maxAngle= SIMD_PI/4.0;
+	btScalar bendingStiffness =1;
+
+
 	btVector3 VectorByQuaternion(btVector3 v, btQuaternion q);
 	btQuaternion ComputeQuaternion(btVector3 v);
 
@@ -45,6 +50,7 @@ private:
 	void pinConstraint();
 	void distanceConstraint();
 	void LRAConstraint(int level);
+
 
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
@@ -81,6 +87,13 @@ public:
 	btVector3 getImpulse(int index);
 	bool checkIfCollisionWithWorldArrayPos(int objWorldArrayPos);
 	void setBlackHolePos(bool activeState, btVector3 pos);
+	void bendingConstraintDistance();
+	void bendingConstraintAngle();
+
+	void setBendingMaxAngle(btScalar angle);
+	btScalar getBendingMaxAngle();
+	void setBendingStiffness(btScalar stiffness);
+	btScalar getBendingStiffness();
 };
 
 #endif  //_BT_CABLE_H
