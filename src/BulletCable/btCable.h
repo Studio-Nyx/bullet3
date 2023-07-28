@@ -28,12 +28,13 @@ class btCable : public btSoftBody
 private:
 	btVector3 blackHolePos= btVector3(0,0,0);
 	bool blackHoleIsActive = false;
+	int m_idxAnchor;
 	btVector3* impulses;
 	btVector3* positionNodes;
 	btCollisionShape* collisionShapeNode;
+	btConvexPenetrationDepthSolver* m_pdSolver;
 	btCollisionWorld* world;
 	btPersistentManifold* tempManiforld = new btPersistentManifold();
-	btConvexPenetrationDepthSolver* m_pdSolver;
 	// Differents forces for the cable:
 	void addForces();
 	//std::vector<btCollisionObject> collisionList;
@@ -49,7 +50,9 @@ private:
 	void pin();
 	void pinConstraint();
 	void distanceConstraint();
-	void LRAConstraint(int level);
+	void LRAConstraint(int level, int idxAnchor);
+	void FollowTheLeader();
+	void FABRIKChain();
 
 
 public:
@@ -94,6 +97,9 @@ public:
 	btScalar getBendingMaxAngle();
 	void setBendingStiffness(btScalar stiffness);
 	btScalar getBendingStiffness();
+	
+	void SetAnchorIndex(int idx);
+	int GetAnchorIndex();
 };
 
 #endif  //_BT_CABLE_H

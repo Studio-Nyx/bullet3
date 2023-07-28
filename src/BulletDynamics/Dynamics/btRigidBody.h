@@ -64,6 +64,7 @@ class btRigidBody : public btCollisionObject
 	btScalar m_inverseMass;
 	btVector3 m_linearFactor;
 	btScalar m_maxLinearVelocity = 0;
+	btScalar m_maxAngularVelocity = 0;
 
 	btVector3 m_gravity;
 	btVector3 m_gravity_acceleration;
@@ -269,6 +270,8 @@ public:
 	}
 
 	void integrateVelocities(btScalar step);
+
+	void clampVelocity();
 
 	void setCenterOfMassTransform(const btTransform& xform);
 
@@ -630,8 +633,14 @@ public:
 
 	virtual void serializeSingleObject(class btSerializer* serializer) const;
 
-	void setMaxLinearVelocity(btScalar maxL) {
+	void setMaxLinearVelocity(btScalar maxL) 
+	{
 		m_maxLinearVelocity = maxL;
+	}
+
+	void setMaxAngularVelocity(btScalar maxL)
+	{
+		m_maxAngularVelocity = maxL;
 	}
 };
 

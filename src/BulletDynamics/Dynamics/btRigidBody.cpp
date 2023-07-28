@@ -99,9 +99,7 @@ void btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 
 void btRigidBody::predictIntegratedTransform(btScalar timeStep, btTransform& predictedTransform)
 {
-	if (m_linearVelocity.length() > m_maxLinearVelocity && m_maxLinearVelocity > 0)
-		m_linearVelocity = m_linearVelocity.normalized() * m_maxLinearVelocity; 
-
+	clampVelocity();
 	btTransformUtil::integrateTransform(m_worldTransform, m_linearVelocity, m_angularVelocity, timeStep, predictedTransform);
 }
 
@@ -380,6 +378,7 @@ void btRigidBody::integrateVelocities(btScalar step)
 	m_linearVelocity += m_totalForce * (m_inverseMass * step);
 	m_angularVelocity += m_invInertiaTensorWorld * m_totalTorque * step;
 
+
 #define MAX_ANGVEL SIMD_HALF_PI
 	/// clamp angular velocity. collision calculations will fail on higher angular velocities
 	btScalar angvel = m_angularVelocity.length();
@@ -390,6 +389,12 @@ void btRigidBody::integrateVelocities(btScalar step)
 	#if defined(BT_CLAMP_VELOCITY_TO) && BT_CLAMP_VELOCITY_TO > 0
 	clampVelocity(m_angularVelocity);
 	#endif
+}
+
+void btRigidBody::clampVelocity()
+{
+	if (m_linearVelocity.length() > m_maxLinearVelocity && m_maxLinearVelocity > 0)
+		m_linearVelocity = m_linearVelocity.normalized() * m_maxLinearVelocity;
 }
 
 btQuaternion btRigidBody::getOrientation() const
