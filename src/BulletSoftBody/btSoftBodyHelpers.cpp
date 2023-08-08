@@ -266,7 +266,7 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 	else
 	{
 		/* Nodes	*/
-		if (0 != (drawflags & fDrawFlags::Nodes))
+		//if (0 != (drawflags & fDrawFlags::Nodes))
 		{
 			for (i = 0; i < psb->m_nodes.size(); ++i)
 			{

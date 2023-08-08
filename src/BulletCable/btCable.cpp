@@ -14,98 +14,6 @@
 
 using namespace std::chrono;
 
-void btCable::addForces()
-{
-	std::ofstream MyFile("addForces.txt");
-
-	for (int i = 0; i < m_links.size(); ++i)
-	{
-		Link& l = m_links[i];  // the spring
-		Node& na = *l.m_n[0];  // 1st particle
-		Node& nb = *l.m_n[1];  // 2nd particle
-
-		btVector3 distAB = nb.m_x - na.m_x;     // distance AB
-		btVector3 velAB = nb.m_v - na.m_v;      // velocity AB
-		btScalar lenAB = distAB.length();       // length AB
-		btVector3 dirAB = distAB.normalized();  // direction AB
-
-		btScalar mr = 1 / (na.m_im + nb.m_im);         // mass reduced
-		btScalar k = m_materials[0]->m_kLST;           // spring stiffness
-		btScalar kMax = mr / (m_sst.sdt * m_sst.sdt);  // spring stiffness max
-		btScalar d = m_materials[0]->m_kVST;           // spring damping
-		btScalar dMax = mr / m_sst.sdt;                // spring damping max
-
-		// Forces
-		btVector3 sForce = k * kMax * (lenAB - l.m_rl) * dirAB;  // spring force
-		if (na.m_battach == 0) na.m_f += sForce;
-		if (nb.m_battach == 0) nb.m_f -= sForce;
-
-		btScalar velA = dirAB.dot(na.m_v);
-		btScalar velB = dirAB.dot(nb.m_v);
-		btVector3 dForce = d * dMax * dirAB.dot(velAB) * dirAB;  // damping force
-		// if (na.m_battach == 0) na.m_f += dForce;
-		// if (nb.m_battach == 0) nb.m_f -= dForce;
-
-		btVector3 gForce = 0.5 * m_worldInfo->m_gravity * mr;  // gravity force
-		if (na.m_battach == 0) na.m_f += gForce;
-		if (nb.m_battach == 0) nb.m_f += gForce;
-
-		/*
-		MyFile << "Link[" << i << "]: " << std::endl;
-		{
-			MyFile << "	k (stiffness): " << k << std::endl;
-			MyFile << "	kMax (stiffness): " << kMax << std::endl;
-			MyFile << "	d (damping): " << d << std::endl;
-			MyFile << "	dMax (damping): " << dMax << std::endl;
-
-			MyFile << "	Node A: " << std::endl;
-			{
-				MyFile << "		Mass inv. (a): " << na.m_im << std::endl;
-				MyFile << "		Mass (a): " << mr << std::endl;
-				MyFile << "		Pos. (a): (" << na.m_x.getX() << "; " << na.m_x.getY() << "; " << na.m_x.getZ() << ")" << std::endl;
-				MyFile << "		Vel. (a): (" << na.m_v.getX() << "; " << na.m_v.getY() << "; " << na.m_v.getZ() << ")" << std::endl;
-				MyFile << "		Vel. length (a): " << na.m_v.length() << std::endl;
-			}
-
-			MyFile << "	Node B:" << std::endl;
-			{
-				MyFile << "		Mass inv. (b): " << nb.m_im << std::endl;
-				MyFile << "		Mass (b): " << mr << std::endl;
-				MyFile << "		Pos. (b): (" << nb.m_x.getX() << "; " << nb.m_x.getY() << "; " << nb.m_x.getZ() << ")" << std::endl;
-				MyFile << "		Vel. (b): (" << nb.m_v.getX() << "; " << nb.m_v.getY() << "; " << nb.m_v.getZ() << ")" << std::endl;
-				MyFile << "		Vel. length (b): " << nb.m_v.length() << std::endl;
-			}
-
-			MyFile << "	Forces:" << std::endl;
-			{
-				MyFile << "		Spring Force: " << sForce.length() << std::endl;		
-				MyFile << "		Spring Force (a): (" << sForce.getX() << "; " << sForce.getY() << "; " << sForce.getZ() << ")" << std::endl;
-				MyFile << "		Spring Force (b): (" << -sForce.getX() << "; " << -sForce.getY() << "; " << -sForce.getZ() << ")" << std::endl;
-
-				MyFile << "		Damping Force: " << dForce.length() << std::endl;
-				MyFile << "		Damping Force (a): (" << dForce.getX() << "; " << dForce.getY() << "; " << dForce.getZ() << ")" << std::endl;
-				MyFile << "		Damping Force (b): (" << -dForce.getX() << "; " << -dForce.getY() << "; " << -dForce.getZ() << ")" << std::endl;
-
-				MyFile << "		Gravity Force: " << gForce.length() << std::endl;
-				MyFile << "		Gravity Force (a): (" << -gForce.getX() << "; " << -gForce.getY() << "; " << -gForce.getZ() << ")" << std::endl;
-				MyFile << "		Gravity Force (b): (" << -gForce.getX() << "; " << -gForce.getY() << "; " << -gForce.getZ() << ")" << std::endl;
-			}
-
-			MyFile << std::endl;
-		}
-	}
-
-
-	MyFile << std::endl;
-	for (int i = 0; i < m_nodes.size(); ++i)
-		MyFile << "Total forces node[" << i << "]:" << m_nodes[i].m_f.length() << std::endl;
-	MyFile << std::endl;
-
-	MyFile.close();
-		*/
-	}
-}
-
 struct btBridgedManifoldResult : public btManifoldResult
 {
 	btCollisionWorld::ContactResultCallback& m_resultCallback;
@@ -181,21 +89,20 @@ void btCable::solveConstraints()
 		l.m_c3 = l.m_n[1]->m_q - l.m_n[0]->m_q;
 		l.m_c2 = 1 / (l.m_c3.length2() * l.m_c0);
 	}
-
+	
 	// Prepare anchors
 	for (i = 0, ni = m_anchors.size(); i < ni; ++i)
 	{
 		Anchor& a = m_anchors[i];
 		const btVector3 ra = a.m_body->getWorldTransform().getBasis() * a.m_local;
 		a.m_c0 = ImpulseMatrix(m_sst.sdt,
-							   a.m_node->m_im,
-							   a.m_body->getInvMass(),
-							   a.m_body->getInvInertiaTensorWorld(),
-							   ra);
+								a.m_node->m_im,
+								a.m_body->getInvMass(),
+								a.m_body->getInvInertiaTensorWorld(),
+								ra);
 		a.m_c1 = ra;
 		a.m_c2 = m_sst.sdt * a.m_node->m_im;
 		a.m_body->activate();
-
 		impulses[i] = btVector3(0, 0, 0);
 	}
 
@@ -210,41 +117,17 @@ void btCable::solveConstraints()
 	//		pinConstraint();
 	// Collisions: 
 	//		getSolver(btSoftBody::ePSolver::RContacts)(this, 1, 0);		
-
-	/*
-	int k = 20;  
-	for (int i = 0; i < k; i++)
-	{
-		for (int i = 0; i < m_cfg.piterations/k; i++)
-			distanceConstraint();
-		pinConstraint();		
-		// getSolver(btSoftBody::ePSolver::RContacts)(this, 1, 0);
-	}
-	LRAConstraint(1, 1);
-	*/
-
-	for (int i = 0; i < 15; i++)
-	{
+	for (int i = 0; i < m_cfg.piterations; i++)
+	{		
+		SolveAnchors();
 		distanceConstraint();
-		FABRIKChain(); 
-		pinConstraint();
-	//		getSolver(btSoftBody::ePSolver::RContacts)(this, 1, 0);
-
-	ni = m_links.size();
-	for (int i = 0; i < this->m_cfg.piterations; ++i)
-	{
-		getSolver(btSoftBody::ePSolver::Anchors)(this, 1, 0);
-		//bendingConstraintAngle();
-
-		distanceConstraint();
-		bendingConstraintDistance();
-
-		getSolver(btSoftBody::ePSolver::RContacts)(this, 1, 0);
+		if (activeLRA) FABRIKChain();
+		if (activeBending) bendingConstraintDistance();
+		getSolver(btSoftBody::ePSolver::RContacts)(this, 1, 0);	
 	}
-
+	pin();
 
 	const btScalar vc = m_sst.isdt * (1 - m_cfg.kDP);
-	const btScalar vt = m_sst.sdt * m_cfg.kDP;
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
 		Node& n = m_nodes[i];
@@ -255,29 +138,14 @@ void btCable::solveConstraints()
 	std::cout << "================================" << std::endl;
 	for (i = 0, ni = m_anchors.size(); i < ni; ++i)
 	{
-		std::cout << "Impulse[" << m_anchors[i].m_body->getMass() << "]: " << impulses[i].length() << std::endl; 
+		std::cout << "impulses[" << i << "]: " << impulses[i].x() << " / " << impulses[i].y() << " /  " << impulses[i].z() << std::endl;
 		std::cout << "Velocity[" << m_anchors[i].m_body->getMass() << "]: " << m_anchors[i].m_body->getVelocityInLocalPoint(m_anchors[i].m_c1).length() << std::endl;
 	}
 		
 	std::cout << "Length[RestL]: " << getLengthRestlength() << std::endl;
 	std::cout << "Length[RealL]: " << getLengthPosition() << std::endl;
-
 }
 
-
-void btCable::FollowTheLeader() {
-	pin();
-	for (int i = 0; i < m_links.size(); ++i)
-	{
-		Link& l = m_links[i];
-		Node* na = l.m_n[0];
-		Node* nb = l.m_n[1];
-
-		btVector3 deltaX = nb->m_x - na->m_x;
-		if (deltaX.length() > l.m_rl)
-			nb->m_x = na->m_x + deltaX.normalized() * l.m_rl;
-	}
-}
 
 void btCable::LRAConstraint(int level, int idxAnchor)
 {
@@ -418,44 +286,50 @@ btVector3 ConstrainDistance(btVector3 point, btVector3 anchor, float distance)
 
 void btCable::FABRIKChain() 
 {
-	/*
-	//Set the first link's position to be at the mouse
-	m_anchors[0].m_node->m_x = m_anchors[0].m_body->getCenterOfMassPosition() + m_anchors[0].m_c1;
-	for (int i = 0; i < m_links.size(); i++)
-	{
-		//Pull the current segment to the previous one
-		Link& l = m_links[i];
-		l.m_n[1]->m_x = ConstrainDistance(l.m_n[1]->m_x, l.m_n[0]->m_x, m_links[i].m_rl);
-	}
-
-	//Set the base link's position to be at the ball
-	m_anchors[1].m_node->m_x = m_anchors[1].m_body->getCenterOfMassPosition() + m_anchors[1].m_c1;
-	for (int i = m_links.size() - 1; i >= 0; i--)
-	{
-		//Pull the previous segment to the current one
-		Link& l = m_links[i];
-		l.m_n[0]->m_x = ConstrainDistance(l.m_n[0]->m_x, l.m_n[1]->m_x, m_links[i].m_rl);
-	}
-	*/
-
-	for (int i = 0; i < m_anchors.size(); ++i)
-	{
-		Anchor& a = m_anchors[i];
-		a.m_node->m_x = m_anchors[i].m_body->getCenterOfMassPosition() + m_anchors[i].m_c1;
-
-		int idx = a.m_node->index;
-		for (int i = idx + 1; i < m_nodes.size(); i++)
+	if (m_idxAnchor == 0)
+		for (int i = m_anchors.size() - 1; i >= 0; --i)
 		{
-			//Pull the current segment to the previous one
-			m_nodes[i].m_x = ConstrainDistance(m_nodes[i].m_x, m_nodes[i - 1].m_x, m_links[i - 1].m_rl);
-		}
+			Anchor& a = m_anchors[i];
+			a.m_node->m_x = m_anchors[i].m_body->getCenterOfMassPosition() + a.m_c1;
+			int idx = a.m_node->index;
 
-		for (int i = idx; i > 0; --i)
-		{
-			//Pull the current segment to the previous one
-			m_nodes[i - 1].m_x = ConstrainDistance(m_nodes[i - 1].m_x, m_nodes[i].m_x, m_links[i - 1].m_rl);
+			for (int i = idx + 1; i < m_nodes.size(); i++)
+			{
+				//Pull the current segment to the previous one
+				if (m_nodes[i - 1].m_x.distance(m_nodes[i].m_x) > m_links[i - 1].m_rl)
+					m_nodes[i].m_x = ConstrainDistance(m_nodes[i].m_x, m_nodes[i - 1].m_x, m_links[i - 1].m_rl);
+			}
+
+			for (int i = idx; i > 0; --i)
+			{
+				//Pull the current segment to the previous one
+				if (m_nodes[i].m_x.distance(m_nodes[i - 1].m_x) > m_links[i - 1].m_rl)
+					m_nodes[i - 1].m_x = ConstrainDistance(m_nodes[i - 1].m_x, m_nodes[i].m_x, m_links[i - 1].m_rl);
+			}
 		}
-	}
+	else if (m_idxAnchor == 1)
+		for (int i = 0; i < m_anchors.size(); ++i)
+		{
+			Anchor& a = m_anchors[i];
+			const btVector3 ra = a.m_body->getWorldTransform().getBasis() * a.m_local;
+
+			a.m_node->m_x = m_anchors[i].m_body->getCenterOfMassPosition() + a.m_c1;
+			int idx = a.m_node->index;
+
+			for (int i = idx; i > 0; --i)
+			{
+				//Pull the current segment to the previous one
+				if (m_nodes[i - 1].m_x.distance(m_nodes[i].m_x) > m_links[i - 1].m_rl)
+					m_nodes[i - 1].m_x = ConstrainDistance(m_nodes[i - 1].m_x, m_nodes[i].m_x, m_links[i - 1].m_rl);
+			}
+
+			for (int i = idx + 1; i < m_nodes.size(); i++)
+			{
+				//Pull the current segment to the previous one
+				if (m_nodes[i].m_x.distance(m_nodes[i - 1].m_x) > m_links[i - 1].m_rl)
+					m_nodes[i].m_x = ConstrainDistance(m_nodes[i].m_x, m_nodes[i - 1].m_x, m_links[i - 1].m_rl);
+			}
+		}
 }
 
 void btCable::pin() {
@@ -468,32 +342,18 @@ void btCable::pin() {
 
 		btVector3 wa = body->getCenterOfMassPosition() + a.m_c1;
 		n->m_x = wa;
+		for (int i = 0; i < 5; i++)
+		{
+			distanceConstraint();
+			n->m_x = wa;
+		}
 	}
 }
 
-// Compute bending constraint for three consecutive particles p1, p2, p3
-/*
-	
-	Vector3 normal1 = delta1.cross(delta2);
-	normal1.normalize();
-	Vector3 normal2 = -normal1;
-	float currentAngle = acos(delta1.dot(delta2) / (delta1.norm() * delta2.norm()));
-	float constraintValue = currentAngle - restAngle;
-	// Calculate gradients of the constraint function
-	Vector3 grad1 = (delta1 / delta1.norm() - delta1.dot(delta2) / (delta1.norm() * delta2.norm()) * delta2 / delta2.norm()).normalized();
-	Vector3 grad2 = (delta2 / delta2.norm() - delta1.dot(delta2) / (delta1.norm() * delta2.norm()) * delta1 / delta1.norm()).normalized();
-	// Compute Lagrange multiplier
-	float lambda = -stiffness * constraintValue / (grad1.squaredNorm() * p1.invMass + 2 * (grad1.dot(grad2)) * p2.invMass + grad2.squaredNorm() * p3.invMass);
-	// Apply corrections
-	p1.position += lambda * grad1 * p1.invMass;
-	p2.position -= lambda * (grad1 + grad2) * p2.invMass;
-	p3.position += lambda * grad2 * p3.invMass;
-}*/
 
 void btCable::bendingConstraintDistance() {
 
 	int size = m_nodes.size();
-
 	/*
 	{
 		
@@ -574,7 +434,9 @@ void btCable::bendingConstraintDistance() {
 		btVector3 delta1 = current->m_x - before->m_x;
 		btVector3 delta2 = after->m_x - current->m_x;
 		float stiffness = this->bendingStiffness;
-		float iterationFactor = (1.0 / m_cfg.piterations) * m_cfg.piterations * stiffness * stiffness;
+		float iterationFactor = stiffness * stiffness;
+
+		if (delta1.length() <= 0.001 || delta2.length() <= 0.001) continue;
 
 		btScalar dot = delta1.normalized().dot(delta2.normalized());
 
@@ -582,15 +444,12 @@ void btCable::bendingConstraintDistance() {
 		if (dot > 1.0f) dot = 1.0f;
 		btScalar phi = acos(dot);
 		auto angleMax = this->maxAngle ; 
-		if (phi > angleMax)
+		if (phi > angleMax || angleMax==0)
 			stiffness = stiffness;
 		else
 			stiffness = phi * stiffness / angleMax;
-
-		
-		
-		// DHat 
-		
+	
+		// DHat 	
 		{
 			btVector3 r = after->m_x - before->m_x;
 			btScalar minLength = m_links[i].m_rl / 2;
@@ -780,9 +639,6 @@ void btCable::bendingConstraintAngle()
 	
 }
 
-
-
-
 btVector3 btCable::VectorByQuaternion(btVector3 v, btQuaternion q) {
 	btVector3 u = btVector3(q.x(), q.y(), q.z());
 	return 2. * u.dot(v) * u + (q.w() * q.w() - u.dot(u)) * v + 2. * q.w() * u.cross(v);
@@ -880,8 +736,6 @@ void btCable::pinConstraint()
 		if (allInvMasses <= 0.0f || body->getActivationState() == DISABLE_SIMULATION)
 			continue;
 
-		std::cout << "DeltaX[" << i << "]:" << deltaX.length() << std::endl;
-		
 		float lambda = deltaX.length() / (allInvMasses);
 		deltaXhat *= -lambda;
 		impulses[i] += deltaXhat;
@@ -944,13 +798,12 @@ void btCable::pinConstraint()
 	*/
 }
 
-void btCable::distanceConstraint()
-{
+
+	/*
 	btVector3* positions = new btVector3[m_nodes.size()];
 
 	for (int i = 0; i < m_links.size(); ++i)
 	{
-		/*
 		Link& l = m_links[i];
 		Node& a = *l.m_n[0];
 		Node& b = *l.m_n[1];
@@ -976,6 +829,28 @@ void btCable::distanceConstraint()
 	}
 
 	delete positions;
+	*/
+
+void btCable::distanceConstraint()
+{
+	for (int i = 0; i < m_links.size(); ++i)
+	{
+		Link& l = m_links[i];
+		Node& a = *l.m_n[0];
+		Node& b = *l.m_n[1];
+		btVector3 AB = b.m_x - a.m_x;
+		btScalar normAB = AB.length();
+		btScalar k = 1;
+		btVector3 errAB = k * (normAB - l.m_rl) * ((1 / normAB) * AB);
+
+		btScalar sumInvMass = a.m_im + b.m_im;
+
+		btVector3 deltap1 = a.m_im / sumInvMass * (AB.length() - l.m_rl) * AB.normalized();
+		btVector3 deltap2 = b.m_im / sumInvMass * (AB.length() - l.m_rl) * AB.normalized();
+
+		a.m_x += deltap1;
+		b.m_x -= deltap2;
+	}
 }
 
 void btCable::predictMotion(btScalar dt)
@@ -1010,9 +885,25 @@ void btCable::predictMotion(btScalar dt)
 	{
 		Node& n = m_nodes[i];
 		n.m_q = n.m_x;
-		n.m_x += n.m_v * dt + 0.5 * n.m_f * n.m_im * dt * dt;
-		n.m_v += n.m_f * n.m_im * dt;
-		n.m_v *= (1 - m_cfg.kDP);
+		btVector3 deltaV = n.m_f * n.m_im * m_sst.sdt;
+		{
+			btScalar maxDisplacement = m_worldInfo->m_maxDisplacement;
+			btScalar clampDeltaV = maxDisplacement / m_sst.sdt;
+			for (int c = 0; c < 3; c++)
+			{
+				if (deltaV[c] > clampDeltaV)
+				{
+					deltaV[c] = clampDeltaV;
+				}
+				if (deltaV[c] < -clampDeltaV)
+				{
+					deltaV[c] = -clampDeltaV;
+				}
+			}
+		}
+		n.m_v += deltaV;
+		n.m_x += n.m_v * m_sst.sdt;
+		n.m_f = btVector3(0, 0, 0);
 	}
 	*/
 
@@ -1022,10 +913,11 @@ void btCable::predictMotion(btScalar dt)
 		n.m_q = n.m_x;
 		btVector3 deltaV = n.m_f * n.m_im * m_sst.sdt;
 		n.m_v += deltaV;
-		// n.m_v *= (1 - m_cfg.kDP);
-		if (n.m_battach == 0) n.m_x += n.m_v * m_sst.sdt;
+		n.m_v *= (1 - m_cfg.kDP);
+		n.m_x += n.m_v * m_sst.sdt;
 		n.m_f = btVector3(0, 0, 0);
 	}
+
 	
 	updateBounds();
 
@@ -1069,25 +961,204 @@ btSoftBody::psolver_t btCable::getSolver(ePSolver::_ solver)
 	return (0);
 }
 
-void btCable::PSolve_Anchors(btSoftBody* psb, btScalar kst, btScalar ti)
-{
-	btCable* c = (btCable*)psb;
 
+void btCable::AnchorsConstraint(btVector3* jointInfo0, btVector3* jointInfo1)
+{
+	/*
 	BT_PROFILE("PSolve_Anchors");
 	const btScalar kAHR = psb->m_cfg.kAHR * kst;
 	const btScalar dt = psb->m_sst.sdt;
 	for (int i = 0, ni = psb->m_anchors.size(); i < ni; ++i)
 	{
-		const Anchor& a = psb->m_anchors[i];
+		Anchor& a = psb->m_anchors[i];
+
+		btTransform& t = a.m_body->getWorldTransform();
+		btVector3 wa = a.m_body->getCenterOfMassPosition() + a.m_c1;
+		Node& n = *a.m_node;
+
+		const btVector3 dx = (wa - n.m_x) * kAHR;
+		const btVector3 dv = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt - (n.m_x - n.m_q);
+		const btVector3 impulse = a.m_c0 * (dv + dx);
+		c->impulses[i] += impulse / dt;
+
+		// méthode de base => prb mass/ratio
+		//n.m_x += impulse * a.m_c2;
+		n.m_x = wa;
+		a.m_body->applyImpulse(-impulse , a.m_c1);
+
+		/*
+		// Déplace le node sur le body	
+		if (c->getAnchorIndex() == i)
+		{
+			n.m_x = wa;
+		}
+		// Déplace le body sur le node
+		else if (c->getAnchorIndex() != i)
+		{
+			//a.m_body->applyTorqueImpulse(a.m_c1.cross(-impulse));
+			t.setOrigin(n.m_x - a.m_c1);
+			a.m_body->setWorldTransform(t);
+			//a.m_body->applyImpulse(-impulse * dt, a.m_c1);
+			n.m_x = wa;
+		}
+	*/
+
+	// methode de secours 2 => prb trop de tension
+	/*
+	for (int i = 0, ni = m_anchors.size(); i < ni; ++i)
+	{
+		Anchor& a = m_anchors[i];
+		btTransform& t = a.m_body->getWorldTransform();
+		btVector3 wa = a.m_body->getCenterOfMassPosition() + a.m_c1;
+		Node& n = *a.m_node;
+		const btVector3 dx = (wa - n.m_x);
+		const btVector3 dv = a.m_body->getVelocityInLocalPoint(a.m_c1) * m_sst.sdt - (n.m_x - n.m_q);
+		const btVector3 impulse = a.m_body->getMass() * (dx + dv);
+		if (m_idxAnchor == 0)
+			n.m_x += impulse * a.m_c2;
+		else
+			n.m_x = wa;
+		impulses[i] += impulse / m_sst.sdt;
+		a.m_body->applyImpulse(-impulse, a.m_c1);
+	}
+	*/
+
+	/*
+	for (int i = 0; i < m_anchors.size(); i++)
+	{
+		Anchor a = m_anchors[i];
+		btRigidBody* body = a.m_body;
+		btScalar invMass0 = body->getInvMass();
+		btScalar invMass1 = a.m_node->m_im;
+		btVector3 corr_x0 = btVector3(0, 0, 0);
+		btQuaternion corr_q0 = btQuaternion(0, 0, 0, 0);
+		btVector3 corr_x1 = btVector3(0, 0, 0);
+		btTransform tr = body->getWorldTransform();
+		btVector3 connector = jointInfo1[i];
+
+		btMatrix3x3 K1, K2;
+		K1.setZero();
+		K2.setZero();
+		K1 = computeMatrix(connector, invMass1, body->getCenterOfMassPosition(), body->getInvInertiaTensorWorld());
+
+		if (invMass1 != 0.0)
+		{
+			K2[0][0] = invMass1;
+			K2[1][1] = invMass1;
+			K2[2][2] = invMass1;
+		}
+
+		const btVector3 pt = llt(K2 + K1) * (a.m_node->m_x - body->getCenterOfMassPosition() + a.m_c1);
+
+		if (invMass0 != 0.0)
+		{
+			// Position
+			corr_x0 = invMass0 * pt;
+			body->applyImpulse(corr_x0, a.m_c1);
+			// body->setLinearVelocity(body->getLinearVelocity() + corr_x0 / m_sst.sdt * body->getInvMass());
+			//tr.setOrigin(tr.getOrigin() + corr_x0);
+
+			// Rotation
+			const btVector3 r0 = connector - body->getWorldTransform().getOrigin();
+			const btVector3 ot = (body->getInvInertiaTensorWorld() * (r0.cross(pt)));
+			const btQuaternion otQ(ot[0], ot[1], ot[2], 0.0);
+			corr_q0.setX(0.5 * (otQ * tr.getRotation()).getX());
+			corr_q0.setY(0.5 * (otQ * tr.getRotation()).getY());
+			corr_q0.setZ(0.5 * (otQ * tr.getRotation()).getZ());
+			tr.setRotation(tr.getRotation() + corr_q0);
+			body->setWorldTransform(tr);
+		}
+
+		if (invMass1 != 0.0)
+		{
+			// Particle / Node
+			corr_x1 = -invMass1 * pt;
+			//a.m_node->m_x += corr_x1;
+			const btVector3 ra = tr.getBasis() * a.m_local;
+			a.m_node->m_x = m_anchors[i].m_body->getCenterOfMassPosition() + ra;	
+		}
+
+		cout << pt[0][0] << " - " << pt[0][1] << " - " << pt[0][2] << endl;
+		cout << pt[1][0] << " - " << pt[1][1] << " - " << pt[1][2] << endl;
+		cout << pt[2][0] << " - " << pt[2][1] << " - " << pt[2][2] << endl;
+	}
+	*/
+}
+
+btMatrix3x3 btCable::llt(btMatrix3x3 M) 
+{
+	btMatrix3x3 res;
+	res.setZero();
+	int n = 3;
+	for (int i = 0; i < n; ++i)
+	{
+		for (int k = 0; k < i; ++k)
+		{
+			btScalar value = M[i][k];
+			for (int j = 0; j < k; ++j)
+				value -= res[i][j] * res[k][j];
+			res[i][k]= value / res[k][k];
+		}
+
+		btScalar value = M[i][i];
+		for (int j = 0; j < i; ++j)
+			value -= res[i][j]* res[i][j];
+		res[i][i]= std::sqrt(value);
+	}
+
+	return res;  //*res.transpose();
+
+}
+
+btMatrix3x3 btCable::computeMatrix(btVector3 connector, btScalar invMass , btVector3 x0, btMatrix3x3 invInertiaTensorW0) {
+	btMatrix3x3 K1 = btMatrix3x3();
+	K1.setZero();
+	if (invMass != 0.0)
+	{
+		// ra: local pos anchor oriented
+		btVector3 v = connector - x0;
+		btScalar a = v.x();
+		btScalar b = v.y();
+		btScalar c = v.z();
+
+		// J is symmetric
+		const btScalar j11 = invInertiaTensorW0[0][0];
+		const btScalar j12 = invInertiaTensorW0[0][1];
+		const btScalar j13 = invInertiaTensorW0[0][2];
+		const btScalar j22 = invInertiaTensorW0[1][1];
+		const btScalar j23 = invInertiaTensorW0[1][2];
+		const btScalar j33 = invInertiaTensorW0[2][2];
+
+		K1[0][0] = c * c * j22 - b * c * (j23 + j23) + b * b * j33 + invMass;
+		K1[0][1] = -(c * c * j12) + a * c * j23 + b * c * j13 - a * b * j33;
+		K1[0][2] = b * c * j12 - a * c * j22 - b * b * j13 + a * b * j23;
+		K1[1][0] = K1[0][1];
+		K1[1][1] = c * c * j11 - a * c * (j13 + j13) + a * a * j33 + invMass;
+		K1[1][2] = -(b * c * j11) + a * c * j12 + a * b * j13 - a * a * j23;
+		K1[2][0] = K1[0][2];
+		K1[2][1] = K1[1][2];
+		K1[2][2] = b * b * j11 - a * b * (j12 + j12) + a * a * j22 + invMass;
+	}
+	return K1;
+
+}
+
+void btCable::SolveAnchors()
+{
+	BT_PROFILE("PSolve_Anchors");
+	const btScalar dt = m_sst.sdt;
+	for (int i = 0, ni = m_anchors.size(); i < ni; ++i)
+	{
+		const Anchor& a = m_anchors[i];
 		const btTransform& t = a.m_body->getWorldTransform();
 		Node& n = *a.m_node;
 		const btVector3 wa = t * a.m_local;
 		const btVector3 va = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt;
 		const btVector3 vb = n.m_x - n.m_q;
-		const btVector3 vr = (va - vb) + (wa - n.m_x) * kAHR;
+		const btVector3 vr = (va - vb) + (wa - n.m_x);
 		const btVector3 impulse = a.m_c0 * vr * a.m_influence;
-		c->impulses[i] += impulse / dt;
 		n.m_x += impulse * a.m_c2;
+		impulses[i] += impulse / dt;
 		a.m_body->applyImpulse(-impulse, a.m_c1);
 	}
 }
@@ -1588,10 +1659,11 @@ void btCable::setWorldRef(btCollisionWorld* colWorld)
 
 bool btCable::checkCollide(btCollisionObject* colObjA, btCollisionObject* colObjB, btCollisionWorld::ContactResultCallback& resultCallback) const 
 {	
+	
 	btCollisionObjectWrapper obA(0, colObjA->getCollisionShape(), colObjA, colObjA->getWorldTransform(), -1, -1);
 	btCollisionObjectWrapper obB(0, colObjB->getCollisionShape(), colObjB, colObjB->getWorldTransform(), -1, -1);
 	bool swap = false;
-		
+	
 	//btCollisionAlgorithm* Tempalgorithm = m_worldInfo->m_dispatcher->findAlgorithm(&obA, &obB, tempManiforld, BT_CLOSEST_POINT_ALGORITHMS);
 	btCollisionAlgorithm* Tempalgorithm = m_worldInfo->m_dispatcher->findAlgorithm(&obA, &obB, tempManiforld, BT_CONTACT_POINT_ALGORITHMS);
 	
@@ -1651,12 +1723,32 @@ btScalar btCable::getBendingStiffness() {
 	return this->bendingStiffness;
 }
 
-void btCable::SetAnchorIndex(int idx)
+void btCable::setAnchorIndex(int idx)
 {
 	m_idxAnchor = idx;
 }
 
-int btCable::GetAnchorIndex()
+int btCable::getAnchorIndex()
 {
 	return m_idxAnchor;
+}
+
+void btCable::setLRAActivationState(bool active)
+{
+	activeLRA = active;
+}
+
+bool btCable::getLRAActivationState()
+{
+	return activeLRA;
+}
+
+void btCable::setBendingActivationState(bool active)
+{
+	activeBending = active;
+}
+
+bool btCable::getBendingActivationState()
+{
+	return activeBending;
 }
