@@ -857,18 +857,6 @@ void btCable::predictMotion(btScalar dt)
 {
 	int i, ni;
 
-	// Update
-	if (m_bUpdateRtCst)
-	{
-		m_bUpdateRtCst = false;
-		updateConstants();
-		m_fdbvt.clear();
-		if (m_cfg.collisions & fCollision::VF_SS)
-		{
-			initializeFaceTree();
-		}
-	}
-
 	// Prepare
 	m_sst.sdt = dt * m_cfg.timescale;
 	m_sst.isdt = 1 / m_sst.sdt;
