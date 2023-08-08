@@ -17,7 +17,7 @@
 #include "BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h"
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
 
-#include<vector>
+#include <vector>
 
 using namespace std;
 
@@ -48,7 +48,6 @@ private:
 	btVector3 VectorByQuaternion(btVector3 v, btQuaternion q);
 	btQuaternion ComputeQuaternion(btVector3 v);
 
-
 	void pinConstraint();
 	void distanceConstraint();
 	void LRAConstraint(int level, int idxAnchor);
@@ -57,7 +56,6 @@ private:
 	void UpdateAnchors(const btTransform tr, btVector3& jointCol0, btVector3& jointCol1);
 	btMatrix3x3 llt(btMatrix3x3 K1);
 	btMatrix3x3 computeMatrix(btVector3 connector, btScalar invMass, btVector3 x0, btMatrix3x3 invInertiaTensorW0);
-
 
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
@@ -70,7 +68,7 @@ public:
 	static void PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti);
 	static void PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti);
 	bool checkCollide(btCollisionObject* colObjA, btCollisionObject* colObjB, btCollisionWorld::ContactResultCallback& resultCallback) const;
-	bool checkContact(const btCollisionObjectWrapper* colObjWrap, const btVector3& x, btScalar margin, btSoftBody::sCti& cti)  const override;
+	bool checkContact(const btCollisionObjectWrapper* colObjWrap, const btVector3& x, btScalar margin, btSoftBody::sCti& cti) const override;
 	bool alreadyHaveContact(int objPos) const;
 	void initPointConstraint(btVector3* m_positionErrorBias, btVector3* m_totalLambda, btMatrix3x3* m_effectiveMass);
 	void updatePointConstraint(btVector3* m_positionErrorBias, btVector3* m_totalLambda, btMatrix3x3* m_effectiveMass);

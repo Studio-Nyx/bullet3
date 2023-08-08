@@ -274,6 +274,7 @@ static ExampleEntry gDefaultExamples[] =
 		ExampleEntry(1, "Cluster Stack Mixed", "Stacking of soft bodies and rigid bodies.", SoftDemoCreateFunc, 29),
 		ExampleEntry(1, "Tetra Cube", "Simulate a volumetric soft body cube defined by tetrahedra.", SoftDemoCreateFunc, 30),
 		ExampleEntry(1, "Tetra Bunny", "Simulate a volumetric soft body Stanford bunny defined by tetrahedra.", SoftDemoCreateFunc, 31),
+		ExampleEntry(1, "CollisionTest", "Test Scene for collision.", SoftDemoCreateFunc, 32),
 
 #endif  //INCLUDE_CLOTH_DEMOS
 
