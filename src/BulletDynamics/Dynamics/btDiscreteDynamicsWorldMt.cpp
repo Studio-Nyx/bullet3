@@ -202,7 +202,7 @@ struct UpdaterUnconstrainedMotion : public btIParallelForBody
 			if (!body->isStaticOrKinematicObject())
 			{
 				//don't integrate/update velocities here, it happens in the constraint solver
-				body->applyDamping(timeStep);
+				// body->applyDamping(timeStep);
 				body->predictIntegratedTransform(timeStep, body->getInterpolationWorldTransform());
 			}
 		}
