@@ -16,7 +16,7 @@
 #include "BulletCollision/CollisionDispatch/btCollisionWorld.h"
 #include "BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h"
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
-
+#include <list>
 #include <vector>
 
 using namespace std;
@@ -47,6 +47,8 @@ private:
 
 	btVector3 VectorByQuaternion(btVector3 v, btQuaternion q);
 	btQuaternion ComputeQuaternion(btVector3 v);
+
+	void solveContact(int step, list<int> broadphaseNode);
 
 	void pinConstraint();
 	void distanceConstraint();

@@ -788,9 +788,8 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 {
 	// Test Cable with 2 falling balls(1shpere & 1compound) on a cube
 	{
-		
-		btScalar massRight(200);		// anchor0
-		btScalar massLeft(20);     // anchor1
+		btScalar massRight(0);   // BouleRouge / Anchor 0
+ 		btScalar massLeft(100);     // anchor1
 
 		btTransform StaticCubePosition;
 		StaticCubePosition.setIdentity();
@@ -806,11 +805,11 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 
 		btTransform AnchorRightPosition = btTransform();
 		AnchorRightPosition.setIdentity();
-		AnchorRightPosition.setOrigin(btVector3(-3, 5, 0));
+		AnchorRightPosition.setOrigin(btVector3(-10, 5, 0));
 
 		btTransform AnchorLeftPosition;
 		AnchorLeftPosition.setIdentity();
-		AnchorLeftPosition.setOrigin(btVector3(3, 5, 0));
+		AnchorLeftPosition.setOrigin(btVector3(10, 5, 0));
 
 		/* Loading object */
 		//load our obj mesh
@@ -842,7 +841,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 		btCompoundShape* compoundShapeLeft = new btCompoundShape();
 
 		compoundShapeLeft->addChildShape(btTransform::getIdentity(), shape);
-		compoundShapeLeft->calculateLocalInertia(0, localInertia);
+		compoundShapeLeft->calculateLocalInertia(massLeft, localInertia);
 		btRigidBody::btRigidBodyConstructionInfo rigidBodyInfoAnchorLeft(massLeft, 0, compoundShapeLeft, localInertia);
 		rigidBodyInfoAnchorLeft.m_startWorldTransform = AnchorLeftPosition;
 
@@ -853,19 +852,24 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 
 		pdemo->getSoftDynamicsWorld()->addRigidBody(AttachLeft);
 
-		btRigidBody* StaticCube = pdemo->createRigidBody(0, StaticCubePosition, new btBoxShape(btVector3(1, 1, 1)));
-		btRigidBody* StaticCubeLeft = pdemo->createRigidBody(0, StaticCubePositionLeft, new btBoxShape(btVector3(1, 1, 1)));
-		btRigidBody* StaticCubeRight = pdemo->createRigidBody(0, StaticCubePositionRight, new btBoxShape(btVector3(1, 1, 1)));
+		//btRigidBody* StaticCube = pdemo->createRigidBody(0, StaticCubePosition, new btBoxShape(btVector3(1, 1, 3)));
+		//StaticCube->getCollisionShape()->setMargin(0.0);
+		//btRigidBody* StaticCubeLeft = pdemo->createRigidBody(0, StaticCubePositionLeft, new btBoxShape(btVector3(1, 1, 1)));
+		//btRigidBody* StaticCubeRight = pdemo->createRigidBody(0, StaticCubePositionRight, new btBoxShape(btVector3(1, 1, 1)));
+
+		//StaticCube->setFriction(1);
 
 		int iterations = 1000;
-		btScalar rl = 0.5;
+		btScalar rl = 0.1;
 
 		btCable* cableAvant;
 		{
 			// cable init
 			btScalar distance = ((AnchorRightPosition.getOrigin() + btVector3(0, 0, 0)) - AnchorLeftPosition.getOrigin() + btVector3(0, 0, 0)).length();
 
-			const int r = distance / rl;
+			int r = distance / rl;
+			printf(" Nombre de nodes : %d \n", r);
+			//r = 30;
 			btVector3* x = new btVector3[r];
 			btScalar* m = new btScalar[r];
 			int i;
@@ -873,7 +877,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 			for (i = 0; i < r; ++i)
 			{
 				const btScalar t = i / (btScalar)(r - 1);
-				x[i] = lerp(AnchorRightPosition.getOrigin() + btVector3(0, 0, 0), AnchorLeftPosition.getOrigin() + btVector3(0, 0, 0), t);
+				x[i] = lerp(AnchorRightPosition.getOrigin() + btVector3(1, 0, 0), AnchorLeftPosition.getOrigin() + btVector3(-1, 0, 0), t);
 				m[i] = 1;
 			}
 
@@ -884,8 +888,8 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 			}
 			cableAvant->getCollisionShape()->setMargin(0.004);
 
-			cableAvant->setBendingStiffness(0.1);
-			cableAvant->setBendingMaxAngle(1);
+			cableAvant->setBendingStiffness(0.4);
+			cableAvant->setBendingMaxAngle(0);
 			float massCable = (distance * 0.335);
 			cableAvant->setTotalMass(massCable);
 			cableAvant->m_cfg.piterations = iterations;
@@ -893,7 +897,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 			cableAvant->m_cfg.kKHR = 1;
 			cableAvant->m_cfg.kCHR = 1;
 			cableAvant->setContactStiffnessAndDamping(0.1, 0);
-			cableAvant->m_cfg.kDF = 0.1;
+			cableAvant->m_cfg.kDF = 0.5;
 			cableAvant->m_cfg.kDP = 0.003;
 
 			pdemo->getSoftDynamicsWorld()->addSoftBody(cableAvant);
@@ -901,15 +905,15 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 			cableAvant->appendAnchor(0, AttachRight, true);
 			cableAvant->appendAnchor(cableAvant->m_nodes.size() - 1, AttachLeft, true);
 
-			cableAvant->setAnchorIndex(1);
+			cableAvant->setAnchorIndex(0);
 
 			for (int i = 0; i < cableAvant->m_nodes.size(); i++)
 				cableAvant->m_nodes[i].index = i;
 		}
 	}
-
+	
+	
 	// Test Cable falling on a compoundshape on the ground
-
 	{
 
 		btScalar massRight(20);   // anchor0
@@ -925,9 +929,9 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 
 		btTransform SpherePos = btTransform();
 		SpherePos.setIdentity();
-		SpherePos.setOrigin(btVector3(0, -8, 5));
+		SpherePos.setOrigin(btVector3(0, 0, 0));
 
-		/* Loading object */
+		
 		//load our obj mesh
 		const char* fileName = "sphere8.obj";
 		char relativeFileName[1024];
@@ -958,7 +962,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 
 		compoundShapeLeft->addChildShape(btTransform::getIdentity(), shape);
 		compoundShapeLeft->calculateLocalInertia(0, localInertia);
-		btRigidBody::btRigidBodyConstructionInfo rigidBodyInfoAnchorLeft(massLeft, 0, compoundShapeLeft, localInertia);
+		btRigidBody::btRigidBodyConstructionInfo rigidBodyInfoAnchorLeft(0, 0, compoundShapeLeft, localInertia);
 		
 
 		//btRigidBody* AttachRight = pdemo->createRigidBody(massRight, SpherePos, new btSphereShape(0.5));
@@ -1009,7 +1013,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 			cableAvant->m_cfg.kDF = 0.1;
 			cableAvant->m_cfg.kDP = 0.003;
 
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cableAvant);
+			//pdemo->getSoftDynamicsWorld()->addSoftBody(cableAvant);
 
 			//cableAvant->appendAnchor(0, AttachRight, true);
 			//cableAvant->appendAnchor(cableAvant->m_nodes.size() - 1, AttachLeft, true);
@@ -1019,7 +1023,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 			for (int i = 0; i < cableAvant->m_nodes.size(); i++)
 				cableAvant->m_nodes[i].index = i;
 		}
-
+		
 
 	}
 }
@@ -1058,7 +1062,7 @@ static void Init_Impact(SoftDemo* pdemo)
 													btVector3(0, -1, 0),
 													0,
 													1);
-	pdemo->getSoftDynamicsWorld()->addSoftBody(psb);
+	//pdemo->getSoftDynamicsWorld()->addSoftBody(psb);
 	psb->m_cfg.kCHR = 0.5;
 	btTransform startTransform;
 	startTransform.setIdentity();
@@ -1079,11 +1083,43 @@ static void Init_CapsuleCollision(SoftDemo* pdemo)
 	const btScalar h = 6;
 	const int r = 20;
 
+	auto a = btVector3(1, 1, 1);
+	auto b = btVector3(5, 5, 5);
+
+	btTransform T1;
+	T1.setIdentity();
+	T1.setOrigin(a);
+	btRigidBody* carreVert = pdemo->createRigidBody(0, T1, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
+
+
+
+	btTransform T2;
+	T2.setIdentity();
+	T2.setOrigin(b);
+	btRigidBody* carreB = pdemo->createRigidBody(0, T2, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
+
+
+
+
+
 	btTransform startTransform;
 	startTransform.setIdentity();
-	startTransform.setOrigin(btVector3(0, h - 2, 0));
 
-	btCollisionShape* capsuleShape = new btCapsuleShapeX(1, 5);
+	btQuaternion q;
+	auto v1 =btVector3(1,0,0);
+	auto v2 = b - a;
+	auto k = (btVector3(1,0,0).cross(b-a));
+	q.setX(k.x());
+	q.setY(k.y());
+	q.setZ(k.z());
+	q.setW(sqrt(v1.length2()*v2.length2())+v1.dot(v2));
+	startTransform.setRotation(q);
+	startTransform.setOrigin((a+b)/2.0);
+
+	btCapsuleShape* capsuleShape = new btCapsuleShapeX(0.01, v2.length());
+	
+	
+
 	capsuleShape->setMargin(0.5);
 
 	//	capsule->setLocalScaling(btVector3(5,1,1));
@@ -1091,6 +1127,10 @@ static void Init_CapsuleCollision(SoftDemo* pdemo)
 	btRigidBody* body = pdemo->createRigidBody(0, startTransform, capsuleShape);
 	body->setFriction(0.8f);
 
+	
+
+
+	/*
 	int fixed = 0;  //4+8;
 	btSoftBody* psb = btSoftBodyHelpers::CreatePatch(pdemo->m_softBodyWorldInfo, btVector3(-s, h, -s),
 													 btVector3(+s, h, -s),
@@ -1102,6 +1142,7 @@ static void Init_CapsuleCollision(SoftDemo* pdemo)
 	psb->m_cfg.piterations = 10;
 	psb->m_cfg.citerations = 10;
 	psb->m_cfg.diterations = 10;
+	*/
 	//	psb->m_cfg.viterations = 10;
 
 	//	psb->appendAnchor(0,body);

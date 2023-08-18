@@ -4098,29 +4098,92 @@ void btSoftBody::defaultCollisionHandler(const btCollisionObjectWrapper* pcoWrap
 	{
 		case fCollision::SDF_RS:
 		{
-			btSoftColliders::CollideSDF_RS docollide;
+			/*
 			btRigidBody* prb1 = (btRigidBody*)btRigidBody::upcast(pcoWrap->getCollisionObject());
 			btTransform wtr = pcoWrap->getWorldTransform();
 
-			const btTransform ctr = pcoWrap->getWorldTransform();
-			const btScalar timemargin = (wtr.getOrigin() - ctr.getOrigin()).length();
-			const btScalar basemargin = getCollisionShape()->getMargin();
 			btVector3 mins;
 			btVector3 maxs;
 			ATTRIBUTE_ALIGNED16(btDbvtVolume)
 			volume;
+			
 			pcoWrap->getCollisionShape()->getAabb(pcoWrap->getWorldTransform(),
 												  mins,
 												  maxs);
-			volume = btDbvtVolume::FromMM(mins, maxs);
-			volume.Expand(btVector3(basemargin, basemargin, basemargin));
-			docollide.psb = this;
-			docollide.m_colObj1Wrap = pcoWrap;
-			docollide.m_rigidBody = prb1;
+			
+			for (int i = 0; i < m_nodes.size()-1; i++) {
+				Node n = m_nodes[i];
+				Node n2 = m_nodes[i + 1];
+				btScalar margin = this->m_collisionShape->getMargin();  // + prb1->getCollisionShape()->getMargin();
+				btVector3 minLink = btVector3(0, 0, 0);
+				btVector3 maxLink = btVector3(0, 0, 0);
 
-			docollide.dynmargin = basemargin + timemargin;
-			docollide.stamargin = basemargin;
-			m_ndbvt.collideTV(m_ndbvt.m_root, volume, docollide);
+				minLink.setX(btMin(n.m_x.x(), n2.m_x.x()) - margin );
+				minLink.setY(btMin(n.m_x.y(), n2.m_x.y()) - margin);
+				minLink.setZ(btMin(n.m_x.z(), n2.m_x.z()) - margin);
+
+				maxLink.setX(btMax(n.m_x.x(), n2.m_x.x()) + margin );
+				maxLink.setY(btMax(n.m_x.y(), n2.m_x.y()) + margin );
+				maxLink.setZ(btMax(n.m_x.z(), n2.m_x.z()) + margin );
+
+				// Change this to compute minmax with velocity
+				//btVector3 predictivePosN  = n.m_x + n.m_v * this->m_sst.sdt;
+				//btVector3 predictivePosN2 = n2.m_x + n2.m_v * this->m_sst.sdt;
+
+				
+
+			
+				// Intersect potentially
+				if ( minLink.x() <= maxs.x() &&
+					 maxLink.x() >= mins.x() &&
+					 minLink.y() <= maxs.y() &&
+					 maxLink.y() >= mins.y() &&
+					 minLink.z() <= maxs.z() &&
+					 maxLink.z() >= mins.z())
+				{
+					btSoftBody::RContact c;
+
+					//if ((!n.m_battach) &&
+					if(	this->checkContact(pcoWrap, m_nodes[i].m_x, margin, c.m_cti))
+					{
+						const btScalar ima = m_nodes[i].m_im;
+						const btScalar imb = prb1 ? prb1->getInvMass() : 0.f;
+						const btScalar ms = ima + imb;
+
+						
+						if (ms > 0)
+						{
+							const btTransform& wtr = prb1 ? prb1->getWorldTransform() : pcoWrap->getCollisionObject()->getWorldTransform();
+							static const btMatrix3x3 iwiStatic(0, 0, 0, 0, 0, 0, 0, 0, 0);
+							const btMatrix3x3& iwi = prb1 ? prb1->getInvInertiaTensorWorld() : iwiStatic;
+							const btVector3 ra = n.m_x - wtr.getOrigin();
+							const btVector3 va = prb1 ? prb1->getVelocityInLocalPoint(ra) * this->m_sst.sdt : btVector3(0, 0, 0);
+							const btVector3 vb = n.m_x - n.m_q;
+							const btVector3 vr = vb - va;
+							const btScalar dn = btDot(vr, c.m_cti.m_normal);
+							const btVector3 fv = vr - c.m_cti.m_normal * dn;
+							const btScalar fc = this->m_cfg.kDF * pcoWrap->getCollisionObject()->getFriction();
+							c.m_node = &m_nodes[i];
+							c.m_c0 = ImpulseMatrix(this->m_sst.sdt, ima, imb, iwi, ra);
+							c.m_c1 = ra;
+							c.m_c2 = ima * this->m_sst.sdt;
+							//c.m_c3 = fv.length2() < (dn * fc * dn * fc) ? 0 : 1 - fc;
+							c.m_c3 = fc;
+							c.m_c4 = pcoWrap->getCollisionObject()->isStaticOrKinematicObject() ? this->m_cfg.kKHR : this->m_cfg.kCHR;
+							this->m_rcontacts.push_back(c);
+							if (prb1)
+								prb1->activate();
+						}
+					}
+					
+				}
+				else
+				{
+					// No itersection between aabb
+					continue;
+				}
+
+			}*/
 		}
 		break;
 		case fCollision::CL_RS:
