@@ -63,7 +63,7 @@ void btCable::solveConstraints()
 		maxLink.setY(n.m_x.y() + margin);
 		maxLink.setZ(n.m_x.z() + margin);
 
-		
+	
 		for (int j = 0; j < collisionObjectList.size() && potentialCollision == false; j++)
 		{
 			btCollisionObject* colObj = collisionObjectList[j];
@@ -83,7 +83,7 @@ void btCable::solveConstraints()
 			colObj->getCollisionShape()->getAabb(colObj->getWorldTransform(),
 												 mins,
 												 maxs);
-	
+
 			// Intersect box
 			if (minLink.x() <= maxs.x() &&
 			maxLink.x() >= mins.x() &&
@@ -101,22 +101,6 @@ void btCable::solveConstraints()
 				file += ";";
 				file += to_string(colObj->getWorldTransform().getOrigin().z());
 				file += "\n";	
-
-				file += "Scale: ";
-				file += to_string(colObj->getCollisionShape()->getLocalScaling().x());
-				file += ";";
-				file += to_string(colObj->getCollisionShape()->getLocalScaling().y());
-				file += ";";
-				file += to_string(colObj->getCollisionShape()->getLocalScaling().z());
-				file += "\n";
-
-				file += "Flags: ";
-				file += to_string(colObj->getCollisionFlags());
-				file += "\n";
-
-				file += "ShapeType: ";
-				file += to_string(colObj->getCollisionShape()->getShapeType());
-				file += "\n";
 
 				indexNodeBroadPhase.push_back(i);
 				potentialCollision = true;
@@ -207,7 +191,6 @@ void btCable::solveContact(int step, list<int> broadphaseNode, string& myfile)
 
 		btVector3 posTo = m_nodes[i].m_x;
 		
-		
 		// No displacement predicted cause 0 velocity or static node
 		if (posFrom == posTo)
 			continue;
@@ -217,38 +200,6 @@ void btCable::solveContact(int step, list<int> broadphaseNode, string& myfile)
 			world->rayTest(posFrom, posTo, closestResults);
 
 			myfile += "\nSHOOT\n";
-
-			myfile += "closetHitFraction: ";
-			myfile += to_string(closestResults.m_closestHitFraction);
-			myfile += "\n";
-			
-			myfile += to_string(closestResults.hasHit());
-			myfile += "\n";
-
-			myfile += "posFrom: ";
-			myfile += to_string(posFrom.x());
-			myfile += ";";
-			myfile += to_string(posFrom.y());
-			myfile += ";";
-			myfile += to_string(posFrom.z());
-			myfile += "\n";
-
-			myfile += "posTo: ";
-			myfile += to_string(posTo.x());
-			myfile += ";";
-			myfile += to_string(posTo.y());
-			myfile += ";";
-			myfile += to_string(posTo.z());
-			myfile += "\n";
-
-			myfile += "closetHitFraction: ";
-			myfile += to_string(closestResults.m_closestHitFraction);
-			myfile += "\n";
-
-			myfile += "Flags: ";
-			myfile += to_string(closestResults.m_flags);
-			myfile += "\n";
-
 			if (closestResults.hasHit())
 			{
 				myfile += "HIT\n";
@@ -271,26 +222,10 @@ void btCable::solveContact(int step, list<int> broadphaseNode, string& myfile)
 		Node* n = &m_nodes[indexNode];
 		btCollisionWorld::ClosestRayResultCallback c = *itCallback;
 		btVector3 newPos = c.m_hitPointWorld + c.m_hitNormalWorld * (margin);
-		myfile += "hitPointWorld: ";
-		myfile += to_string(c.m_hitPointWorld.x());
-		myfile += ";";
-		myfile += to_string(c.m_hitPointWorld.y());
-		myfile += ";";
-		myfile += to_string(c.m_hitPointWorld.z());
-		myfile += "\n";
-
-		myfile += "hitNormalWorld: ";
-		myfile += to_string(c.m_hitNormalWorld.x());
-		myfile += ";";
-		myfile += to_string(c.m_hitNormalWorld.y());
-		myfile += ";";
-		myfile += to_string(c.m_hitNormalWorld.z());
-		myfile += "\n";
-
 		btVector3 deltaPos = n->m_x - newPos;
 		btVector3 changementSpeed = c.m_hitNormalWorld.cross(deltaPos);
 		changementSpeed = changementSpeed.cross(c.m_hitNormalWorld);
-		n->m_x = newPos; // + changementSpeed*(1 - (m_cfg.kDF * c.m_collisionObject->getFriction()));
+		n->m_x = newPos + changementSpeed*(1 - (m_cfg.kDF * c.m_collisionObject->getFriction()));
 		n->m_splitv = n->m_x;
 	}
 }
@@ -600,7 +535,7 @@ void btCable::distanceConstraint()
 		btScalar sumInvMass = a.m_im + b.m_im;
 		btVector3 deltap1 = btVector3(0, 0, 0);
 		btVector3 deltap2 = btVector3(0, 0, 0); 
-		if (sumInvMass > 0)
+		if (sumInvMass != 0 && a.m_im != 0 && b.m_im != 0)
 		{
 			deltap1 = a.m_im / sumInvMass * (AB.length() - l.m_rl) * AB.normalized();
 			deltap2 = b.m_im / sumInvMass * (AB.length() - l.m_rl) * AB.normalized();
@@ -634,8 +569,6 @@ void btCable::predictMotion(btScalar dt)
 		n.m_v *= (1 - m_cfg.kDP);
 		n.m_x += n.m_v * m_sst.sdt;
 		n.m_f = btVector3(0, 0, 0);
-
-		positionNodes[i] = n.m_x;
 	}
 
 	updateBounds();
