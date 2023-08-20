@@ -3910,7 +3910,7 @@ void btSoftBody::PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti)
 	{
 		const RContact& c = psb->m_rcontacts[i];
 		const sCti& cti = c.m_cti;
-		if (cti.m_colObj->hasContactResponse())
+		if (cti.m_colObj->hasContactResponse() && c.m_node->m_battach == 0)
 		{
 			btVector3 va(0, 0, 0);
 			btRigidBody* rigidCol = 0;
@@ -3955,7 +3955,7 @@ void btSoftBody::PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti)
 				// c0 is the impulse matrix, c3 is 1 - the friction coefficient or 0, c4 is the contact hardness coefficient
 				const btVector3 impulse = c.m_c0 * ((vr - (fv * c.m_c3) + (cti.m_normal * (dp * c.m_c4))) * kst);
 				c.m_node->m_x -= impulse * c.m_c2;
-				
+				/*
 				if (cti.m_colObj->getInternalType() == btCollisionObject::CO_RIGID_BODY)
 				{
 					if (rigidCol)
@@ -3970,6 +3970,7 @@ void btSoftBody::PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti)
 						multibodyLinkCol->m_multiBody->applyDeltaVeeMultiDof(deltaV, -impulse.length() * multiplier);
 					}
 				}
+				*/
 			}
 		}
 	}
@@ -4098,7 +4099,6 @@ void btSoftBody::defaultCollisionHandler(const btCollisionObjectWrapper* pcoWrap
 	{
 		case fCollision::SDF_RS:
 		{
-			/*
 			btRigidBody* prb1 = (btRigidBody*)btRigidBody::upcast(pcoWrap->getCollisionObject());
 			btTransform wtr = pcoWrap->getWorldTransform();
 
@@ -4183,7 +4183,7 @@ void btSoftBody::defaultCollisionHandler(const btCollisionObjectWrapper* pcoWrap
 					continue;
 				}
 
-			}*/
+			}
 		}
 		break;
 		case fCollision::CL_RS:

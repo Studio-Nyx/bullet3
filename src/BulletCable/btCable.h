@@ -35,29 +35,21 @@ private:
 	btConvexPenetrationDepthSolver* m_pdSolver;
 	btCollisionWorld* world;
 	btPersistentManifold* tempManiforld = new btPersistentManifold();
-	// Differents forces for the cable:
-	void addForces();
-	//std::vector<btCollisionObject> collisionList;
 	std::vector<int> collisionObjPos;
-
+	bool useLRA = true;
+	bool useBending = true;
+	bool useGravity = true;
+	bool useCollision = true;
 	btScalar maxAngle = 0.1;
 	btScalar bendingStiffness = 0.1;
-	bool activeLRA = true;
-	bool activeBending = true;
 
-	btVector3 VectorByQuaternion(btVector3 v, btQuaternion q);
-	btQuaternion ComputeQuaternion(btVector3 v);
+	void solveContact(int step, list<int> broadphaseNode, string& myFile);
 
-	void solveContact(int step, list<int> broadphaseNode);
-
-	void pinConstraint();
 	void distanceConstraint();
+	void LRAConstraint();
 	void LRAConstraint(int level, int idxAnchor);
-	void FollowTheLeader();
 	void FABRIKChain();
 	void UpdateAnchors(const btTransform tr, btVector3& jointCol0, btVector3& jointCol1);
-	btMatrix3x3 llt(btMatrix3x3 K1);
-	btMatrix3x3 computeMatrix(btVector3 connector, btScalar invMass, btVector3 x0, btMatrix3x3 invInertiaTensorW0);
 
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
@@ -66,15 +58,7 @@ public:
 	void solveConstraints() override;
 	void SolveAnchors();
 	static btSoftBody::psolver_t getSolver(ePSolver::_ solver);
-	void AnchorsConstraint(btVector3* jointInfo0, btVector3* jointInfo1);
 	static void PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti);
-	static void PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti);
-	bool checkCollide(btCollisionObject* colObjA, btCollisionObject* colObjB, btCollisionWorld::ContactResultCallback& resultCallback) const;
-	bool checkContact(const btCollisionObjectWrapper* colObjWrap, const btVector3& x, btScalar margin, btSoftBody::sCti& cti) const override;
-	bool alreadyHaveContact(int objPos) const;
-	void initPointConstraint(btVector3* m_positionErrorBias, btVector3* m_totalLambda, btMatrix3x3* m_effectiveMass);
-	void updatePointConstraint(btVector3* m_positionErrorBias, btVector3* m_totalLambda, btMatrix3x3* m_effectiveMass);
-	//bool alreadyHaveContact(btCollisionObject obj) const;
 
 	void removeLink(int index);
 	void removeNode(int index);
@@ -88,7 +72,6 @@ public:
 	btScalar getLengthRestlength();
 	btVector3* getImpulses();
 	btVector3* getPositionNodes();
-	btVector3* getPositionNodesArray();
 	btCollisionShape* getCollisionShapeNode() const;
 	void setCollisionShapeNode(btCollisionShape* nodeShape);
 	void setWorldRef(btCollisionWorld* colWorld);
@@ -107,10 +90,21 @@ public:
 	
 	void setAnchorIndex(int idx);
 	int getAnchorIndex();
-	void setLRAActivationState(bool active);
-	bool getLRAActivationState();
-	void setBendingActivationState(bool active);
-	bool getBendingActivationState();
+
+#pragma region Use methods
+public:
+	void setUseLRA(bool active);
+	bool getUseLRA();
+
+	void setUseBending(bool active);
+	bool getUseBending();
+
+	void setUseGravity(bool active);
+	bool getUseGravity();
+
+	void setUseCollision(bool active);
+	bool getUseCollision();
+#pragma endregion
 };
 
 #endif  //_BT_CABLE_H

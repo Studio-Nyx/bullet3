@@ -395,6 +395,8 @@ void btRigidBody::clampVelocity()
 {
 	if (m_linearVelocity.length() > m_maxLinearVelocity && m_maxLinearVelocity > 0)
 		m_linearVelocity = m_linearVelocity.normalized() * m_maxLinearVelocity;
+	if (m_angularVelocity.length() > m_maxAngularVelocity && m_maxAngularVelocity > 0)
+		m_angularVelocity = m_angularVelocity.normalized() * m_maxAngularVelocity;
 }
 
 btQuaternion btRigidBody::getOrientation() const
