@@ -196,6 +196,8 @@ struct btSoftSingleRayCallback : public btBroadphaseRayCallback
 
 		btVector3 rayDir = (rayToWorld - rayFromWorld);
 
+		if (rayDir.fuzzyZero()) return;
+
 		rayDir.normalize();
 		///what about division by zero? --> just set rayDirection[i] to INF/1e30
 		m_rayDirectionInverse[0] = rayDir[0] == btScalar(0.0) ? btScalar(1e30) : btScalar(1.0) / rayDir[0];

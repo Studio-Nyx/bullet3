@@ -43,8 +43,6 @@ private:
 	btScalar maxAngle = 0.1;
 	btScalar bendingStiffness = 0.1;
 
-	void solveContact(int step, list<int> broadphaseNode, string& myFile);
-
 	void distanceConstraint();
 	void LRAConstraint();
 	void LRAConstraint(int level, int idxAnchor);
@@ -59,6 +57,11 @@ public:
 	void SolveAnchors();
 	static btSoftBody::psolver_t getSolver(ePSolver::_ solver);
 	static void PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti);
+	static void PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti);
+	bool checkCollide(btCollisionObject* colObjA, btCollisionObject* colObjB, btCollisionWorld::ContactResultCallback& resultCallback) const;
+	bool checkContact(const btCollisionObjectWrapper* colObjWrap, const btVector3& x, btScalar margin, btSoftBody::sCti& cti) const override;
+	bool alreadyHaveContact(int objPos) const;
+	void solveContact(int step, list<int> broadphaseNode);
 
 	void removeLink(int index);
 	void removeNode(int index);

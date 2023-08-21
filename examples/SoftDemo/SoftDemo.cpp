@@ -537,7 +537,7 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 
 	btScalar mass(0);
 	//btScalar mass2(0);
-	btScalar massBateau(1000);
+	btScalar massBateau(100000);
 
 
 	btTransform CarreVertPosition;
@@ -641,7 +641,7 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 	CarreRouge->setFriction(1);
 	bateau->setFriction(1);
 	//carreVert->setFriction(1);
-	int iterations = 100;
+	int iterations = 50;
 	btScalar rl = .5;
 	//printf("%f \n", 1/cable1->m_nodes[0].m_im);
 
@@ -751,7 +751,7 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 		{
 			const btScalar t = i / (btScalar)(r - 1);
 			x[i] = lerp(bateauPosition.getOrigin() + btVector3(-5, 1, 0), CubeJaunePosition.getOrigin() + btVector3(0, -0.5, 0), t);
-			m[i] = 1;
+			m[i] = 10;
 		}
 
 		cable2 = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), r, x, m);
@@ -788,7 +788,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 {
 	// Test Cable with 2 falling balls(1shpere & 1compound) on a cube
 	{
-		btScalar massRight(10);   // BouleRouge / Anchor 0
+		btScalar massRight(0);   // BouleRouge / Anchor 0
  		btScalar massLeft(100);     // anchor1
 
 		btTransform StaticCubePosition;
@@ -805,11 +805,11 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 
 		btTransform AnchorRightPosition = btTransform();
 		AnchorRightPosition.setIdentity();
-		AnchorRightPosition.setOrigin(btVector3(-5, 5, 0));
+		AnchorRightPosition.setOrigin(btVector3(-10, 5, 0));
 
 		btTransform AnchorLeftPosition;
 		AnchorLeftPosition.setIdentity();
-		AnchorLeftPosition.setOrigin(btVector3(5, 5, 0));
+		AnchorLeftPosition.setOrigin(btVector3(10, 5, 0));
 
 		/* Loading object */
 		//load our obj mesh
@@ -859,7 +859,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 
 		//StaticCube->setFriction(1);
 
-		int iterations = 100;
+		int iterations = 50;
 		btScalar rl = 0.1;
 
 		btCable* cableAvant;
@@ -878,7 +878,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 			{
 				const btScalar t = i / (btScalar)(r - 1);
 				x[i] = lerp(AnchorRightPosition.getOrigin() + btVector3(1, 0, 0), AnchorLeftPosition.getOrigin() + btVector3(-1, 0, 0), t);
-				m[i] = 0.1;
+				m[i] = 1;
 			}
 
 			cableAvant = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), r, x, m);
@@ -991,7 +991,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 			{
 				const btScalar t = i / (btScalar)(r - 1);
 				x[i] = lerp(AnchorRightPosition.getOrigin() + btVector3(0, 0, 0), AnchorLeftPosition.getOrigin() + btVector3(0, 0, 0), t);
-				m[i] = 0.1;
+				m[i] = 1;
 			}
 
 			cableAvant = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), r, x, m);
