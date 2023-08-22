@@ -845,7 +845,7 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 		btRigidBody::btRigidBodyConstructionInfo rigidBodyInfoAnchorLeft(massLeft, 0, compoundShapeLeft, localInertia);
 		rigidBodyInfoAnchorLeft.m_startWorldTransform = AnchorLeftPosition;
 
-		btRigidBody* AttachRight = pdemo->createRigidBody(massRight, AnchorRightPosition, new btSphereShape(0.5));
+		btRigidBody* AttachRight = pdemo->createRigidBody(massRight, AnchorRightPosition, compoundShapeLeft);
 
 		btRigidBody* AttachLeft = new btRigidBody(rigidBodyInfoAnchorLeft);
 		AttachLeft->setWorldTransform(AnchorLeftPosition);

@@ -4097,6 +4097,7 @@ void btSoftBody::defaultCollisionHandler(const btCollisionObjectWrapper* pcoWrap
 {
 	switch (m_cfg.collisions & fCollision::RVSmask)
 	{
+		/*
 		case fCollision::SDF_RS:
 		{
 			btRigidBody* prb1 = (btRigidBody*)btRigidBody::upcast(pcoWrap->getCollisionObject());
@@ -4129,10 +4130,7 @@ void btSoftBody::defaultCollisionHandler(const btCollisionObjectWrapper* pcoWrap
 				// Change this to compute minmax with velocity
 				//btVector3 predictivePosN  = n.m_x + n.m_v * this->m_sst.sdt;
 				//btVector3 predictivePosN2 = n2.m_x + n2.m_v * this->m_sst.sdt;
-
-				
-
-			
+	
 				// Intersect potentially
 				if ( minLink.x() <= maxs.x() &&
 					 maxLink.x() >= mins.x() &&
@@ -4186,6 +4184,7 @@ void btSoftBody::defaultCollisionHandler(const btCollisionObjectWrapper* pcoWrap
 			}
 		}
 		break;
+		*/
 		case fCollision::CL_RS:
 		{
 			btSoftColliders::CollideCL_RS collider;

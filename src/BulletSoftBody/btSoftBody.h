@@ -30,6 +30,8 @@ subject to the following restrictions:
 #include "BulletCollision/BroadphaseCollision/btDbvt.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraint.h"
+#include <BulletCollision/CollisionDispatch/btCollisionWorldImporter.h>
+#include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
 //#ifdef BT_USE_DOUBLE_PRECISION
 //#define btRigidBodyData	btRigidBodyDoubleData
 //#define btRigidBodyDataName	"btRigidBodyDoubleData"
@@ -865,6 +867,9 @@ public:
 
 	bool m_reducedModel;	// Reduced deformable model flag
 	
+public:
+	btCollisionWorld* m_world;
+
 	//
 	// Api
 	//

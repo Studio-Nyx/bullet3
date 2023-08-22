@@ -26,16 +26,8 @@ using namespace std;
 class btCable : public btSoftBody
 {
 private:
-	btVector3 blackHolePos = btVector3(0,0,0);
-	bool blackHoleIsActive = false;
 	int m_idxAnchor;
 	btVector3* impulses;
-	btVector3* positionNodes;
-	btCollisionShape* collisionShapeNode;
-	btConvexPenetrationDepthSolver* m_pdSolver;
-	btCollisionWorld* world;
-	btPersistentManifold* tempManiforld = new btPersistentManifold();
-	std::vector<int> collisionObjPos;
 	bool useLRA = true;
 	bool useBending = true;
 	bool useGravity = true;
@@ -47,21 +39,14 @@ private:
 	void LRAConstraint();
 	void LRAConstraint(int level, int idxAnchor);
 	void FABRIKChain();
-	void UpdateAnchors(const btTransform tr, btVector3& jointCol0, btVector3& jointCol1);
-
-public:
-	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
 	void pin();
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
 	void SolveAnchors();
-	static btSoftBody::psolver_t getSolver(ePSolver::_ solver);
-	static void PSolve_Links(btSoftBody* psb, btScalar kst, btScalar ti);
-	static void PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti);
-	bool checkCollide(btCollisionObject* colObjA, btCollisionObject* colObjB, btCollisionWorld::ContactResultCallback& resultCallback) const;
-	bool checkContact(const btCollisionObjectWrapper* colObjWrap, const btVector3& x, btScalar margin, btSoftBody::sCti& cti) const override;
-	bool alreadyHaveContact(int objPos) const;
 	void solveContact(int step, list<int> broadphaseNode);
+
+public:
+	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
 
 	void removeLink(int index);
 	void removeNode(int index);
@@ -69,38 +54,34 @@ public:
 	void swapNodes(int index0, int index1);
 	void swapAnchors(int index0, int index1);
 
+#pragma region Use methods
+public:
 	void setRestLengthLink(int index, btScalar distance);
 	btScalar getRestLengthLink(int index);
+
 	btScalar getLengthPosition();
 	btScalar getLengthRestlength();
-	btVector3* getImpulses();
-	btVector3* getPositionNodes();
-	btCollisionShape* getCollisionShapeNode() const;
-	void setCollisionShapeNode(btCollisionShape* nodeShape);
-	void setWorldRef(btCollisionWorld* colWorld);
 
-	btVector3 getPositionNode(int index);
+	btVector3* getImpulses();
 	btVector3 getImpulse(int index);
-	bool checkIfCollisionWithWorldArrayPos(int objWorldArrayPos);
-	void setBlackHolePos(bool activeState, btVector3 pos);
+
 	void bendingConstraintDistance();
 	void bendingConstraintAngle();
 
+	void setUseBending(bool active);
+	bool getUseBending();
+
 	void setBendingMaxAngle(btScalar angle);
 	btScalar getBendingMaxAngle();
+
 	void setBendingStiffness(btScalar stiffness);
 	btScalar getBendingStiffness();
-	
+
 	void setAnchorIndex(int idx);
 	int getAnchorIndex();
 
-#pragma region Use methods
-public:
 	void setUseLRA(bool active);
 	bool getUseLRA();
-
-	void setUseBending(bool active);
-	bool getUseBending();
 
 	void setUseGravity(bool active);
 	bool getUseGravity();
