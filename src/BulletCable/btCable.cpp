@@ -103,7 +103,8 @@ void btCable::solveConstraints()
 			}
 		}
 	}
-	
+
+
 	for (int i = 0; i < m_cfg.piterations; ++i)
 	{
 		SolveAnchors();
@@ -175,10 +176,12 @@ void btCable::solveContact(int step, list<int> broadphaseNode)
 void btCable::LRAConstraint()
 {
 	btScalar distance = 0;
-	pin();
 	if (m_idxAnchor == 1)
 	{
 		Node& a = m_nodes[m_nodes.size() - 1];
+		for (int i = 0; i < m_anchors.size(); ++i)
+			if (a.index == m_anchors[i].m_node->index)
+				a.m_x = m_anchors[i].m_c1 + m_anchors[i].m_body->getCenterOfMassPosition(); 
 		for (int i = m_links.size() - 1; i >= 0; --i)
 		{
 			Link& l = m_links[i];
@@ -192,6 +195,9 @@ void btCable::LRAConstraint()
 	else
 	{
 		Node& a = m_nodes[0];
+		for (int i = 0; i < m_anchors.size(); ++i)
+			if (a.index == m_anchors[i].m_node->index)
+				a.m_x = m_anchors[i].m_c1 + m_anchors[i].m_body->getCenterOfMassPosition(); 
 		for (int i = 0; i < m_links.size() - 1; ++i)
 		{
 			Link& l = m_links[i];
@@ -314,11 +320,6 @@ void btCable::pin()
 
 		btVector3 wa = body->getCenterOfMassPosition() + a.m_c1;
 		n->m_x = wa;
-		for (int i = 0; i < 5; i++)
-		{
-			//distanceConstraint();
-			n->m_x = wa;
-		}
 	}
 }
 
@@ -530,10 +531,13 @@ void btCable::SolveAnchors()
 		const btVector3 va = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt;
 		const btVector3 vb = n.m_x - n.m_q;
 		const btVector3 vr = (va - vb) + (wa - n.m_x);
-		const btVector3 impulse = a.m_c0 * vr * a.m_influence * m_cfg.kAHR;
-		n.m_x += impulse * a.m_c2;
-		impulses[i] += impulse / dt;
-		a.m_body->applyImpulse(-impulse, a.m_c1);
+		const btVector3 impulseBase = a.m_c0 * vr * a.m_influence * m_cfg.kAHR;
+		n.m_x += impulseBase * a.m_c2;
+		impulses[i] += impulseBase / dt;
+		a.m_body->applyImpulse(-impulseBase, a.m_c1);
+		// const btVector3 impulseMass = vr * a.m_influence * m_cfg.kAHR;
+		// a.m_body->setLinearVelocity(a.m_body->getLinearVelocity() - impulseMass);
+		// a.m_body->setAngularVelocity(a.m_body->getAngularVelocity() - a.m_c1.cross(impulseMass));
 	}
 }
 #pragma endregion
