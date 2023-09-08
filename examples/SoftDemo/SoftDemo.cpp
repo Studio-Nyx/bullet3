@@ -789,12 +789,16 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 	// Test Cable with 2 falling balls(1shpere & 1compound) on a cube
 	{
 		btScalar massLeft(10);
-		btScalar massMiddle(10);
+		btScalar massMiddle(0);
 		btScalar massRight(10);
 
 		btTransform StaticCubePosition;
 		StaticCubePosition.setIdentity();
-		StaticCubePosition.setOrigin(btVector3(0, 0, 0));
+		StaticCubePosition.setOrigin(btVector3(0, 0, -1));	
+		
+		btTransform StaticCubePosition2;
+		StaticCubePosition2.setIdentity();
+		StaticCubePosition2.setOrigin(btVector3(0, 0, 1));
 
 		btTransform StaticCubePositionLeft;
 		StaticCubePositionLeft.setIdentity();
@@ -831,12 +835,21 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 		shape->initializePolyhedralFeatures();
 		*/
 
-		btRigidBody* StaticCube = pdemo->createRigidBody(0, StaticCubePosition, new btBoxShape(btVector3(1, 1, 1)));
+		btRigidBody* StaticCube = pdemo->createRigidBody(10, StaticCubePosition, new btBoxShape(btVector3(1, 1, 1)));
+		StaticCube->setAngularVelocity(btVector3(0,0,10));
+		btQuaternion qu = btQuaternion::getIdentity();
+		qu.setEulerZYX(0, 180, 0);
+		StaticCube->getWorldTransform().setRotation(qu);
+
+		btRigidBody* StaticCube2 = pdemo->createRigidBody(10, StaticCubePosition2, new btBoxShape(btVector3(1, 1, 1)));
+		StaticCube2->setAngularVelocity(btVector3(0, 0, 10));
+
+		
 		btRigidBody* StaticCubeLeft = pdemo->createRigidBody(massLeft, StaticCubePositionLeft, new btBoxShape(btVector3(1, 1, 1)));
-		btRigidBody* StaticCubeRight = pdemo->createRigidBody(0, StaticCubePositionRight, new btBoxShape(btVector3(1, 1, 1)));
+		btRigidBody* StaticCubeRight = pdemo->createRigidBody(10, StaticCubePositionRight, new btBoxShape(btVector3(1, 1, 1)));
 
 		int iterations = 100;
-		btScalar rl = 0.1;
+		btScalar rl = 0.75;
 		btCable* cableAvant;
 		{
 			// cable init
@@ -863,8 +876,8 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 			}
 			cableAvant->getCollisionShape()->setMargin(0.004);
 			cableAvant->m_useSelfCollision = false;
-			cableAvant->setBendingStiffness(0);
-			cableAvant->setBendingMaxAngle(0);
+			cableAvant->setBendingStiffness(0.2);
+			cableAvant->setBendingMaxAngle(3);
 			cableAvant->setAnchorIndex(1);
 			float massCable = (distance * 0.335);
 			cableAvant->setTotalMass(massCable);
@@ -887,8 +900,8 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 				cableAvant->m_nodes[i].index = i;
 
 			cableAvant->setUseLRA(true);
-			cableAvant->setUseBending(false);
-			cableAvant->setUseCollision(false);
+			cableAvant->setUseBending(true);
+			cableAvant->setUseCollision(true);
 		}
 	}
 }

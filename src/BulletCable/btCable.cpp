@@ -68,13 +68,13 @@ void btCable::solveConstraints()
 			btVector3 minLink = btVector3(0, 0, 0);
 			btVector3 maxLink = btVector3(0, 0, 0);
 
-			minLink.setX(n.m_x.x() - margin);
-			minLink.setY(n.m_x.y() - margin);
-			minLink.setZ(n.m_x.z() - margin);
+			minLink.setX(n.m_x.x() - margin * 2);
+			minLink.setY(n.m_x.y() - margin * 2);
+			minLink.setZ(n.m_x.z() - margin * 2);
 
-			maxLink.setX(n.m_x.x() + margin);
-			maxLink.setY(n.m_x.y() + margin);
-			maxLink.setZ(n.m_x.z() + margin);
+			maxLink.setX(n.m_x.x() + margin * 2);
+			maxLink.setY(n.m_x.y() + margin * 2);
+			maxLink.setZ(n.m_x.z() + margin * 2);
 
 			for (int j = 0; j < collisionObjectList.size() && potentialCollision == false; j++)
 			{
@@ -165,7 +165,7 @@ void btCable::solveContact(int step, list<int> broadphaseNode)
 		int indexNode = *itNode;
 		Node* n = &m_nodes[indexNode];
 		btCollisionWorld::ClosestRayResultCallback c = *itCallback;
-		btVector3 newPos = c.m_hitPointWorld + c.m_hitNormalWorld * (margin);
+		btVector3 newPos = c.m_hitPointWorld + c.m_hitNormalWorld * (margin * 2 * m_cfg.kKHR);
 		btVector3 deltaPos = n->m_x - newPos;
 		btVector3 changementSpeed = c.m_hitNormalWorld.cross(deltaPos);
 		changementSpeed = changementSpeed.cross(c.m_hitNormalWorld);
@@ -532,9 +532,10 @@ void btCable::SolveAnchors()
 		const btVector3 vb = n.m_x - n.m_q;
 		const btVector3 vr = (va - vb) + (wa - n.m_x);
 		const btVector3 impulseBase = a.m_c0 * vr * a.m_influence * m_cfg.kAHR;
-		n.m_x += impulseBase * a.m_c2;
+		n.m_x = a.m_body->getCenterOfMassPosition() + a.m_c1;
 		impulses[i] += impulseBase / dt;
 		a.m_body->applyImpulse(-impulseBase, a.m_c1);
+
 		// const btVector3 impulseMass = vr * a.m_influence * m_cfg.kAHR;
 		// a.m_body->setLinearVelocity(a.m_body->getLinearVelocity() - impulseMass);
 		// a.m_body->setAngularVelocity(a.m_body->getAngularVelocity() - a.m_c1.cross(impulseMass));
