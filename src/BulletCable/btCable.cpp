@@ -610,7 +610,31 @@ btVector3* btCable::getImpulses()
 
 btVector3 btCable::getImpulse(int index)
 {
-	return impulses[index];
+	switch (index)
+	{
+		case 0:
+			for (int i = 0; i < m_anchors.size(); ++i)
+			{
+				if (m_anchors[i].m_node->index == 0)
+					return impulses[i];
+			}
+			return btVector3(0, 0, 0);
+			break;
+
+		case 1:
+			for (int i = 0; i < m_anchors.size(); ++i)
+			{
+				if (m_anchors[i].m_node->index == (m_nodes.size() - 1))
+					return impulses[i];
+			}
+			return btVector3(0, 0, 0);
+			break;
+
+		default:
+			return btVector3(0, 0, 0);
+			break;
+	}
+
 }
 
 void btCable::setBendingMaxAngle(btScalar angle)
