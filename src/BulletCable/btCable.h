@@ -48,17 +48,8 @@ private:
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
 
-	void removeLink(int index);
-	void removeNode(int index);
-	void removeAnchor(int index);
-	void swapNodes(int index0, int index1);
-	void swapAnchors(int index0, int index1);
-
 #pragma region Use methods
 public:
-	void setRestLengthLink(int index, btScalar distance);
-	btScalar getRestLengthLink(int index);
-
 	btScalar getLengthPosition();
 	btScalar getLengthRestlength();
 
@@ -77,8 +68,8 @@ public:
 	void setBendingStiffness(btScalar stiffness);
 	btScalar getBendingStiffness();
 
-	void setAnchorIndex(int idx);
-	int getAnchorIndex();
+	void setIndexLRA(int idx);
+	int getIndexLRA();
 
 	void setUseLRA(bool active);
 	bool getUseLRA();
@@ -90,5 +81,4 @@ public:
 	bool getUseCollision();
 #pragma endregion
 };
-
 #endif  //_BT_CABLE_H

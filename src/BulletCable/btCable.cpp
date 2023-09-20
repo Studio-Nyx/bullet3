@@ -219,7 +219,7 @@ void btCable::LRAConstraint(int level, int idxAnchor)
 	for (int j = stablePointIndex - 1; j >= 0; j--)
 	{
 		Node& n = m_nodes[j];
-		btScalar distMax = getRestLengthLink(stablePointIndex - 1);
+		btScalar distMax = m_links[stablePointIndex - 1].m_rl;
 		int indexToCheck = j - 1;
 		if (indexToCheck >= 0)
 		{
@@ -239,7 +239,7 @@ void btCable::LRAConstraint(int level, int idxAnchor)
 	for (int j = stablePointIndex; j < m_nodes.size() - 1; j++)
 	{
 		Node& n = m_nodes[j];
-		btScalar distMax = getRestLengthLink(stablePointIndex);
+		btScalar distMax = m_links[stablePointIndex].m_rl;
 		int indexToCheck = j + 1;
 		if (indexToCheck < m_nodes.size())
 		{
@@ -543,43 +543,7 @@ void btCable::SolveAnchors()
 }
 #pragma endregion
 
-void btCable::removeLink(int index)
-{
-	m_links.removeAtIndex(index);
-}
-void btCable::removeNode(int index)
-{
-	m_nodes.removeAtIndex(index);
-}
-void btCable::removeAnchor(int index)
-{
-	Anchor a = m_anchors[index];
-	a.m_node->m_battach = 0;
-	m_anchors.removeAtIndex(index);
-}
-
 #pragma region Getter/Setter
-void btCable::setRestLengthLink(int index, btScalar distance)
-{
-	Link& l = m_links[index];
-	l.m_rl = distance;
-	l.m_c1 = l.m_rl * l.m_rl;
-}
-
-btScalar btCable::getRestLengthLink(int index)
-{
-	return m_links[index].m_rl;
-}
-
-void btCable::swapNodes(int index0, int index1)
-{
-	m_nodes.swap(index0, index1);
-}
-
-void btCable::swapAnchors(int index0, int index1)
-{
-	m_anchors.swap(index0, index1);
-}
 
 btScalar btCable::getLengthRestlength()
 {
@@ -654,12 +618,12 @@ btScalar btCable::getBendingStiffness()
 	return this->bendingStiffness;
 }
 
-void btCable::setAnchorIndex(int idx)
+void btCable::setIndexLRA(int idx)
 {
 	m_idxAnchor = idx;
 }
 
-int btCable::getAnchorIndex()
+int btCable::getIndexLRA()
 {
 	return m_idxAnchor;
 }
@@ -703,4 +667,7 @@ bool btCable::getUseCollision()
 {
 	return useCollision;
 }
+
+
+
 #pragma endregion
