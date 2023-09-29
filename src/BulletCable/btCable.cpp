@@ -17,7 +17,6 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 {
 	m_world = world;
 	impulses = new btVector3[2]{btVector3(0, 0, 0)};
-	m_idxAnchor = 0;
 	for (int i = 0; i < this->m_nodes.size(); i++)
 	{
 		m_nodes[i].m_battach = 0;
@@ -176,37 +175,20 @@ void btCable::solveContact(int step, list<int> broadphaseNode)
 void btCable::LRAConstraint()
 {
 	btScalar distance = 0;
-	if (m_idxAnchor == 1)
-	{
-		Node& a = m_nodes[m_nodes.size() - 1];
-		for (int i = 0; i < m_anchors.size(); ++i)
-			if (a.index == m_anchors[i].m_node->index)
-				a.m_x = m_anchors[i].m_c1 + m_anchors[i].m_body->getCenterOfMassPosition(); 
-		for (int i = m_links.size() - 1; i >= 0; --i)
-		{
-			Link& l = m_links[i];
-			Node* b = l.m_n[0];
 
-			distance += l.m_rl;
-			if (a.m_x.distance(b->m_x) > distance)
-				b->m_x = a.m_x + (b->m_x - a.m_x).normalized() * distance;
-		}
-	}
-	else
-	{
-		Node& a = m_nodes[0];
-		for (int i = 0; i < m_anchors.size(); ++i)
-			if (a.index == m_anchors[i].m_node->index)
-				a.m_x = m_anchors[i].m_c1 + m_anchors[i].m_body->getCenterOfMassPosition(); 
-		for (int i = 0; i < m_links.size() - 1; ++i)
-		{
-			Link& l = m_links[i];
-			Node* b = l.m_n[1];
+	Node& a = m_nodes[m_nodes.size() - 1];
+	for (int i = 0; i < m_anchors.size(); ++i)
+		if (a.index == m_anchors[i].m_node->index)
+			a.m_x = m_anchors[i].m_c1 + m_anchors[i].m_body->getCenterOfMassPosition(); 
 
-			distance += l.m_rl;
-			if (a.m_x.distance(b->m_x) > distance)
-				b->m_x = a.m_x + (b->m_x - a.m_x).normalized() * distance;
-		}
+	for (int i = m_links.size() - 1; i >= 0; --i)
+	{
+		Link& l = m_links[i];
+		Node* b = l.m_n[0];
+
+		distance += l.m_rl;
+		if (a.m_x.distance(b->m_x) > distance)
+			b->m_x = a.m_x + (b->m_x - a.m_x).normalized() * distance;
 	}
 }
 
@@ -263,50 +245,28 @@ btVector3 ConstrainDistance(btVector3 point, btVector3 anchor, float distance)
 
 void btCable::FABRIKChain()
 {
-	if (m_idxAnchor == 0)
-		for (int i = m_anchors.size() - 1; i >= 0; --i)
+	for (int i = 0; i < m_anchors.size(); ++i)
+	{
+		Anchor& a = m_anchors[i];
+		const btVector3 ra = a.m_body->getWorldTransform().getBasis() * a.m_local;
+
+		a.m_node->m_x = m_anchors[i].m_body->getCenterOfMassPosition() + a.m_c1;
+		int idx = a.m_node->index;
+
+		for (int i = idx; i > 0; --i)
 		{
-			Anchor& a = m_anchors[i];
-			a.m_node->m_x = m_anchors[i].m_body->getCenterOfMassPosition() + a.m_c1;
-			int idx = a.m_node->index;
-
-			for (int i = idx + 1; i < m_nodes.size(); i++)
-			{
-				//Pull the current segment to the previous one
-				if (m_nodes[i - 1].m_x.distance(m_nodes[i].m_x) > m_links[i - 1].m_rl)
-					m_nodes[i].m_x = ConstrainDistance(m_nodes[i].m_x, m_nodes[i - 1].m_x, m_links[i - 1].m_rl);
-			}
-
-			for (int i = idx; i > 0; --i)
-			{
-				//Pull the current segment to the previous one
-				if (m_nodes[i].m_x.distance(m_nodes[i - 1].m_x) > m_links[i - 1].m_rl)
-					m_nodes[i - 1].m_x = ConstrainDistance(m_nodes[i - 1].m_x, m_nodes[i].m_x, m_links[i - 1].m_rl);
-			}
+			//Pull the current segment to the previous one
+			if (m_nodes[i - 1].m_x.distance(m_nodes[i].m_x) > m_links[i - 1].m_rl)
+				m_nodes[i - 1].m_x = ConstrainDistance(m_nodes[i - 1].m_x, m_nodes[i].m_x, m_links[i - 1].m_rl);
 		}
-	else if (m_idxAnchor == 1)
-		for (int i = 0; i < m_anchors.size(); ++i)
+
+		for (int i = idx + 1; i < m_nodes.size(); i++)
 		{
-			Anchor& a = m_anchors[i];
-			const btVector3 ra = a.m_body->getWorldTransform().getBasis() * a.m_local;
-
-			a.m_node->m_x = m_anchors[i].m_body->getCenterOfMassPosition() + a.m_c1;
-			int idx = a.m_node->index;
-
-			for (int i = idx; i > 0; --i)
-			{
-				//Pull the current segment to the previous one
-				if (m_nodes[i - 1].m_x.distance(m_nodes[i].m_x) > m_links[i - 1].m_rl)
-					m_nodes[i - 1].m_x = ConstrainDistance(m_nodes[i - 1].m_x, m_nodes[i].m_x, m_links[i - 1].m_rl);
-			}
-
-			for (int i = idx + 1; i < m_nodes.size(); i++)
-			{
-				//Pull the current segment to the previous one
-				if (m_nodes[i].m_x.distance(m_nodes[i - 1].m_x) > m_links[i - 1].m_rl)
-					m_nodes[i].m_x = ConstrainDistance(m_nodes[i].m_x, m_nodes[i - 1].m_x, m_links[i - 1].m_rl);
-			}
+			//Pull the current segment to the previous one
+			if (m_nodes[i].m_x.distance(m_nodes[i - 1].m_x) > m_links[i - 1].m_rl)
+				m_nodes[i].m_x = ConstrainDistance(m_nodes[i].m_x, m_nodes[i - 1].m_x, m_links[i - 1].m_rl);
 		}
+	}
 }
 
 void btCable::pin()
@@ -616,16 +576,6 @@ void btCable::setBendingStiffness(btScalar stiffness)
 btScalar btCable::getBendingStiffness()
 {
 	return this->bendingStiffness;
-}
-
-void btCable::setIndexLRA(int idx)
-{
-	m_idxAnchor = idx;
-}
-
-int btCable::getIndexLRA()
-{
-	return m_idxAnchor;
 }
 
 void btCable::setUseLRA(bool active)

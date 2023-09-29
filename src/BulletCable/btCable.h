@@ -26,7 +26,6 @@ using namespace std;
 class btCable : public btSoftBody
 {
 private:
-	int m_idxAnchor;
 	btVector3* impulses;
 	bool useLRA = true;
 	bool useBending = true;
@@ -67,9 +66,6 @@ public:
 
 	void setBendingStiffness(btScalar stiffness);
 	btScalar getBendingStiffness();
-
-	void setIndexLRA(int idx);
-	int getIndexLRA();
 
 	void setUseLRA(bool active);
 	bool getUseLRA();
