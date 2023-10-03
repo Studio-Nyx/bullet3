@@ -274,6 +274,7 @@ public:
 	struct Node : Feature
 	{
 		btVector3 m_x;       // Position
+		btVector3 m_xOut;  // Previous step position/Test position
 		btVector3 m_q;       // Previous step position/Test position
 		btVector3 m_v;       // Velocity
 		btVector3 m_vn;      // Previous step velocity

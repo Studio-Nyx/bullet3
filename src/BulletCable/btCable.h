@@ -42,7 +42,10 @@ private:
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
 	void SolveAnchors();
-	void solveContact(int step, list<int> broadphaseNode);
+	bool checkCollide(int indexNode);
+	void solveContact(btAlignedObjectArray<int> broadphaseNodeList);
+	void solveContactLink(btAlignedObjectArray<int> broadphaseNodeList);
+	void moveBodyCollision(btRigidBody* body, int indexNode, btVector3 normale, btVector3 hitPosition);
 
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
