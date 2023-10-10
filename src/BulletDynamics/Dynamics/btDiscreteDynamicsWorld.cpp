@@ -343,12 +343,17 @@ void btDiscreteDynamicsWorld::synchronizeSingleMotionState(btRigidBody* body)
 		///@todo: add 'dirty' flag
 		//if (body->getActivationState() != ISLAND_SLEEPING)
 		{
+			/*
 			btTransform interpolatedTransform;
 			btTransformUtil::integrateTransform(body->getInterpolationWorldTransform(),
 												body->getInterpolationLinearVelocity(), body->getInterpolationAngularVelocity(),
 												(m_latencyMotionStateInterpolation && m_fixedTimeStep) ? m_localTime - m_fixedTimeStep : m_localTime * body->getHitFraction(),
 												interpolatedTransform);
 			body->getMotionState()->setWorldTransform(interpolatedTransform);
+			*/
+
+			// We take the the world transform because the predicted one doesn't evolve with the softbody's solver
+			body->getMotionState()->setWorldTransform(body->getWorldTransform());
 		}
 	}
 }
