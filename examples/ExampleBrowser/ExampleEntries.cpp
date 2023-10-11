@@ -39,6 +39,7 @@
 #include "../RigidBody/KinematicRigidBodyExample.h"
 #include "../VoronoiFracture/VoronoiFractureDemo.h"
 #include "../SoftDemo/SoftDemo.h"
+#include "../CableDemo/CableDemo.h"
 #include "../Constraints/ConstraintDemo.h"
 #include "../Vehicles/Hinge2Vehicle.h"
 #include "../Importers/ImportBullet/SerializeSetup.h"
@@ -245,7 +246,7 @@ static ExampleEntry gDefaultExamples[] =
 		ExampleEntry(1, "Pressure", "Simulate 3d soft body using a pressure constraint.", SoftDemoCreateFunc, 1),
 		ExampleEntry(1, "Volume", "Simulate 3d soft body using a volume constraint.", SoftDemoCreateFunc, 2),
 		ExampleEntry(1, "Ropes", "Simulate ropes", SoftDemoCreateFunc, 3),
-		ExampleEntry(1, "Rope Attach", "Simulate a rigid body connected to a rope.", SoftDemoCreateFunc, 4),
+		ExampleEntry(1, "Pendulum", "Simulate a pendulum with a cable.", SoftDemoCreateFunc, 4),
 		ExampleEntry(1, "Cloth Attach", "A rigid body attached to a cloth.", SoftDemoCreateFunc, 5),
 		ExampleEntry(1, "Sticks", "Show simulation of ropes fixed to the ground.", SoftDemoCreateFunc, 6),
 		ExampleEntry(1, "Capsule Collision", "Collision detection between a capsule shape and cloth.", SoftDemoCreateFunc, 7),
@@ -274,7 +275,15 @@ static ExampleEntry gDefaultExamples[] =
 		ExampleEntry(1, "Cluster Stack Mixed", "Stacking of soft bodies and rigid bodies.", SoftDemoCreateFunc, 29),
 		ExampleEntry(1, "Tetra Cube", "Simulate a volumetric soft body cube defined by tetrahedra.", SoftDemoCreateFunc, 30),
 		ExampleEntry(1, "Tetra Bunny", "Simulate a volumetric soft body Stanford bunny defined by tetrahedra.", SoftDemoCreateFunc, 31),
-		ExampleEntry(1, "CollisionTest", "Test Scene for collision.", SoftDemoCreateFunc, 32),
+		ExampleEntry(1, "Collisions", "Simulate collisions with a cable.", SoftDemoCreateFunc, 32),
+		ExampleEntry(1, "2 bodies", "Simulate a cable with two attached bodies.", SoftDemoCreateFunc, 33),
+
+
+		// Cable demos 
+		ExampleEntry(0, "Cable"),
+		ExampleEntry(1, "Test1", "oui.", CableDemoCreateFunc, 0),
+		ExampleEntry(1, "Test2", "oui.", CableDemoCreateFunc, 1),
+
 
 #endif  //INCLUDE_CLOTH_DEMOS
 

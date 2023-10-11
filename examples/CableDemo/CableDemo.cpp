@@ -1,0 +1,497 @@
+#include "../Utils/b3ResourcePath.h"
+#include "Bullet3Common/b3FileUtils.h"
+#include "../Importers/ImportObjDemo/LoadMeshFromObj.h"
+#include "../OpenGLWindow/GLInstanceGraphicsShape.h"
+#include "../Utils/b3BulletDefaultFileIO.h"
+
+#include "../CommonInterfaces/CommonRigidBodyBase.h"
+
+#include "btBulletDynamicsCommon.h"
+#include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
+
+#include "BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h"
+#include "BulletCollision/NarrowPhaseCollision/btGjkEpa2.h"
+#include "LinearMath/btQuickprof.h"
+#include "LinearMath/btIDebugDraw.h"
+
+#include <stdio.h>  //printf debugging
+#include "LinearMath/btConvexHull.h"
+#include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
+#include "BulletSoftBody/btSoftBodyHelpers.h"
+
+#include "CableDemo.h"
+#include "GL_ShapeDrawer.h"
+
+#include "LinearMath/btAlignedObjectArray.h"
+#include "BulletSoftBody/btSoftBody.h"
+#include "BulletCable/btCable.h"
+
+#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h>
+#include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
+#include <iostream>
+
+class btBroadphaseInterface;
+class btCollisionShape;
+class btOverlappingPairCache;
+class btCollisionDispatcher;
+class btConstraintSolver;
+struct btCollisionAlgorithmCreateFunc;
+class btDefaultCollisionConfiguration;
+
+///collisions between two btSoftBody's
+class btSoftSoftCollisionAlgorithm;
+
+///collisions between a btSoftBody and a btRigidBody
+class btSoftRididCollisionAlgorithm;
+class btSoftRigidDynamicsWorld;
+
+class CableDemo : public CommonRigidBodyBase
+{
+public:
+	btAlignedObjectArray<btSoftSoftCollisionAlgorithm*> m_SoftSoftCollisionAlgorithms;
+
+	btAlignedObjectArray<btSoftRididCollisionAlgorithm*> m_SoftRigidCollisionAlgorithms;
+
+	btSoftBodyWorldInfo m_softBodyWorldInfo;
+
+	bool m_autocam;
+	bool m_cutting;
+	bool m_raycast;
+	btScalar m_animtime;
+	btClock m_clock;
+	int m_lastmousepos[2];
+	btVector3 m_impact;
+	btSoftBody::sRayCast m_results;
+	btSoftBody::Node* m_node;
+	btVector3 m_goal;
+	bool m_drag;
+
+	//keep the collision shapes, for deletion/cleanup
+	btAlignedObjectArray<btCollisionShape*> m_collisionShapes;
+
+	btBroadphaseInterface* m_broadphase;
+
+	//btCollisionDispatcherMt* m_dispatcher;
+	btCollisionDispatcher* m_dispatcher;
+
+	btConstraintSolver* m_solver;
+
+	btCollisionAlgorithmCreateFunc* m_boxBoxCF;
+
+	btDefaultCollisionConfiguration* m_collisionConfiguration;
+
+public:
+	void initPhysics();
+
+	void exitPhysics();
+
+	virtual void resetCamera()
+	{
+		//@todo depends on current_demo?
+		float dist = 10;
+		float pitch = 0;
+		float yaw = 0;
+		float targetPos[3] = {0, 3, 0};
+		m_guiHelper->resetCamera(dist, yaw, pitch, targetPos[0], targetPos[1], targetPos[2]);
+	}
+
+	CableDemo(struct GUIHelperInterface* helper)
+		: CommonRigidBodyBase(helper),
+		  m_drag(false)
+
+	{
+	}
+	virtual ~CableDemo()
+	{
+		btAssert(m_dynamicsWorld == 0);
+	}
+
+	//virtual void clientMoveAndDisplay();
+
+	//virtual void displayCallback();
+
+	void createStack(btCollisionShape* boxShape, float halfCubeSize, int size, float zPos);
+
+	virtual void setDrawClusters(bool drawClusters);
+
+	virtual const btSoftRigidDynamicsWorld* getSoftDynamicsWorld() const
+	{
+		///just make it a btSoftRigidDynamicsWorld please
+		///or we will add type checking
+		return (btSoftRigidDynamicsWorld*)m_dynamicsWorld;
+	}
+
+	virtual btSoftRigidDynamicsWorld* getSoftDynamicsWorld()
+	{
+		///just make it a btSoftRigidDynamicsWorld please
+		///or we will add type checking
+		return (btSoftRigidDynamicsWorld*)m_dynamicsWorld;
+	}
+
+	//
+	//void	clientResetScene();
+	void renderme();
+	void keyboardCallback(unsigned char key, int x, int y);
+	void mouseFunc(int button, int state, int x, int y);
+	void mouseMotionFunc(int x, int y);
+
+	GUIHelperInterface* getGUIHelper()
+	{
+		return m_guiHelper;
+	}
+
+	virtual void renderScene()
+	{
+		CommonRigidBodyBase::renderScene();
+		btSoftRigidDynamicsWorld* softWorld = getSoftDynamicsWorld();
+
+		for (int i = 0; i < softWorld->getSoftBodyArray().size(); i++)
+		{
+			btSoftBody* psb = (btSoftBody*)softWorld->getSoftBodyArray()[i];
+			//if (softWorld->getDebugDrawer() && !(softWorld->getDebugDrawer()->getDebugMode() & (btIDebugDraw::DBG_DrawWireframe)))
+			{
+				btSoftBodyHelpers::DrawFrame(psb, softWorld->getDebugDrawer());
+				btSoftBodyHelpers::Draw(psb, softWorld->getDebugDrawer(), softWorld->getDrawFlags());
+			}
+		}
+	}
+};
+
+static void Init_Cloth(CableDemo* pdemo)
+{
+	std::cout << "youhou" << std::endl;
+}
+
+static void Init_Pendulum(CableDemo* pdemo)
+{
+	btScalar massInspector125(0);
+	btTransform positionInspector125;
+	positionInspector125.setIdentity();
+	positionInspector125.setOrigin(btVector3(0, 10, 0));
+	btRigidBody* inspector125 = pdemo->createRigidBody(massInspector125, positionInspector125, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
+	// inspector125->getCollisionShape()->setMargin(0);
+
+	btScalar massLest(10);
+	btTransform positionLest = btTransform();
+	positionLest.setIdentity();
+	positionLest.setOrigin(btVector3(5, 10, 0));
+	btRigidBody* lest = pdemo->createRigidBody(massLest, positionLest, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
+
+	int iterations = 100;
+	btScalar restLength = .2;
+
+	btCable* cableAvant;
+	{
+		btVector3 posAnchorInspector125 = positionInspector125.getOrigin() + btVector3(0, -0.5, 0);
+		btVector3 posAnchorLest = positionLest.getOrigin() + btVector3(-0.5, 0, 0);
+
+		// cable init
+		btScalar distance = (posAnchorInspector125 - posAnchorLest).length();
+
+		const int resolution = distance / restLength;
+		btVector3* positionNodes = new btVector3[resolution];
+		btScalar* massNodes = new btScalar[resolution];
+		int i;
+
+		for (i = 0; i < resolution; ++i)
+		{
+			const btScalar t = i / (btScalar)(resolution - 1);
+			positionNodes[i] = lerp(posAnchorLest, posAnchorInspector125, t);
+			massNodes[i] = 1;
+		}
+
+		cableAvant = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
+		cableAvant->appendAnchor(0, lest);
+		cableAvant->appendAnchor(cableAvant->m_nodes.size() - 1, inspector125);
+
+		cableAvant->getCollisionShape()->setMargin(0.004);
+		// float massCable = distance * 0.243;
+		// cableAvant->setTotalMass(1);
+		cableAvant->m_cfg.piterations = iterations;
+		cableAvant->m_cfg.kAHR = 1;
+
+		pdemo->getSoftDynamicsWorld()->addSoftBody(cableAvant);
+	}
+}
+
+void (*demofncs[])(CableDemo*) =
+{
+		Init_Cloth,
+		Init_Pendulum
+};
+
+////////////////////////////////////
+///for mouse picking
+void pickingPreTickCallbackCable(btDynamicsWorld* world, btScalar timeStep)
+{
+	CableDemo* cableDemo = (CableDemo*)world->getWorldUserInfo();
+
+	if (cableDemo->m_drag)
+	{
+		const int x = cableDemo->m_lastmousepos[0];
+		const int y = cableDemo->m_lastmousepos[1];
+		float rf[3];
+		cableDemo->getGUIHelper()->getRenderInterface()->getActiveCamera()->getCameraPosition(rf);
+		float target[3];
+		cableDemo->getGUIHelper()->getRenderInterface()->getActiveCamera()->getCameraTargetPosition(target);
+		btVector3 cameraTargetPosition(target[0], target[1], target[2]);
+
+		const btVector3 cameraPosition(rf[0], rf[1], rf[2]);
+		const btVector3 rayFrom = cameraPosition;
+
+		const btVector3 rayTo = cableDemo->getRayTo(x, y);
+		const btVector3 rayDir = (rayTo - rayFrom).normalized();
+		const btVector3 N = (cameraTargetPosition - cameraPosition).normalized();
+		const btScalar O = btDot(cableDemo->m_impact, N);
+		const btScalar den = btDot(N, rayDir);
+		if ((den * den) > 0)
+		{
+			const btScalar num = O - btDot(N, rayFrom);
+			const btScalar hit = num / den;
+			if ((hit > 0) && (hit < 1500))
+			{
+				cableDemo->m_goal = rayFrom + rayDir * hit;
+			}
+		}
+		btVector3 delta = cableDemo->m_goal - cableDemo->m_node->m_x;
+		static const btScalar maxdrag = 10;
+		if (delta.length2() > (maxdrag * maxdrag))
+		{
+			delta = delta.normalized() * maxdrag;
+		}
+		cableDemo->m_node->m_v += delta / timeStep;
+	}
+}
+
+int currentCableDemo = 0;
+
+///
+/// btTaskSchedulerManager -- manage a number of task schedulers so we can switch between them
+///
+class btTaskSchedulerManager
+{
+	btAlignedObjectArray<btITaskScheduler*> m_taskSchedulers;
+	btAlignedObjectArray<btITaskScheduler*> m_allocatedTaskSchedulers;
+
+public:
+	btTaskSchedulerManager() {}
+	void init()
+	{
+		addTaskScheduler(btGetSequentialTaskScheduler());
+#if BT_THREADSAFE
+		if (btITaskScheduler* ts = btCreateDefaultTaskScheduler())
+		{
+			m_allocatedTaskSchedulers.push_back(ts);
+			addTaskScheduler(ts);
+		}
+		addTaskScheduler(btGetOpenMPTaskScheduler());
+		addTaskScheduler(btGetTBBTaskScheduler());
+		addTaskScheduler(btGetPPLTaskScheduler());
+		if (getNumTaskSchedulers() > 1)
+		{
+			// prefer a non-sequential scheduler if available
+			btSetTaskScheduler(m_taskSchedulers[1]);
+		}
+		else
+		{
+			btSetTaskScheduler(m_taskSchedulers[0]);
+		}
+#endif  // #if BT_THREADSAFE
+	}
+	void shutdown()
+	{
+		for (int i = 0; i < m_allocatedTaskSchedulers.size(); ++i)
+		{
+			delete m_allocatedTaskSchedulers[i];
+		}
+		m_allocatedTaskSchedulers.clear();
+	}
+
+	void addTaskScheduler(btITaskScheduler* ts)
+	{
+		if (ts)
+		{
+#if BT_THREADSAFE
+			// if initial number of threads is 0 or 1,
+			if (ts->getNumThreads() <= 1)
+			{
+				// for OpenMP, TBB, PPL set num threads to number of logical cores
+				ts->setNumThreads(ts->getMaxNumThreads());
+			}
+#endif  // #if BT_THREADSAFE
+			m_taskSchedulers.push_back(ts);
+		}
+	}
+	int getNumTaskSchedulers() const { return m_taskSchedulers.size(); }
+	btITaskScheduler* getTaskScheduler(int i) { return m_taskSchedulers[i]; }
+};
+
+void CableDemo::setDrawClusters(bool drawClusters)
+{
+	if (drawClusters)
+	{
+		getSoftDynamicsWorld()->setDrawFlags(getSoftDynamicsWorld()->getDrawFlags() | fDrawFlags::Clusters);
+	}
+	else
+	{
+		getSoftDynamicsWorld()->setDrawFlags(getSoftDynamicsWorld()->getDrawFlags() & (~fDrawFlags::Clusters));
+	}
+}
+
+static btTaskSchedulerManager gTaskSchedulerMgr;
+
+void CableDemo::initPhysics()
+{
+	///create concave ground mesh
+	m_guiHelper->setUpAxis(1);
+
+	m_dispatcher = 0;
+
+	if (gTaskSchedulerMgr.getNumTaskSchedulers() == 0)
+	{
+		gTaskSchedulerMgr.init();
+	}
+
+	///register some softbody collision algorithms on top of the default btDefaultCollisionConfiguration
+	m_collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration();
+
+	//m_dispatcher = new btCollisionDispatcher(m_collisionConfiguration);
+	m_dispatcher = new btCollisionDispatcherMt(m_collisionConfiguration);
+	m_softBodyWorldInfo.m_dispatcher = m_dispatcher;
+
+	////////////////////////////
+	///Register softbody versus softbody collision algorithm
+
+	///Register softbody versus rigidbody collision algorithm
+
+	////////////////////////////
+
+	btVector3 worldAabbMin(-1000, -1000, -1000);
+	btVector3 worldAabbMax(1000, 1000, 1000);
+
+	//m_broadphase = new btAxisSweep3(worldAabbMin, worldAabbMax, maxProxies);
+
+	m_broadphase = new btDbvtBroadphase();
+
+	m_softBodyWorldInfo.m_broadphase = m_broadphase;
+
+	//btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
+	btSequentialImpulseConstraintSolverMt* solver = new btSequentialImpulseConstraintSolverMt();
+
+	m_solver = solver;
+
+	btSoftBodySolver* softBodySolver = 0;
+#ifdef USE_AMD_OPENCL
+
+	static bool once = true;
+	if (once)
+	{
+		once = false;
+		initCL(0, 0);
+	}
+
+	if (g_openCLSIMDSolver)
+		delete g_openCLSIMDSolver;
+	if (g_softBodyOutput)
+		delete g_softBodyOutput;
+
+	if (1)
+	{
+		g_openCLSIMDSolver = new btOpenCLSoftBodySolverSIMDAware(g_cqCommandQue, g_cxMainContext);
+		//	g_openCLSIMDSolver = new btOpenCLSoftBodySolver( g_cqCommandQue, g_cxMainContext);
+		g_openCLSIMDSolver->setCLFunctions(new CachingCLFunctions(g_cqCommandQue, g_cxMainContext));
+	}
+
+	softBodySolver = g_openCLSIMDSolver;
+	g_softBodyOutput = new btSoftBodySolverOutputCLtoCPU;
+#endif  //USE_AMD_OPENCL
+
+	//btDiscreteDynamicsWorld* world = new btSoftRigidDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfiguration);
+	btSoftRigidDynamicsWorld* world = new btSoftRigidDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfiguration, softBodySolver);
+	m_dynamicsWorld = world;
+	m_dynamicsWorld->setInternalTickCallback(pickingPreTickCallbackCable, this, true);
+
+	m_dynamicsWorld->getDispatchInfo().m_enableSPU = true;
+	m_dynamicsWorld->setGravity(btVector3(0, -9.81, 0));
+	m_softBodyWorldInfo.m_gravity.setValue(0, -9.81, 0);
+	m_guiHelper->createPhysicsDebugDrawer(world);
+	//	clientResetScene();
+
+	m_softBodyWorldInfo.m_sparsesdf.Initialize();
+	//	clientResetScene();
+
+	//create ground object
+
+	int lastDemo = (sizeof(demofncs) / sizeof(demofncs[0])) - 1;
+
+	if (currentCableDemo < 0)
+		currentCableDemo = lastDemo;
+	if (currentCableDemo > lastDemo)
+		currentCableDemo = 0;
+
+	m_softBodyWorldInfo.m_sparsesdf.Reset();
+
+	m_softBodyWorldInfo.air_density = (btScalar)0;
+	m_softBodyWorldInfo.water_density = 0;
+	m_softBodyWorldInfo.water_offset = 0;
+	m_softBodyWorldInfo.water_normal = btVector3(0, 0, 0);
+	m_softBodyWorldInfo.m_gravity.setValue(0, -9.81, 0);
+
+	m_autocam = false;
+	m_raycast = false;
+	m_cutting = false;
+	m_results.fraction = 1.f;
+
+	demofncs[currentCableDemo](this);
+
+	m_guiHelper->autogenerateGraphicsObjects(m_dynamicsWorld);
+}
+
+void CableDemo::exitPhysics()
+{
+	//cleanup in the reverse order of creation/initialization
+
+	//remove the rigidbodies from the dynamics world and delete them
+	int i;
+	for (i = m_dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--)
+	{
+		btCollisionObject* obj = m_dynamicsWorld->getCollisionObjectArray()[i];
+		btRigidBody* body = btRigidBody::upcast(obj);
+		if (body && body->getMotionState())
+		{
+			delete body->getMotionState();
+		}
+		m_dynamicsWorld->removeCollisionObject(obj);
+		delete obj;
+	}
+
+	//delete collision shapes
+	for (int j = 0; j < m_collisionShapes.size(); j++)
+	{
+		btCollisionShape* shape = m_collisionShapes[j];
+		m_collisionShapes[j] = 0;
+		delete shape;
+	}
+
+	//delete dynamics world
+	delete m_dynamicsWorld;
+	m_dynamicsWorld = 0;
+
+	//delete solver
+	delete m_solver;
+
+	//delete broadphase
+	delete m_broadphase;
+
+	//delete dispatcher
+	delete m_dispatcher;
+
+	delete m_collisionConfiguration;
+}
+
+
+class CommonExampleInterface* CableDemoCreateFunc(struct CommonExampleOptions& options)
+{
+	currentCableDemo = options.m_option;
+	return new CableDemo(options.m_guiHelper);
+}
