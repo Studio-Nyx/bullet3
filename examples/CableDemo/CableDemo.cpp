@@ -80,6 +80,10 @@ public:
 
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 
+private:
+	int m_currentDemoIndex;
+	bool m_applyForceOnRigidbody;
+
 public:
 	void initPhysics();
 
@@ -95,11 +99,11 @@ public:
 		m_guiHelper->resetCamera(dist, yaw, pitch, targetPos[0], targetPos[1], targetPos[2]);
 	}
 
-	CableDemo(struct GUIHelperInterface* helper)
-		: CommonRigidBodyBase(helper),
+	CableDemo(struct GUIHelperInterface* helper): CommonRigidBodyBase(helper),
 		  m_drag(false)
 
 	{
+		m_applyForceOnRigidbody = false;
 	}
 	virtual ~CableDemo()
 	{
@@ -131,7 +135,24 @@ public:
 	//
 	//void	clientResetScene();
 	void renderme();
-	void keyboardCallback(unsigned char key, int x, int y);
+	bool keyboardCallback(int key, int state) override
+	{
+		if (m_currentDemoIndex == 2)
+		{
+			if (key == 'a' && state)
+			{
+				m_applyForceOnRigidbody = true;
+			}
+
+			if (key == 'd' && state)
+			{
+				PrintDistance_DemoCableForce();
+			}
+		}
+
+		return false;
+	}
+
 	void mouseFunc(int button, int state, int x, int y);
 	void mouseMotionFunc(int x, int y);
 
@@ -154,6 +175,87 @@ public:
 				btSoftBodyHelpers::Draw(psb, softWorld->getDebugDrawer(), softWorld->getDrawFlags());
 			}
 		}
+	}
+
+	void stepSimulation(float deltaTime) override
+	{
+		if (m_dynamicsWorld)
+		{
+			if (m_currentDemoIndex == 2 && m_applyForceOnRigidbody)
+			{
+				AddConstantForce_DemoCableForce();
+			}
+
+			m_dynamicsWorld->stepSimulation(deltaTime);
+		}
+	}
+
+	void AddConstantForce_DemoCableForce()
+	{
+		btCollisionObjectArray collisionArray = getSoftDynamicsWorld()->getCollisionObjectArray();
+		for (int i = 0; i < 5 ; i++)
+		{
+			int index = 1 + i * 3;
+			float force = btPow(10,(i+1));
+			btRigidBody* rb = (btRigidBody*)collisionArray[index];
+			rb->applyCentralForce(btVector3(force, 0, 0));
+		}
+	}
+
+	void PrintDistance_DemoCableForce()
+	{
+		btCollisionObjectArray collisionArray = getSoftDynamicsWorld()->getCollisionObjectArray();
+		std::cout << "---" << std::endl;
+		for (int i = 0; i < 5; i++)
+		{
+			int index = 2 + i * 3;
+			btCable* cable = (btCable*)collisionArray[index];
+			PrintDistance(i, cable);
+		}
+	}
+
+	void PrintDistance(int indexCable, btCable * cable)
+	{
+		btSoftBody::Anchor a0 = cable->m_anchors[0];
+		btVector3 worldPositionAnchor0 = a0.m_body->getCenterOfMassPosition() + a0.m_c1;
+		btVector3 worldPositionNode0 = a0.m_node->m_x;
+
+		btSoftBody::Anchor a1 = cable->m_anchors[1];
+		btVector3 worldPositionAnchor1 = a1.m_body->getCenterOfMassPosition() + a1.m_c1;
+		btVector3 worldPositionNode1 = a1.m_node->m_x;
+
+		float distance0 = worldPositionAnchor0.distance(worldPositionNode0) * 1000; // Convert in cm
+		float distance1 = worldPositionAnchor1.distance(worldPositionNode1) * 1000;  // Convert in cm
+
+		std::cout << "Cable : " << indexCable << "-"<< " Distance between Anchor0 and its node "
+			<< distance0<< "cm -"<< " Distance between Anchor1 and its node "
+				  << distance1 << "cm." << std::endl;
+	}
+
+	void createCable(int resolution, int iteration, btVector3 posAnchorKinematic, btVector3 posAnchorPhysic, btRigidBody* physic, btRigidBody* kinematic)
+	{
+		// Nodes' positions
+		btVector3* positionNodes = new btVector3[resolution];
+		btScalar* massNodes = new btScalar[resolution];
+		for (int i = 0; i < resolution; ++i)
+		{
+			const btScalar t = i / (btScalar)(resolution - 1);
+			positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
+			massNodes[i] = 1;
+		}
+
+		// Cable's creation
+		btCable* cable = new btCable(&m_softBodyWorldInfo, getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
+		cable->setUseCollision(false);
+		cable->appendAnchor(0, physic);
+		cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
+		// Cable's config
+		cable->setTotalMass(resolution);
+		cable->m_cfg.piterations = iteration;
+		cable->m_cfg.kAHR = 1;
+
+		// Add cable to the world
+		getSoftDynamicsWorld()->addSoftBody(cable);
 	}
 };
 
@@ -214,10 +316,59 @@ static void Init_Pendulum(CableDemo* pdemo)
 	}
 }
 
+static void Init_CableForceDown(CableDemo* pdemo)
+{
+	// Shape
+	btCollisionShape* boxShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
+	// Cable 0: 10 nodes ; 5 m ; 2 bodies (0 & 10 kg) ; static
+	// 
+	// Masses
+	btScalar massKinematic(0);
+	btScalar massPhysic(10);
+
+	// Rotation
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+	
+	
+	// Resolution's cable
+	int resolution = 10;
+	int iteration = 100;
+
+	// Create 10 cube and 5 cables
+	for (int i = 0 ; i < 5 ; i++)
+	{
+		// Positions
+		btVector3 positionKinematic(0, 10, i * 2);
+		btVector3 positionPhysic(0, 4, i * 2);
+		transformKinematic.setOrigin(positionKinematic);
+		transformPhysic.setOrigin(positionPhysic);
+		
+		// Create the rigidbodys
+		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
+		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
+
+		// Anchor's positions
+		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
+		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
+		
+		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+	}
+}
+
 void (*demofncs[])(CableDemo*) =
 {
 		Init_Cloth,
-		Init_Pendulum
+		Init_Pendulum,
+		Init_CableForceDown
 };
 
 ////////////////////////////////////
@@ -342,6 +493,8 @@ static btTaskSchedulerManager gTaskSchedulerMgr;
 
 void CableDemo::initPhysics()
 {
+	m_currentDemoIndex = currentCableDemo;
+
 	///create concave ground mesh
 	m_guiHelper->setUpAxis(1);
 

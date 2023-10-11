@@ -283,6 +283,7 @@ static ExampleEntry gDefaultExamples[] =
 		ExampleEntry(0, "Cable"),
 		ExampleEntry(1, "Test1", "oui.", CableDemoCreateFunc, 0),
 		ExampleEntry(1, "Test2", "oui.", CableDemoCreateFunc, 1),
+		ExampleEntry(1, "CableForceDown", "idk.", CableDemoCreateFunc, 2),
 
 
 #endif  //INCLUDE_CLOTH_DEMOS
