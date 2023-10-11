@@ -832,8 +832,8 @@ void btCable::bendingConstraintDistance()
 			btScalar rr = r.length2();
 			btScalar d2 = btDot(delta2, r);
 			btScalar d1 = btDot(delta1, r);
-			btClamp(d2, 0.0, rr);
-			btClamp(d1, 0.0, rr);
+			btClamp(d2, (btScalar)0.0, rr);
+			btClamp(d1, (btScalar)0.0, rr);
 			btScalar alpha1 = d2 / rr;
 			btScalar alpha2 = d1 / rr;
 
