@@ -19,6 +19,7 @@ subject to the following restrictions:
 #include "btScalar.h"
 #include "btMinMax.h"
 #include "btAlignedAllocator.h"
+#include <string>
 
 #ifdef BT_USE_DOUBLE_PRECISION
 #define btVector3Data btVector3DoubleData
@@ -579,6 +580,19 @@ public:
 	SIMD_FORCE_INLINE const btScalar& z() const { return m_floats[2]; }
 	/**@brief Return the w value */
 	SIMD_FORCE_INLINE const btScalar& w() const { return m_floats[3]; }
+
+	/**@brief Return the values of the vector in string */
+	SIMD_FORCE_INLINE std::string toString() const
+	{
+		std::string s("( ");
+		s.append(std::to_string(getX()));
+		s.append(" | ");
+		s.append(std::to_string(getY()));
+		s.append(" | ");
+		s.append(std::to_string(getZ()));
+		s.append(" )");
+		return s;
+	}
 
 	//SIMD_FORCE_INLINE btScalar&       operator[](int i)       { return (&m_floats[0])[i];	}
 	//SIMD_FORCE_INLINE const btScalar& operator[](int i) const { return (&m_floats[0])[i]; }
