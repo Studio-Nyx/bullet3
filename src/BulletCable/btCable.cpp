@@ -23,6 +23,11 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 	{
 		m_nodes[i].m_battach = 0;
 		m_nodes[i].index = i;
+
+		if (i != 0)
+		{
+			appendLink(i - 1, i);
+		}
 	}
 }
 
