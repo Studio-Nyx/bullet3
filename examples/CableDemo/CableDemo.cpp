@@ -137,7 +137,7 @@ public:
 	void renderme();
 	bool keyboardCallback(int key, int state) override
 	{
-		if (m_currentDemoIndex == 2)
+		if (m_currentDemoIndex == 2 || m_currentDemoIndex == 3)
 		{
 			if (key == 'a' && state)
 			{
@@ -185,6 +185,10 @@ public:
 			{
 				AddConstantForce_DemoCableForce();
 			}
+			if (m_currentDemoIndex == 3 && m_applyForceOnRigidbody)
+			{
+				AddConstantForce_DemoCableForceUp();
+			}
 
 			m_dynamicsWorld->stepSimulation(deltaTime);
 		}
@@ -197,6 +201,18 @@ public:
 		{
 			int index = 1 + i * 3;
 			float force = btPow(10,(i+1));
+			btRigidBody* rb = (btRigidBody*)collisionArray[index];
+			rb->applyCentralForce(btVector3(force, 0, 0));
+		}
+	}
+
+	void AddConstantForce_DemoCableForceUp()
+	{
+		btCollisionObjectArray collisionArray = getSoftDynamicsWorld()->getCollisionObjectArray();
+		for (int i = 0; i < 5; i++)
+		{
+			int index = 0 + i * 3;
+			float force = btPow(10, (i + 1));
 			btRigidBody* rb = (btRigidBody*)collisionArray[index];
 			rb->applyCentralForce(btVector3(force, 0, 0));
 		}
@@ -338,7 +354,6 @@ static void Init_CableForceDown(CableDemo* pdemo)
 	transformPhysic.setIdentity();
 	transformPhysic.setRotation(rotation);
 	
-	
 	// Resolution's cable
 	int resolution = 10;
 	int iteration = 100;
@@ -361,6 +376,60 @@ static void Init_CableForceDown(CableDemo* pdemo)
 		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 		
 		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		
+	}
+}
+
+static void Init_CableForceUp(CableDemo* pdemo)
+{
+	// Shape
+	btCollisionShape* boxShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
+	// Cable 0: 10 nodes ; 5 m ; 2 bodies (0 & 10 kg) ; static
+	//
+	// Masses
+	btScalar massKinematic(10);
+	btScalar massPhysic(10);
+
+	// Rotation
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+
+	// Resolution's cable
+	int resolution = 10;
+	int iteration = 100;
+
+	pdemo->m_softBodyWorldInfo.m_gravity = btVector3(0, 0, 0);
+	pdemo->getSoftDynamicsWorld()->setGravity(btVector3(0, 0, 0));
+
+	// Create 10 cube and 5 cables
+	for (int i = 0; i < 5; i++)
+	{
+		// Positions
+		btVector3 positionKinematic(0, 10, i * 2);
+		btVector3 positionPhysic(0, 4, i * 2);
+		transformKinematic.setOrigin(positionKinematic);
+		transformPhysic.setOrigin(positionPhysic);
+
+		// Create the rigidbodys
+		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
+		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
+
+		kinematic->clearGravity();
+		physic->clearGravity();
+
+		// Anchor's positions
+		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
+		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
+
+		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 	}
 }
 
@@ -368,7 +437,8 @@ void (*demofncs[])(CableDemo*) =
 {
 		Init_Cloth,
 		Init_Pendulum,
-		Init_CableForceDown
+		Init_CableForceDown,
+		Init_CableForceUp
 };
 
 ////////////////////////////////////
