@@ -282,9 +282,11 @@ static ExampleEntry gDefaultExamples[] =
 		// Cable demos 
 		ExampleEntry(0, "Cable"),
 		ExampleEntry(1, "Test1", "oui.", CableDemoCreateFunc, 0),
-		ExampleEntry(1, "Test2", "oui.", CableDemoCreateFunc, 1),
-		ExampleEntry(1, "CableForceDown", "idk.", CableDemoCreateFunc, 2),
-		ExampleEntry(1, "CableForceUp", "idk.", CableDemoCreateFunc, 3),
+		ExampleEntry(1, "Test2", "oui", CableDemoCreateFunc, 1),
+		ExampleEntry(1, "CableForceDown", "Add 10 cubes and 5 cables. Press A to add forces on cube down. Press D to print distance between anchor and its node", 
+			CableDemoCreateFunc, 2),
+		ExampleEntry(1, "CableForceUp", "Add 10 cubes and 5 cables. Press A to add forces on cube up. Press D to print distance between anchor and its node", 
+			CableDemoCreateFunc, 3),
 		
 
 
