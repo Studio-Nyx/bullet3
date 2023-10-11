@@ -672,7 +672,6 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 
 		cableAvant->setBendingStiffness(0);
 		cableAvant->setBendingMaxAngle(0);
-		cableAvant->setAnchorIndex(1);
 		float massCable = (distance * 1);
 		cableAvant->setTotalMass(massCable);
 		cableAvant->m_cfg.piterations = iterations;
@@ -718,7 +717,6 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 
 		cable1->setBendingStiffness(0);
 		cable1->setBendingMaxAngle(0);
-		cable1->setAnchorIndex(1);
 		float massCable = (distance * 1);
 		cable1->setTotalMass(massCable);
 		cable1->m_cfg.piterations = iterations;
@@ -763,7 +761,6 @@ static void Init_RopeAttach(SoftDemo* pdemo)
 
 		cable2->setBendingStiffness(0);
 		cable2->setBendingMaxAngle(0);
-		cable2->setAnchorIndex(1);
 		float massCable = (distance * 1);
 		cable2->setTotalMass(massCable);
 		cable2->m_cfg.piterations = iterations;
@@ -878,7 +875,6 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 			cableAvant->m_useSelfCollision = false;
 			cableAvant->setBendingStiffness(0.2);
 			cableAvant->setBendingMaxAngle(3);
-			cableAvant->setAnchorIndex(1);
 			float massCable = (distance * 0.335);
 			cableAvant->setTotalMass(massCable);
 			cableAvant->m_cfg.piterations = iterations;
@@ -893,8 +889,6 @@ static void Init_CollisionTest(SoftDemo* pdemo)
 
 			cableAvant->appendAnchor(cableAvant->m_nodes.size() - 1, StaticCubeLeft, true);
 			cableAvant->appendAnchor(0, StaticCubeRight, true);
-
-			cableAvant->setAnchorIndex(0);
 
 			for (int i = 0; i < cableAvant->m_nodes.size(); i++)
 				cableAvant->m_nodes[i].index = i;
