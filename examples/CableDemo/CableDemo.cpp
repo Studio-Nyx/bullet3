@@ -240,8 +240,8 @@ public:
 		btVector3 worldPositionAnchor1 = a1.m_body->getCenterOfMassPosition() + a1.m_c1;
 		btVector3 worldPositionNode1 = a1.m_node->m_x;
 
-		float distance0 = worldPositionAnchor0.distance(worldPositionNode0) * 1000; // Convert in cm
-		float distance1 = worldPositionAnchor1.distance(worldPositionNode1) * 1000;  // Convert in cm
+		float distance0 = worldPositionAnchor0.distance(worldPositionNode0) * 100; // Convert in cm
+		float distance1 = worldPositionAnchor1.distance(worldPositionNode1) * 100;  // Convert in cm
 
 		std::cout << "Cable : " << indexCable << "-"<< " Distance between Anchor0 and its node "
 			<< distance0<< "cm -"<< " Distance between Anchor1 and its node "
