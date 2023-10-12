@@ -137,7 +137,7 @@ public:
 	void renderme();
 	bool keyboardCallback(int key, int state) override
 	{
-		if (m_currentDemoIndex == 2 || m_currentDemoIndex == 3)
+		if (m_currentDemoIndex == 0 || m_currentDemoIndex == 1)
 		{
 			if (key == 'a' && state)
 			{
@@ -181,11 +181,11 @@ public:
 	{
 		if (m_dynamicsWorld)
 		{
-			if (m_currentDemoIndex == 2 && m_applyForceOnRigidbody)
+			if (m_currentDemoIndex == 0 && m_applyForceOnRigidbody)
 			{
 				AddConstantForce_DemoCableForce();
 			}
-			if (m_currentDemoIndex == 3 && m_applyForceOnRigidbody)
+			if (m_currentDemoIndex == 1 && m_applyForceOnRigidbody)
 			{
 				AddConstantForce_DemoCableForceUp();
 			}
@@ -1317,7 +1317,6 @@ static void Init_Iterations(CableDemo* pdemo)
 	}
 }
 
-
 static void Init_Lengths(CableDemo* pdemo)
 {
 	// Shape
@@ -1747,8 +1746,6 @@ static void Init_CableForceUp(CableDemo* pdemo)
 
 void (*demofncs[])(CableDemo*) =
 {
-		Init_Cloth,
-		Init_Pendulum,
 		Init_CableForceDown,
 		Init_CableForceUp,
 		Init_Nodes,

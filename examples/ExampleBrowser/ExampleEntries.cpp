@@ -281,16 +281,14 @@ static ExampleEntry gDefaultExamples[] =
 
 		// Cable demos 
 		ExampleEntry(0, "Cable"),
-		ExampleEntry(1, "Test1", "oui.", CableDemoCreateFunc, 0),
-		ExampleEntry(1, "Test2", "oui", CableDemoCreateFunc, 1),
 		ExampleEntry(1, "CableForceDown", "Add 10 cubes and 5 cables. Press A to add forces on cube down. Press D to print distance between anchor and its node", 
-			CableDemoCreateFunc, 2),
+			CableDemoCreateFunc, 0),
 		ExampleEntry(1, "CableForceUp", "Add 10 cubes and 5 cables. Press A to add forces on cube up. Press D to print distance between anchor and its node", 
-			CableDemoCreateFunc, 3),	
-		ExampleEntry(1, "Nodes", "[10 - 50 - 100 - 500 - 1000] nodes ; 10 kg ; 100 iterations ; 5 meters ; static", CableDemoCreateFunc, 4),
-		ExampleEntry(1, "Weigths", "20 nodes ; [1 - 10 - 100 - 1000 - 10000 - 100000] kg ; 100 iterations ; 5 meters ; static", CableDemoCreateFunc, 5),
-		ExampleEntry(1, "Iterations", "20 nodes ; 1000 kg ; [1 - 10 - 100 - 1000 - 10000] iterations ; 5 meters ; static", CableDemoCreateFunc, 6),
-		ExampleEntry(1, "Lengths", "20 nodes ; 10 kg ; 100 iterations ; [2 - 5 - 20 - 100 - 500] meters ; static", CableDemoCreateFunc, 7),
+			CableDemoCreateFunc, 1),	
+		ExampleEntry(1, "Nodes", "[10 - 50 - 100 - 500 - 1000] nodes ; 10 kg ; 100 iterations ; 5 meters ; static", CableDemoCreateFunc, 2),
+		ExampleEntry(1, "Weigths", "20 nodes ; [1 - 10 - 100 - 1000 - 10000 - 100000] kg ; 100 iterations ; 5 meters ; static", CableDemoCreateFunc, 3),
+		ExampleEntry(1, "Iterations", "20 nodes ; 1000 kg ; [1 - 10 - 100 - 1000 - 10000] iterations ; 5 meters ; static", CableDemoCreateFunc, 4),
+		ExampleEntry(1, "Lengths", "20 nodes ; 10 kg ; 100 iterations ; [2 - 5 - 20 - 100 - 500] meters ; static", CableDemoCreateFunc, 5),
 
 
 #endif  //INCLUDE_CLOTH_DEMOS
