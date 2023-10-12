@@ -143,12 +143,9 @@ public:
 	void renderme();
 	bool keyboardCallback(int key, int state) override
 	{
-		if (m_currentDemoIndex == 0 || m_currentDemoIndex == 1)
+		if (key == 'a' && state)
 		{
-			if (key == 'a' && state)
-			{
-				m_applyForceOnRigidbody = true;
-			}
+			m_applyForceOnRigidbody = !m_applyForceOnRigidbody;
 		}
 
 		if (key == 'd' && state)
@@ -192,7 +189,7 @@ public:
 	{
 		if (m_dynamicsWorld)
 		{
-			if (m_currentDemoIndex == 0 && m_applyForceOnRigidbody)
+			if ( m_applyForceOnRigidbody)
 			{
 				AddConstantForce_DemoCableForce();
 			}
@@ -221,9 +218,12 @@ public:
 		for (int i = 0; i < 5 ; i++)
 		{
 			int index = 1 + i * 3;
-			float force = btPow(10,(i+1));
-			btRigidBody* rb = (btRigidBody*)collisionArray[index];
-			rb->applyCentralForce(btVector3(force, 0, 0));
+			if (index < collisionArray.size())
+			{
+				float force = btPow(10, (i + 1));
+				btRigidBody* rb = (btRigidBody*)collisionArray[index];
+				rb->applyCentralForce(btVector3(0, 0, force));
+			}
 		}
 	}
 
@@ -233,9 +233,12 @@ public:
 		for (int i = 0; i < 5; i++)
 		{
 			int index = 0 + i * 3;
-			float force = btPow(10, (i + 1));
-			btRigidBody* rb = (btRigidBody*)collisionArray[index];
-			rb->applyCentralForce(btVector3(force, 0, 0));
+			if (index < collisionArray.size())
+			{
+				float force = btPow(10, (i + 1));
+				btRigidBody* rb = (btRigidBody*)collisionArray[index];
+				rb->applyCentralForce(btVector3(0, 0, force));
+			}
 		}
 	}
 
@@ -267,9 +270,7 @@ public:
 		float distance0 = worldPositionAnchor0.distance(worldPositionNode0) * 100; // Convert in cm
 		float distance1 = worldPositionAnchor1.distance(worldPositionNode1) * 100;  // Convert in cm
 
-		std::cout << "Cable : " << indexCable << "-"<< " Distance between Anchor0 and its node "
-			<< distance0<< "cm -"<< " Distance between Anchor1 and its node "
-				  << distance1 << "cm." << std::endl;
+		b3Printf("Cable : % i - Distance between Anchor0 and its node %f cm - Distance between Anchor1 and its node %f cm", indexCable, distance0, distance1);
 	}
 
 	void createCable(int resolution, int iteration, btVector3 posAnchorKinematic, btVector3 posAnchorPhysic, btRigidBody* physic, btRigidBody* kinematic)
@@ -550,15 +551,15 @@ static void Init_CableForceDown(CableDemo* pdemo)
 	transformPhysic.setRotation(rotation);
 	
 	// Resolution's cable
-	int resolution = 10;
+	int resolution = 20;
 	int iteration = 100;
 
 	// Create 10 cube and 5 cables
 	for (int i = 0 ; i < 5 ; i++)
 	{
 		// Positions
-		btVector3 positionKinematic(0, 10, i * 2);
-		btVector3 positionPhysic(0, 4, i * 2);
+		btVector3 positionKinematic(-5 + (i * 2.5f), 10, 0);
+		btVector3 positionPhysic(-5 + (i * 2.5f), 4, 0);
 		transformKinematic.setOrigin(positionKinematic);
 		transformPhysic.setOrigin(positionPhysic);
 		
@@ -598,7 +599,7 @@ static void Init_CableForceUp(CableDemo* pdemo)
 	transformPhysic.setRotation(rotation);
 
 	// Resolution's cable
-	int resolution = 10;
+	int resolution = 20;
 	int iteration = 100;
 
 	pdemo->m_softBodyWorldInfo.m_gravity = btVector3(0, 0, 0);
@@ -608,8 +609,8 @@ static void Init_CableForceUp(CableDemo* pdemo)
 	for (int i = 0; i < 5; i++)
 	{
 		// Positions
-		btVector3 positionKinematic(0, 10, i * 2);
-		btVector3 positionPhysic(0, 4, i * 2);
+		btVector3 positionKinematic(-5 + (i * 2.5f), 10, 0);
+		btVector3 positionPhysic(-5 + (i * 2.5f), 4, 0);
 		transformKinematic.setOrigin(positionKinematic);
 		transformPhysic.setOrigin(positionPhysic);
 
