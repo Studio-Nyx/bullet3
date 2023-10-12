@@ -84,6 +84,11 @@ private:
 	int m_currentDemoIndex;
 	bool m_applyForceOnRigidbody;
 
+	bool m_printFPS;
+	clock_t current_ticks, delta_ticks;
+	clock_t m_fps = 0;
+
+
 public:
 	void initPhysics();
 
@@ -104,6 +109,7 @@ public:
 
 	{
 		m_applyForceOnRigidbody = false;
+		m_printFPS = false;
 	}
 	virtual ~CableDemo()
 	{
@@ -150,6 +156,11 @@ public:
 			PrintDistance_DemoCableForce();
 		}
 
+		if (key == 'f' && state)
+		{
+			m_printFPS = ! m_printFPS;
+		}
+
 		return false;
 	}
 
@@ -190,7 +201,17 @@ public:
 				AddConstantForce_DemoCableForceUp();
 			}
 
+			current_ticks = clock();
+
 			m_dynamicsWorld->stepSimulation(deltaTime);
+		
+			delta_ticks = clock() - current_ticks;
+			
+			if (m_printFPS)
+			{
+				m_fps = CLOCKS_PER_SEC / delta_ticks;
+				b3Printf("FPS: %d ", m_fps);
+			}
 		}
 	}
 
