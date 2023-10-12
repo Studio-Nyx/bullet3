@@ -143,11 +143,11 @@ public:
 			{
 				m_applyForceOnRigidbody = true;
 			}
+		}
 
-			if (key == 'd' && state)
-			{
-				PrintDistance_DemoCableForce();
-			}
+		if (key == 'd' && state)
+		{
+			PrintDistance_DemoCableForce();
 		}
 
 		return false;
@@ -225,8 +225,11 @@ public:
 		for (int i = 0; i < 5; i++)
 		{
 			int index = 2 + i * 3;
-			btCable* cable = (btCable*)collisionArray[index];
-			PrintDistance(i, cable);
+			if (index < collisionArray.size())
+			{
+				btCable* cable = (btCable*)collisionArray[index];
+				PrintDistance(i, cable);
+			}
 		}
 	}
 
@@ -280,324 +283,61 @@ static void Init_Nodes(CableDemo* pdemo)
 	// Shape
 	btCollisionShape* boxShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
 
-	// Cable 0: 10 nodes ; 5 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
+	// Masses
+	btScalar massKinematic(0);
+	btScalar massPhysic(10);
+
+	// Rotation
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+
+	// Resolution's cable
+	int resolution = 10;
+	int iteration = 100;
+
+	// Create 12 cube and 6 cables
+	for (int i = 0; i < 5; i++)
 	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
+		if (i == 1)
+		{
+			resolution = 50;
+		}
+		else if (i == 2)
+		{
+			resolution = 100;
+		}
+		else if (i == 3)
+		{
+			resolution = 500;
+		}
+		else if (i == 4)
+		{
+			resolution = 1000;
+		}
 
 		// Positions
-		btVector3 positionKinematic(-5, 10, 0);
-		btVector3 positionPhysic(-5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
+		btVector3 positionKinematic(-5 + (i * 2.5f), 10, 0);
+		btVector3 positionPhysic(-5 + (i * 2.5f), 4, 0);
 		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
 		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
 
-		// Bodies
+		// Create the rigidbodys
 		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
 		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
 
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
+		// Anchor's positions
+		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
+		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 
-			// Resolution's cable
-			int resolution = 10;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-			
-			// Cable's creation 
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config 
-			cable->setTotalMass(resolution);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 1: 50 nodes ; 5 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
-
-		// Positions
-		btVector3 positionKinematic(-2.5, 10, 0);
-		btVector3 positionPhysic(-2.5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 50;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(resolution);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 2: 100 nodes ; 5 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
-
-		// Positions
-		btVector3 positionKinematic(0, 10, 0);
-		btVector3 positionPhysic(0, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 100;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(resolution);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 3: 500 nodes ; 5 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
-
-		// Positions
-		btVector3 positionKinematic(2.5, 10, 0);
-		btVector3 positionPhysic(2.5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 500;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(resolution);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 4: 1000 nodes ; 5 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
-
-		// Positions
-		btVector3 positionKinematic(5, 10, 0);
-		btVector3 positionPhysic(5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 1000;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(resolution);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
+		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 	}
 }
 
@@ -606,388 +346,49 @@ static void Init_Weigths(CableDemo* pdemo)
 	// Shape
 	btCollisionShape* boxShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
 
-	// Cable 0: 20 nodes ; 5 m ; 2 bodies (0 & 1 kg) ; 100 iterations ; static
+	// Masses
+	btScalar massKinematic(0);
+	btScalar massPhysic(1);
+
+	// Rotation
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+
+	// Resolution's cable
+	int resolution = 20;
+	int iteration = 100;
+
+	// Create 12 cube and 6 cables
+	for (int i = 0; i < 6; i++)
 	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(1);
+		if (i > 0)
+		{
+			massPhysic = btPow(10, i);
+		}
 
 		// Positions
-		btVector3 positionKinematic(-5, 10, 0);
-		btVector3 positionPhysic(-5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
+		btVector3 positionKinematic(-5 + (i * 2.5f), 10, 0);
+		btVector3 positionPhysic(-5 + (i * 2.5f), 4, 0);
 		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
 		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
 
-		// Bodies
+		// Create the rigidbodys
 		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
 		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
 
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 1: 20 nodes ; 5 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
-
-		// Positions
-		btVector3 positionKinematic(-2.5, 10, 0);
-		btVector3 positionPhysic(-2.5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 2: 20 nodes ; 5 m ; 2 bodies (0 & 100 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(100);
-
-		// Positions
-		btVector3 positionKinematic(0, 10, 0);
-		btVector3 positionPhysic(0, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 3: 20 nodes ; 5 m ; 2 bodies (0 & 1000 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(1000);
-
-		// Positions
-		btVector3 positionKinematic(2.5, 10, 0);
-		btVector3 positionPhysic(2.5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 4: 20 nodes ; 5 m ; 2 bodies (0 & 10000 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10000);
-
-		// Positions
-		btVector3 positionKinematic(5, 10, 0);
-		btVector3 positionPhysic(5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 5: 20 nodes ; 5 m ; 2 bodies (0 & 100000 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(100000);
-
-		// Positions
-		btVector3 positionKinematic(7.5, 10, 0);
-		btVector3 positionPhysic(7.5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
+		// Anchor's positions
+		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
+		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
+
+		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 	}
 }
 
@@ -996,324 +397,49 @@ static void Init_Iterations(CableDemo* pdemo)
 	// Shape
 	btCollisionShape* boxShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
 
-	// Cable 0: 20 nodes ; 5 m ; 2 bodies (0 & 1000 kg) ; 1 iterations ; static
+	// Masses
+	btScalar massKinematic(0);
+	btScalar massPhysic(1000);
+
+	// Rotation
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+
+	// Resolution's cable
+	int resolution = 20;
+	int iteration = 1;
+
+	// Create 12 cube and 6 cables
+	for (int i = 0; i < 5; i++)
 	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(1000);
+		if (i > 0)
+		{
+			iteration = btPow(10, i);
+		}
 
 		// Positions
-		btVector3 positionKinematic(-5, 10, 0);
-		btVector3 positionPhysic(-5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
+		btVector3 positionKinematic(-5 +( i * 2.5f), 10, 0);
+		btVector3 positionPhysic(-5 + (i * 2.5f), 4, 0);
 		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
 		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
 
-		// Bodies
+		// Create the rigidbodys
 		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
 		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
 
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
+		// Anchor's positions
+		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
+		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 1;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 1: 20 nodes ; 5 m ; 2 bodies (0 & 1000 kg) ; 10 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(1000);
-
-		// Positions
-		btVector3 positionKinematic(-2.5, 10, 0);
-		btVector3 positionPhysic(-2.5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 10;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 2: 20 nodes ; 5 m ; 2 bodies (0 & 1000 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(1000);
-
-		// Positions
-		btVector3 positionKinematic(0, 10, 0);
-		btVector3 positionPhysic(0, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 3: 20 nodes ; 5 m ; 2 bodies (0 & 1000 kg) ; 1000 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(1000);
-
-		// Positions
-		btVector3 positionKinematic(2.5, 10, 0);
-		btVector3 positionPhysic(2.5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 1000;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 4: 20 nodes ; 5 m ; 2 bodies (0 & 1000 kg) ; 10000 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(1000);
-
-		// Positions
-		btVector3 positionKinematic(5, 10, 0);
-		btVector3 positionPhysic(5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 10000;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
+		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 	}
 }
 
@@ -1322,324 +448,62 @@ static void Init_Lengths(CableDemo* pdemo)
 	// Shape
 	btCollisionShape* boxShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
 
-	// Cable 0: 20 nodes ; 2 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
+	// Masses
+	btScalar massKinematic(0);
+	btScalar massPhysic(10);
+
+	// Rotation
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+
+	// Resolution's cable
+	int resolution = 20;
+	int iteration = 100;
+
+	// Positions
+	btVector3 positionKinematic(-5, 7, 0);
+
+	// Create 12 cube and 6 cables
+	for (int i = 0; i < 5; i++)
 	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
+		if (i == 1)
+		{
+			positionKinematic = btVector3(-2.5, 10, 0);
+		}
+		else if (i == 2)
+		{
+			positionKinematic = btVector3(0, 30, 0);
+		}
+		else if (i == 3)
+		{
+			positionKinematic = btVector3(2.5, 105, 0);
+		}
+		else if (i == 4)
+		{
+			positionKinematic = btVector3(5, 505, 0);
+		}
 
-		// Positions
-		btVector3 positionKinematic(-5, 7, 0);
-		btVector3 positionPhysic(-5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
+		btVector3 positionPhysic(-5 + (i * 2.5f), 4, 0);
 		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
 		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
 
-		// Bodies
+		// Create the rigidbodys
 		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
 		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
 
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
+		// Anchor's positions
+		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
+		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 1: 20 nodes ; 5 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
-
-		// Positions
-		btVector3 positionKinematic(-2.5, 10, 0);
-		btVector3 positionPhysic(-2.5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 2: 20 nodes ; 20 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
-
-		// Positions
-		btVector3 positionKinematic(0, 30, 0);
-		btVector3 positionPhysic(0, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 3: 20 nodes ; 100 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
-
-		// Positions
-		btVector3 positionKinematic(2.5, 105, 0);
-		btVector3 positionPhysic(2.5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
-	}
-
-	// Cable 4: 20 nodes ; 500 m ; 2 bodies (0 & 10 kg) ; 100 iterations ; static
-	{
-		// Masses
-		btScalar massKinematic(0);
-		btScalar massPhysic(10);
-
-		// Positions
-		btVector3 positionKinematic(5, 505, 0);
-		btVector3 positionPhysic(5, 4, 0);
-
-		// Rotation
-		btQuaternion rotationKinematic(0, 0, 0, 1);
-		btQuaternion rotationPhysic(0, 0, 0, 1);
-
-		// Transform
-		btTransform transformKinematic;
-		transformKinematic.setIdentity();
-		transformKinematic.setOrigin(positionKinematic);
-		transformKinematic.setRotation(rotationKinematic);
-
-		btTransform transformPhysic;
-		transformPhysic.setIdentity();
-		transformPhysic.setOrigin(positionPhysic);
-		transformPhysic.setRotation(rotationPhysic);
-
-		// Bodies
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
-
-		// Cable
-		{
-			// Anchor's positions
-			btVector3 posAnchorKinematic = positionKinematic - btVector3(0, 0.5, 0);
-			btVector3 posAnchorPhysic = positionPhysic + btVector3(0, 0.5, 0);
-
-			// Resolution's cable
-			int resolution = 20;
-			int iteration = 100;
-
-			// Nodes' positions
-			btVector3* positionNodes = new btVector3[resolution];
-			btScalar* massNodes = new btScalar[resolution];
-			for (int i = 0; i < resolution; ++i)
-			{
-				const btScalar t = i / (btScalar)(resolution - 1);
-				positionNodes[i] = lerp(posAnchorPhysic, posAnchorKinematic, t);
-				massNodes[i] = 1;
-			}
-
-			// Cable's creation
-			btCable* cable = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
-			cable->appendAnchor(0, physic);
-			cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
-
-			// Cable's config
-			cable->setTotalMass(1);
-			cable->m_cfg.piterations = iteration;
-			cable->m_cfg.kAHR = 1;
-
-			// Add cable to the world
-			pdemo->getSoftDynamicsWorld()->addSoftBody(cable);
-		}
+		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 	}
 }
 
@@ -1647,8 +511,7 @@ static void Init_CableForceDown(CableDemo* pdemo)
 {
 	// Shape
 	btCollisionShape* boxShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
-	// Cable 0: 10 nodes ; 5 m ; 2 bodies (0 & 10 kg) ; static
-	// 
+
 	// Masses
 	btScalar massKinematic(0);
 	btScalar massPhysic(10);
