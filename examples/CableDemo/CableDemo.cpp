@@ -213,6 +213,7 @@ public:
 			delta_ticks = clock() - current_ticks;
 			
 			if (m_printFPS)
+			if (m_printFPS && delta_ticks > 0)
 			{
 				m_fps = CLOCKS_PER_SEC / delta_ticks;
 				b3Printf("FPS: %d ", m_fps);
@@ -278,7 +279,7 @@ public:
 		float distance0 = worldPositionAnchor0.distance(worldPositionNode0) * 100; // Convert in cm
 		float distance1 = worldPositionAnchor1.distance(worldPositionNode1) * 100;  // Convert in cm
 
-		b3Printf("Cable : % i - Distance Anchor0-Node %f cm | Distance Anchor1-Node %f cm | - Cable length %f", indexCable, distance0, distance1, cable->getLengthPosition());
+		b3Printf("Cable : % i - Distance Anchor0-Node %f cm | Distance Anchor1-Node %f cm | - Cable length %f | - Impluse: %f N", indexCable, distance0, distance1, cable->getLengthPosition(), cable->getImpulse(0).length());
 	}
 
 	void createCable(int resolution, int iteration, btScalar totalMass, btVector3 posAnchorKinematic, btVector3 posAnchorPhysic, btRigidBody* physic, btRigidBody* kinematic)

@@ -1008,6 +1008,8 @@ void btCable::SolveAnchors()
 		const btVector3 impulse = a.m_c0 * vr * a.m_influence;
 		n.m_x += impulse * a.m_c2;
 		a.m_body->applyImpulse(-impulse, a.m_c1);
+
+		impulses[i] += impulse / dt;
 	}
 }
 #pragma endregion
