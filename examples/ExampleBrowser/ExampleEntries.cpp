@@ -289,7 +289,9 @@ static ExampleEntry gDefaultExamples[] =
 		ExampleEntry(1, "Weigths", "20 nodes ; [1 - 10 - 100 - 1000 - 10000 - 100000] kg ; 100 iterations ; 5 meters ; static", CableDemoCreateFunc, 3),
 		ExampleEntry(1, "Iterations", "20 nodes ; 1000 kg ; [1 - 10 - 100 - 1000 - 10000] iterations ; 5 meters ; static", CableDemoCreateFunc, 4),
 		ExampleEntry(1, "Lengths", "20 nodes ; 10 kg ; 100 iterations ; [2 - 5 - 20 - 100 - 500] meters ; static", CableDemoCreateFunc, 5),
-
+		ExampleEntry(1, "Test_Arse", "Arse with mass of 750 kg, two cables of length 3m with mass 1kg", CableDemoCreateFunc, 6),
+		ExampleEntry(1, "Test_T18", "Cube with mass of 777 kg, cable length 4m, cable mass 1kg, iterations 100", CableDemoCreateFunc, 7),
+		ExampleEntry(1, "Test_A18", "Cube with mass of 404 kg, cable length 15m, cable mass 3.6kg, iterations 100", CableDemoCreateFunc, 8),
 
 #endif  //INCLUDE_CLOTH_DEMOS
 

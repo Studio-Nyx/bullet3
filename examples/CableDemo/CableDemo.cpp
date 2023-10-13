@@ -637,7 +637,137 @@ static void Init_CableForceUp(CableDemo* pdemo)
 	}
 }
 
+static void Init_TestArse(CableDemo* pdemo)
+{
+	// Shape
+	btCollisionShape* supportShape = new btBoxShape(btVector3(16, 2, 2));
+	btCollisionShape* arseShape = new btBoxShape(btVector3(13, 5, 5));
 
+	// Masses
+	btScalar massKinematic(0);
+	btScalar massPhysic(750);
+
+	// Position / Rotation
+	btVector3 positionKinematic(0, 20, 0);
+	btVector3 positionPhysic(0, 10, 0);
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+	transformKinematic.setOrigin(positionKinematic);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+	transformPhysic.setOrigin(positionPhysic);
+
+	// Resolution's cable
+	int resolution = 20;
+	int iteration = 100;
+
+	// Create the rigidbodys
+	btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, supportShape);
+	btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, arseShape);
+
+	// Anchor's positions
+	btVector3 anchorPositionKinematic = positionKinematic + btVector3(-3.8, -2.0, 0);
+	btVector3 anchorPositionPhysic = positionPhysic + btVector3(-4, 5, 0);
+
+	pdemo->createCable(resolution, iteration, 1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+
+	// Anchor's positions
+	anchorPositionKinematic = positionKinematic + btVector3(3.8, -2.0, 0);
+	anchorPositionPhysic = positionPhysic + btVector3(4, 5, 0);
+
+	pdemo->createCable(resolution, iteration, 1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+
+	pdemo->SetCameraPosition(btVector3(0, 17, 15));
+}
+
+static void Init_TestSupportT18(CableDemo* pdemo)
+{
+	// Shape
+	btCollisionShape* shape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
+
+	// Masses
+	btScalar massKinematic(0);
+	btScalar massPhysic(777);
+
+	// Position / Rotation
+	btVector3 positionKinematic(0, 10, 0);
+	btVector3 positionPhysic(0, 4, 0);
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+	transformKinematic.setOrigin(positionKinematic);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+	transformPhysic.setOrigin(positionPhysic);
+
+	// Resolution's cable
+	int resolution = 20;
+	int iteration = 100;
+
+	// Create the rigidbodys
+	btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, shape);
+	btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, shape);
+
+	// Anchor's positions
+	btVector3 anchorPositionKinematic = positionKinematic + btVector3(0, -0.5, 0);
+	btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
+
+	pdemo->createCable(resolution, iteration, 1.61, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+}
+
+static void Init_TestSupportA18(CableDemo* pdemo)
+{
+	// Shape
+	btCollisionShape* shape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
+
+	// Masses
+	btScalar massKinematic(0);
+	btScalar massPhysic(404);
+
+	// Position / Rotation
+	btVector3 positionKinematic(0, 16, 0);
+	btVector3 positionPhysic(0, 0, 0);
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+	transformKinematic.setOrigin(positionKinematic);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+	transformPhysic.setOrigin(positionPhysic);
+
+	// Resolution's cable
+	int resolution = 20;
+	int iteration = 50;
+
+	// Create the rigidbodys
+	btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, shape);
+	btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, shape);
+
+	// Anchor's positions
+	btVector3 anchorPositionKinematic = positionKinematic + btVector3(0, -0.5, 0);
+	btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
+
+	btScalar cableTotalMass(15.0 * 0.243);
+
+	pdemo->createCable(resolution, iteration, cableTotalMass, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+	pdemo->SetCameraPosition(btVector3(0, 0.5, -9));
+}
 
 void (*demofncs[])(CableDemo*) =
 {
@@ -646,8 +776,10 @@ void (*demofncs[])(CableDemo*) =
 		Init_Nodes,
 		Init_Weigths,
 		Init_Iterations,
-		Init_Lengths
-};
+		Init_Lengths,
+		Init_TestArse,
+		Init_TestSupportT18, 
+		Init_TestSupportA18};
 
 ////////////////////////////////////
 ///for mouse picking
