@@ -143,9 +143,7 @@ void btCable::solveConstraints()
 		if (useLRA) LRAConstraint();
 		if (useBending && i%2 == 0) bendingConstraintDistance();
 
-
 		if (useCollision) solveContact(collisionNodeList);
-
 	}
 	
 
@@ -996,6 +994,7 @@ void btCable::predictMotion(btScalar dt)
 void btCable::SolveAnchors()
 {
 	BT_PROFILE("PSolve_Anchors");
+	const btScalar kAHR = m_cfg.kAHR * 1;
 	const btScalar dt = m_sst.sdt;
 	for (int i = 0, ni = m_anchors.size(); i < ni; ++i)
 	{
@@ -1005,14 +1004,10 @@ void btCable::SolveAnchors()
 		const btVector3 wa = t * a.m_local;
 		const btVector3 va = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt;
 		const btVector3 vb = n.m_x - n.m_q;
-		const btVector3 vr = (va - vb) + (wa - n.m_x);
-		const btVector3 impulseBase = a.m_c0 * vr * a.m_influence * m_cfg.kAHR;
-		n.m_x = a.m_body->getCenterOfMassPosition() + a.m_c1;
-		
-		
-		impulses[i] += impulseBase / dt;
-		a.m_body->applyImpulse(-impulseBase, a.m_c1);
-
+		const btVector3 vr = (va - vb) + (wa - n.m_x) * kAHR;
+		const btVector3 impulse = a.m_c0 * vr * a.m_influence;
+		n.m_x += impulse * a.m_c2;
+		a.m_body->applyImpulse(-impulse, a.m_c1);
 	}
 }
 #pragma endregion
