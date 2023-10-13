@@ -102,7 +102,7 @@ public:
 		float dist = 10;
 		float pitch = 0;
 		float yaw = 180;
-		float targetPos[3] = {m_cameraStartPosition.x(), m_cameraStartPosition.y(), m_cameraStartPosition.z()};
+		float targetPos[3] = {(float)m_cameraStartPosition.x(), (float)m_cameraStartPosition.y(), (float)m_cameraStartPosition.z()};
 		m_guiHelper->resetCamera(dist, yaw, pitch, targetPos[0], targetPos[1], targetPos[2]);
 	}
 
