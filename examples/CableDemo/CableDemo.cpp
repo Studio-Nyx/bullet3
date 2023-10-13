@@ -88,6 +88,8 @@ private:
 	clock_t current_ticks, delta_ticks;
 	clock_t m_fps = 0;
 
+	btVector3 m_cameraStartPosition;
+
 
 public:
 	void initPhysics();
@@ -100,8 +102,13 @@ public:
 		float dist = 10;
 		float pitch = 0;
 		float yaw = 180;
-		float targetPos[3] = {0, 3, 0};
+		float targetPos[3] = {m_cameraStartPosition.x(), m_cameraStartPosition.y(), m_cameraStartPosition.z()};
 		m_guiHelper->resetCamera(dist, yaw, pitch, targetPos[0], targetPos[1], targetPos[2]);
+	}
+
+	void SetCameraPosition(btVector3 cameraPosition)
+	{
+		m_cameraStartPosition = cameraPosition;
 	}
 
 	CableDemo(struct GUIHelperInterface* helper): CommonRigidBodyBase(helper),
@@ -110,6 +117,7 @@ public:
 	{
 		m_applyForceOnRigidbody = false;
 		m_printFPS = false;
+		m_cameraStartPosition = btVector3(0, 3, 0);
 	}
 	virtual ~CableDemo()
 	{
@@ -270,10 +278,10 @@ public:
 		float distance0 = worldPositionAnchor0.distance(worldPositionNode0) * 100; // Convert in cm
 		float distance1 = worldPositionAnchor1.distance(worldPositionNode1) * 100;  // Convert in cm
 
-		b3Printf("Cable : % i - Distance between Anchor0 and its node %f cm - Distance between Anchor1 and its node %f cm", indexCable, distance0, distance1);
+		b3Printf("Cable : % i - Distance Anchor0-Node %f cm | Distance Anchor1-Node %f cm | - Cable length %f", indexCable, distance0, distance1, cable->getLengthPosition());
 	}
 
-	void createCable(int resolution, int iteration, btVector3 posAnchorKinematic, btVector3 posAnchorPhysic, btRigidBody* physic, btRigidBody* kinematic)
+	void createCable(int resolution, int iteration, btScalar totalMass, btVector3 posAnchorKinematic, btVector3 posAnchorPhysic, btRigidBody* physic, btRigidBody* kinematic)
 	{
 		// Nodes' positions
 		btVector3* positionNodes = new btVector3[resolution];
@@ -291,7 +299,7 @@ public:
 		cable->appendAnchor(0, physic);
 		cable->appendAnchor(cable->m_nodes.size() - 1, kinematic);
 		// Cable's config
-		cable->setTotalMass(resolution);
+		cable->setTotalMass(totalMass);
 		cable->m_cfg.piterations = iteration;
 		cable->m_cfg.kAHR = 1;
 
@@ -359,7 +367,7 @@ static void Init_Nodes(CableDemo* pdemo)
 		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
 		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 
-		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		pdemo->createCable(resolution, iteration, resolution, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 	}
 }
 
@@ -410,7 +418,7 @@ static void Init_Weigths(CableDemo* pdemo)
 		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
 		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 
-		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		pdemo->createCable(resolution, iteration,1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 	}
 }
 
@@ -461,7 +469,7 @@ static void Init_Iterations(CableDemo* pdemo)
 		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
 		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 
-		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		pdemo->createCable(resolution, iteration,1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 	}
 }
 
@@ -525,7 +533,7 @@ static void Init_Lengths(CableDemo* pdemo)
 		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
 		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 
-		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		pdemo->createCable(resolution, iteration, 1,  anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 	}
 }
 
@@ -571,7 +579,7 @@ static void Init_CableForceDown(CableDemo* pdemo)
 		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
 		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 		
-		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		pdemo->createCable(resolution, iteration,1,  anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 		
 	}
 }
@@ -625,9 +633,11 @@ static void Init_CableForceUp(CableDemo* pdemo)
 		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
 		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 
-		pdemo->createCable(resolution, iteration, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		pdemo->createCable(resolution, iteration, 1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 	}
 }
+
+
 
 void (*demofncs[])(CableDemo*) =
 {
