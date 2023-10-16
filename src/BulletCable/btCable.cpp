@@ -711,7 +711,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 					rlLinkBefore = m_links[indexNode - 1].m_rl;
 					btVector3 linkBefore = nBefore->m_x - n->m_x;
 					btScalar len = linkBefore.length();
-					if (len > rlLinkBefore)
+					if (btFuzzyZero((posNode - posFrom).length())
 					{
 						btVector3 dirBefore = linkBefore / len;
 						btVector3 extraSizeLinkBefore = linkBefore - dirBefore * rlLinkBefore;
