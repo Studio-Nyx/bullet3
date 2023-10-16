@@ -431,6 +431,8 @@ struct CommonRigidBodyBase : public CommonExampleInterface
 		body->setWorldTransform(startTransform);
 #endif  //
 
+		body->setDamping(0.0, 0.0);
+
 		body->setUserIndex(-1);
 		m_dynamicsWorld->addRigidBody(body);
 		return body;
