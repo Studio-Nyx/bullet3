@@ -64,6 +64,16 @@ private:
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
 
+	struct CableData
+	{
+		bool useHydroAero;
+		double cableRadius;
+		float tangentDragCoefficient;
+		float normalDragCoefficient;
+		int nodeStartIndex;
+		int nodeEndIndex;
+	};
+	static const int CableDataSize = sizeof(CableData);
 #pragma region Use methods
 public:
 	btScalar getLengthPosition();

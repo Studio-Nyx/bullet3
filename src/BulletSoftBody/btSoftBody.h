@@ -291,6 +291,15 @@ public:
 		btMatrix3x3 m_effectiveMass;      // effective mass in contact
 		btMatrix3x3 m_effectiveMass_inv;  // inverse of effective mass
 	};
+
+	/* SumForces of a node*/
+	struct NodeForces
+	{
+		float x;
+		float y;
+		float z;
+	};
+	static const int nodeForcesCapacity = sizeof(NodeForces);
 	/* Link			*/
 	ATTRIBUTE_ALIGNED16(struct)
 	Link : Feature
