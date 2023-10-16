@@ -16,15 +16,27 @@
 #include "BulletCollision/CollisionDispatch/btCollisionWorld.h"
 #include "BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h"
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
+#include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <list>
 #include <vector>
 
 using namespace std;
 
+
+
 ///The btCable is a class that inherits from btSoftBody.
 ///Its purpose is to be able to create a cable/rope with our own method parameters that Bullet does not implement.
 class btCable : public btSoftBody
 {
+	struct NodePairNarrowPhase
+	{
+		Node* node;
+		btCollisionShape* collisionShape;
+		btCollisionObject* body;
+		btTransform worldToLocal;
+		btVector3 m_Xout;
+	};
+
 private:
 	btVector3* impulses;
 	bool useLRA = true;
@@ -43,9 +55,11 @@ private:
 	void solveConstraints() override;
 	void anchorConstraint();
 	bool checkCollide(int indexNode);
-	void solveContact(btAlignedObjectArray<int> broadphaseNodeList);
+	void solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairContact);
 	void solveContactLink(btAlignedObjectArray<int> broadphaseNodeList);
-	void moveBodyCollision(btRigidBody* body, int indexNode, btVector3 normale, btVector3 hitPosition);
+	void moveBodyCollision(btRigidBody* body, Node* n, btVector3 normale, btVector3 hitPosition);
+	btVector3 PositionStartRayCalculation(Node* n, btCollisionObject* obj);
+	void recursiveBroadPhase(btCollisionObject* obj, Node* n, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink,btTransform transform);
 
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);

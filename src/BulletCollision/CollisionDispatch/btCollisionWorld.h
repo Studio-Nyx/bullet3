@@ -454,9 +454,15 @@ public:
 							  const btTransform& colObjWorldTransform,
 							  RayResultCallback& resultCallback);
 
+	static void rayTestSingleWithMargin(const btTransform& rayFromTrans, const btTransform& rayToTrans,
+							  btCollisionObject* collisionObject,
+							  btCollisionShape* collisionShape,
+							  const btTransform& colObjWorldTransform,
+							  RayResultCallback& resultCallback, const btScalar margin);
+
 	static void rayTestSingleInternal(const btTransform& rayFromTrans, const btTransform& rayToTrans,
 									  const btCollisionObjectWrapper* collisionObjectWrap,
-									  RayResultCallback& resultCallback);
+									  RayResultCallback& resultCallback, const btScalar margin);
 
 	/// objectQuerySingle performs a collision detection query and calls the resultCallback. It is used internally by rayTest.
 	static void objectQuerySingle(const btConvexShape* castShape, const btTransform& rayFromTrans, const btTransform& rayToTrans,

@@ -273,6 +273,22 @@ void btCollisionWorld::removeCollisionObject(btCollisionObject* collisionObject)
 	collisionObject->setWorldArrayIndex(-1);
 }
 
+
+void btCollisionWorld::rayTestSingleWithMargin(const btTransform& rayFromTrans, const btTransform& rayToTrans,
+											   btCollisionObject* collisionObject,
+											   btCollisionShape* collisionShape,
+											   const btTransform& colObjWorldTransform,
+											   RayResultCallback& resultCallback,
+											   const btScalar margin)
+{
+	btCollisionObject colobj = btCollisionObject();
+	colobj.setWorldTransform(colObjWorldTransform);
+	colobj.setCollisionShape(collisionShape);
+	btCollisionObjectWrapper colObWrap(0, collisionShape, &colobj , colObjWorldTransform, -1, -1);
+	btCollisionWorld::rayTestSingleInternal(rayFromTrans, rayToTrans, &colObWrap, resultCallback, margin);
+	
+}
+
 void btCollisionWorld::rayTestSingle(const btTransform& rayFromTrans, const btTransform& rayToTrans,
 									 btCollisionObject* collisionObject,
 									 const btCollisionShape* collisionShape,
@@ -280,15 +296,15 @@ void btCollisionWorld::rayTestSingle(const btTransform& rayFromTrans, const btTr
 									 RayResultCallback& resultCallback)
 {
 	btCollisionObjectWrapper colObWrap(0, collisionShape, collisionObject, colObjWorldTransform, -1, -1);
-	btCollisionWorld::rayTestSingleInternal(rayFromTrans, rayToTrans, &colObWrap, resultCallback);
+	btCollisionWorld::rayTestSingleInternal(rayFromTrans, rayToTrans, &colObWrap, resultCallback, btScalar(0.0));
 }
 
 void btCollisionWorld::rayTestSingleInternal(const btTransform& rayFromTrans, const btTransform& rayToTrans,
-											 const btCollisionObjectWrapper* collisionObjectWrap,
-											 RayResultCallback& resultCallback)
+											 const btCollisionObjectWrapper* collisionObjectWrap, 
+											 RayResultCallback& resultCallback, const btScalar margin)
 {
-	btSphereShape pointShape(btScalar(0.0));
-	pointShape.setMargin(0.f);
+	btSphereShape pointShape(0);
+	pointShape.setMargin(margin);
 	const btConvexShape* castShape = &pointShape;
 	const btCollisionShape* collisionShape = collisionObjectWrap->getCollisionShape();
 	const btTransform& colObjWorldTransform = collisionObjectWrap->getWorldTransform();
@@ -529,18 +545,21 @@ void btCollisionWorld::rayTestSingleInternal(const btTransform& rayFromTrans, co
 					const btTransform& m_rayFromTrans;
 					const btTransform& m_rayToTrans;
 					RayResultCallback& m_resultCallback;
+					const btScalar m_margin;
 
 					RayTester(const btCollisionObject* collisionObject,
 							  const btCompoundShape* compoundShape,
 							  const btTransform& colObjWorldTransform,
 							  const btTransform& rayFromTrans,
 							  const btTransform& rayToTrans,
-							  RayResultCallback& resultCallback) : m_collisionObject(collisionObject),
+							  RayResultCallback& resultCallback, const btScalar margin) : m_collisionObject(collisionObject),
 																   m_compoundShape(compoundShape),
 																   m_colObjWorldTransform(colObjWorldTransform),
 																   m_rayFromTrans(rayFromTrans),
 																   m_rayToTrans(rayToTrans),
-																   m_resultCallback(resultCallback)
+																   m_resultCallback(resultCallback),
+																   m_margin(margin)
+																		
 					{
 					}
 
@@ -559,7 +578,7 @@ void btCollisionWorld::rayTestSingleInternal(const btTransform& rayFromTrans, co
 							m_rayFromTrans,
 							m_rayToTrans,
 							&tmpOb,
-							my_cb);
+							my_cb,m_margin);
 					}
 
 					void Process(const btDbvtNode* leaf)
@@ -577,7 +596,7 @@ void btCollisionWorld::rayTestSingleInternal(const btTransform& rayFromTrans, co
 					colObjWorldTransform,
 					rayFromTrans,
 					rayToTrans,
-					resultCallback);
+					resultCallback,margin);
 #ifndef DISABLE_DBVT_COMPOUNDSHAPE_RAYCAST_ACCELERATION
 				if (dbvt)
 				{
