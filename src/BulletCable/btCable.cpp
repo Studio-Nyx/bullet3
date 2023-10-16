@@ -137,18 +137,15 @@ void btCable::solveConstraints()
 	
 	for (int i = 0; i < m_cfg.piterations; ++i)
 	{
-		SolveAnchors();
+		anchorConstraint();
 		distanceConstraint(); 
-
 		if (useLRA) LRAConstraint();
 		if (useBending && i%2 == 0) bendingConstraintDistance();
-
 		if (useCollision) solveContact(collisionNodeList);
 	}
 	
 
 	const btScalar vc = m_sst.isdt * (1 - m_cfg.kDP);
-	
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
 		Node& n = m_nodes[i];
@@ -780,20 +777,6 @@ void btCable::FABRIKChain()
 	}
 }
 
-void btCable::pin()
-{
-	for (int i = 0; i < m_anchors.size(); ++i)
-	{
-		Anchor& a = m_anchors[i];
-		Node* n = a.m_node;
-		btRigidBody* body = a.m_body;
-		btTransform tr = body->getWorldTransform();
-
-		btVector3 wa = body->getCenterOfMassPosition() + a.m_c1;
-		n->m_x = wa;
-	}
-}
-
 void btCable::bendingConstraintDistance()
 {
 	int size = m_nodes.size();
@@ -936,7 +919,8 @@ void btCable::bendingConstraintAngle()
 
 void btCable::distanceConstraint()
 {
-	for (int i = 0; i < m_links.size(); ++i)
+	BT_PROFILE("PSolve_Links");
+	for (int i = 0, ni = m_links.size(); i < ni; ++i)
 	{
 		Link& l = m_links[i];
 		Node& a = *l.m_n[0];
@@ -947,12 +931,13 @@ void btCable::distanceConstraint()
 		btVector3 errAB = k * (normAB - l.m_rl) * ((1 / normAB) * AB);
 
 		btScalar sumInvMass = a.m_im + b.m_im;
-		btVector3 deltap1 = btVector3(0, 0, 0);
-		btVector3 deltap2 = btVector3(0, 0, 0);
+		btVector3 deltap1;
+		btVector3 deltap2;
 		if (sumInvMass != 0 && a.m_im != 0 && b.m_im != 0)
 		{
-			deltap1 = a.m_im / sumInvMass * (AB.length() - l.m_rl) * AB.normalized();
-			deltap2 = b.m_im / sumInvMass * (AB.length() - l.m_rl) * AB.normalized();
+			btVector3 ABNormalized = AB.normalized();
+			deltap1 = a.m_im / sumInvMass * (AB.length() - l.m_rl) * ABNormalized;
+			deltap2 = b.m_im / sumInvMass * (AB.length() - l.m_rl) * ABNormalized;
 		}
 		a.m_x += deltap1;
 		b.m_x -= deltap2;
@@ -991,7 +976,7 @@ void btCable::predictMotion(btScalar dt)
 	m_scontacts.resize(0);
 }
 
-void btCable::SolveAnchors()
+void btCable::anchorConstraint()
 {
 	BT_PROFILE("PSolve_Anchors");
 	const btScalar kAHR = m_cfg.kAHR * 1;

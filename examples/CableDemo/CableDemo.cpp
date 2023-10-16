@@ -208,7 +208,9 @@ public:
 
 			current_ticks = clock();
 
-			m_dynamicsWorld->stepSimulation(deltaTime);
+
+			int subStep = 5;
+			m_dynamicsWorld->stepSimulation(deltaTime, subStep, deltaTime / subStep);
 		
 			delta_ticks = clock() - current_ticks;
 			
@@ -254,8 +256,9 @@ public:
 	void PrintDistance_DemoCableForce()
 	{
 		btCollisionObjectArray collisionArray = getSoftDynamicsWorld()->getCollisionObjectArray();
+		btSoftBodyArray& softArray = getSoftDynamicsWorld()->getSoftBodyArray();
 		std::cout << "---" << std::endl;
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < softArray.size(); i++)
 		{
 			int index = 2 + i * 3;
 			if (index < collisionArray.size())
@@ -332,7 +335,7 @@ static void Init_Nodes(CableDemo* pdemo)
 
 	// Resolution's cable
 	int resolution = 10;
-	int iteration = 100;
+	int iteration = 50;
 
 	// Create 12 cube and 6 cables
 	for (int i = 0; i < 5; i++)
@@ -395,7 +398,7 @@ static void Init_Weigths(CableDemo* pdemo)
 
 	// Resolution's cable
 	int resolution = 20;
-	int iteration = 100;
+	int iteration = 50;
 
 	// Create 12 cube and 6 cables
 	for (int i = 0; i < 6; i++)
@@ -497,7 +500,7 @@ static void Init_Lengths(CableDemo* pdemo)
 
 	// Resolution's cable
 	int resolution = 20;
-	int iteration = 100;
+	int iteration = 50;
 
 	// Positions
 	btVector3 positionKinematic(-5, 7, 0);
@@ -561,7 +564,7 @@ static void Init_CableForceDown(CableDemo* pdemo)
 	
 	// Resolution's cable
 	int resolution = 20;
-	int iteration = 100;
+	int iteration = 50;
 
 	// Create 10 cube and 5 cables
 	for (int i = 0 ; i < 5 ; i++)
@@ -609,7 +612,7 @@ static void Init_CableForceUp(CableDemo* pdemo)
 
 	// Resolution's cable
 	int resolution = 20;
-	int iteration = 100;
+	int iteration = 50;
 
 	pdemo->m_softBodyWorldInfo.m_gravity = btVector3(0, 0, 0);
 	pdemo->getSoftDynamicsWorld()->setGravity(btVector3(0, 0, 0));
@@ -666,7 +669,7 @@ static void Init_TestArse(CableDemo* pdemo)
 
 	// Resolution's cable
 	int resolution = 20;
-	int iteration = 100;
+	int iteration = 50;
 
 	// Create the rigidbodys
 	btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, supportShape);
@@ -714,7 +717,7 @@ static void Init_TestSupportT18(CableDemo* pdemo)
 
 	// Resolution's cable
 	int resolution = 20;
-	int iteration = 100;
+	int iteration = 50;
 
 	// Create the rigidbodys
 	btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, shape);

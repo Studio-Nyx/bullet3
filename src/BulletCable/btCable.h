@@ -38,10 +38,10 @@ private:
 	void LRAConstraint();
 	void LRAConstraint(int level, int idxAnchor);
 	void FABRIKChain();
-	void pin();
+	
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
-	void SolveAnchors();
+	void anchorConstraint();
 	bool checkCollide(int indexNode);
 	void solveContact(btAlignedObjectArray<int> broadphaseNodeList);
 	void solveContactLink(btAlignedObjectArray<int> broadphaseNodeList);
