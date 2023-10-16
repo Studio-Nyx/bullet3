@@ -55,6 +55,14 @@ btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
 	m_sbi.m_gravity.setValue(0, -10, 0);
 
 	m_sbi.m_sparsesdf.Initialize();
+
+	m_nodeForcesNumber = 0;
+	m_sizeOfNodeForcesStruct = 8192;
+	m_nodeForces = new btSoftBody::NodeForces[m_sizeOfNodeForcesStruct];
+
+	int arraySize = btSoftBody::nodeForcesCapacity * m_sizeOfNodeForcesStruct;
+
+	memset(m_nodeForces, 0, arraySize);
 }
 
 btSoftRigidDynamicsWorld::~btSoftRigidDynamicsWorld()
@@ -63,6 +71,11 @@ btSoftRigidDynamicsWorld::~btSoftRigidDynamicsWorld()
 	{
 		m_softBodySolver->~btSoftBodySolver();
 		btAlignedFree(m_softBodySolver);
+	}
+
+	if (m_nodeForces != nullptr)
+	{
+		delete m_nodeForces;
 	}
 }
 
@@ -345,4 +358,24 @@ void btSoftRigidDynamicsWorld::serialize(btSerializer* serializer)
 	serializeCollisionObjects(serializer);
 
 	serializer->finishSerialization();
+}
+
+bool btSoftRigidDynamicsWorld::updateCableForces(btSoftBody::NodeForces* co, int size)
+{
+	bool test = true;
+
+	m_nodeForcesNumber = size;
+	int copySize = m_nodeForcesNumber * btSoftBody::nodeForcesCapacity;
+
+	memcpy(m_nodeForces, co, copySize);
+
+	//for (int i = 0; i < m_nodeForcesNumber; ++i)
+	//{
+	//	btSoftBody::NodeForces f = m_nodeForces[i];
+	//	if (co->x != f.x || co->y != f.y || co->z != f.z)
+	//		test = false;
+	//	co++;
+	//}
+
+	return test;
 }

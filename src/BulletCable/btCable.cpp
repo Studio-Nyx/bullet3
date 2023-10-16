@@ -1,5 +1,6 @@
 #include "btCable.h"
 #include <BulletSoftBody/btSoftBodyInternals.h>
+#include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 #include <fstream>
 #include <BulletCollision/CollisionShapes/btSphereShape.h>
 #include <BulletCollision/CollisionShapes/btCapsuleShape.h>
@@ -32,6 +33,8 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 			appendLink(i - 1, i);
 		}
 	}
+	m_cableData = new CableData();
+	m_cableData->nodeStartIndex = 0;
 }
 
 
@@ -1075,13 +1078,25 @@ void btCable::predictMotion(btScalar dt)
 	m_sst.velmrg = m_sst.sdt * 3;
 	m_sst.radmrg = getCollisionShape()->getMargin();
 	m_sst.updmrg = m_sst.radmrg * (btScalar)0.25;
-	/* Forces                */
-	if(useGravity) addVelocity(m_worldInfo->m_gravity * m_sst.sdt);
-	/* Integrate            */
+
+	// Forces
+	if (useGravity) addVelocity(m_worldInfo->m_gravity * m_sst.sdt);
+
+	// SoftRigidBody
+	NodeForces* nodeForces = static_cast<btSoftRigidDynamicsWorld*>(m_world)->m_nodeForces;
+	btVector3 nodeForceToApply = btVector3();
+
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
 		Node& n = m_nodes[i];
 		n.m_q = n.m_x;
+
+		// Apply Hydro and Aero forces
+		NodeForces currentNodeForces = nodeForces[m_cableData->nodeStartIndex + i];
+		
+		n.m_f.setValue(n.m_f.getX() + currentNodeForces.x, n.m_f.getY() + currentNodeForces.y, n.m_f.getZ() + currentNodeForces.z);
+
+
 		btVector3 deltaV = n.m_f * n.m_im * m_sst.sdt;
 		n.m_v += deltaV;
 		n.m_x += n.m_v * m_sst.sdt;
@@ -1231,6 +1246,13 @@ void btCable::setUseCollision(bool active)
 bool btCable::getUseCollision()
 {
 	return useCollision;
+}
+
+bool btCable::UpdateCableData(btCable::CableData &cableData)
+{
+	memcpy(m_cableData, &cableData, CableDataSize);
+
+	return true;
 }
 
 #pragma endregion

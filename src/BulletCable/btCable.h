@@ -74,6 +74,10 @@ public:
 		int nodeEndIndex;
 	};
 	static const int CableDataSize = sizeof(CableData);
+
+private:
+	CableData* m_cableData;
+
 #pragma region Use methods
 public:
 	btScalar getLengthPosition();
@@ -102,6 +106,8 @@ public:
 
 	void setUseCollision(bool active);
 	bool getUseCollision();
+	bool UpdateCableData(btCable::CableData &cableData);
+
 #pragma endregion
 };
 #endif  //_BT_CABLE_H

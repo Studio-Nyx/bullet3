@@ -13,6 +13,7 @@ subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 */
 
+
 #ifndef BT_SOFT_RIGID_DYNAMICS_WORLD_H
 #define BT_SOFT_RIGID_DYNAMICS_WORLD_H
 
@@ -43,6 +44,10 @@ protected:
 	void solveSoftBodiesConstraints(btScalar timeStep);
 
 	void serializeSoftBodies(btSerializer* serializer);
+
+	int m_sizeOfNodeForcesStruct;
+	int m_nodeForcesNumber;
+
 
 public:
 	btSoftRigidDynamicsWorld(btDispatcher* dispatcher, btBroadphaseInterface* pairCache, btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration, btSoftBodySolver* softBodySolver = 0);
@@ -97,6 +102,11 @@ public:
 							  RayResultCallback& resultCallback);
 
 	virtual void serialize(btSerializer* serializer);
+
+	bool updateCableForces(btSoftBody::NodeForces* co, int size);
+
+	btSoftBody::NodeForces* m_nodeForces;
+
 };
 
 #endif  //BT_SOFT_RIGID_DYNAMICS_WORLD_H
