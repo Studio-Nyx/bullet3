@@ -1091,11 +1091,12 @@ void btCable::predictMotion(btScalar dt)
 		Node& n = m_nodes[i];
 		n.m_q = n.m_x;
 
-		// Apply Hydro and Aero forces
-		NodeForces currentNodeForces = nodeForces[m_cableData->nodeStartIndex + i];
-		
-		n.m_f.setValue(n.m_f.getX() + currentNodeForces.x, n.m_f.getY() + currentNodeForces.y, n.m_f.getZ() + currentNodeForces.z);
-
+		if (m_cableData->useHydroAero)
+		{  
+			// Apply Hydro and Aero forces
+			NodeForces currentNodeForces = nodeForces[m_cableData->nodeStartIndex + i];
+			n.m_f.setValue(n.m_f.getX() + currentNodeForces.x, n.m_f.getY() + currentNodeForces.y, n.m_f.getZ() + currentNodeForces.z);
+		}
 
 		btVector3 deltaV = n.m_f * n.m_im * m_sst.sdt;
 		n.m_v += deltaV;
