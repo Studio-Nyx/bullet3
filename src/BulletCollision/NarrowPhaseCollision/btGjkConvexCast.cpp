@@ -20,7 +20,8 @@ subject to the following restrictions:
 #include "LinearMath/btTransformUtil.h"
 
 #ifdef BT_USE_DOUBLE_PRECISION
-#define MAX_ITERATIONS 64
+//#define MAX_ITERATIONS 64
+#define MAX_ITERATIONS 32
 #else
 #define MAX_ITERATIONS 32
 #endif

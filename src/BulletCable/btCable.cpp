@@ -41,6 +41,9 @@ void btCable::solveConstraints()
 	int i, ni;
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
+		m_nodes[i].m_nbCollidingObject = 0;
+
+		// debug draw
 		m_nodes[i].m_splitv = btVector3(0, 0, 0);
 	}
 	// Prepare links
@@ -67,13 +70,8 @@ void btCable::solveConstraints()
 		impulses[i] = btVector3(0, 0, 0);
 	}
 
-	btCollisionObjectArray collisionObjectList = m_world->getCollisionObjectArray();
-
 	btAlignedObjectArray<btCollisionObject*> BroadPhaseOutput = btAlignedObjectArray<btCollisionObject*>();
 	btAlignedObjectArray<NodePairNarrowPhase> nodePairContact = btAlignedObjectArray<NodePairNarrowPhase>();
-
-	//BroadPhase Per Node
-	auto PreBroadphase = high_resolution_clock::now();
 
 	if (useCollision)
 	{
@@ -84,14 +82,12 @@ void btCable::solveConstraints()
 		// Get the overlapping pairs
 		auto cache = m_world->getBroadphase()->getOverlappingPairCache();
 		auto temp = cache->getOverlappingPairArray();
-
 		// Maybe a faster way is possible using a filter
 		for (int w = 0; w < temp.size(); w++)
 		{
 			if (temp[w].m_pProxy0->m_clientObject == this)
 			{
 				// Add Object to the potential list
-
 				btCollisionObject* rb = (btCollisionObject*)temp[w].m_pProxy1->m_clientObject;
 				if (rb->hasContactResponse() && this->m_collisionDisabledObjects.findLinearSearch(rb) == m_collisionDisabledObjects.size())
 					BroadPhaseOutput.push_back(rb);
@@ -106,7 +102,6 @@ void btCable::solveConstraints()
 		}
 		int potentialCollisionObjectListSize = BroadPhaseOutput.size();
 
-		cout << "Obj en collision potentiel : " << potentialCollisionObjectListSize << endl;
 		if (potentialCollisionObjectListSize > 0)
 		{
 			for (int i = 0; i < ni; i++)
@@ -123,22 +118,22 @@ void btCable::solveConstraints()
 					btVector3 minLink = btVector3(0, 0, 0);
 					btVector3 maxLink = btVector3(0, 0, 0);
 
-					minLink.setX(btMin(n.m_x.x() - marginscale, n.m_q.x() - marginscale));
-					minLink.setY(btMin(n.m_x.y() - marginscale, n.m_q.y() - marginscale));
-					minLink.setZ(btMin(n.m_x.z() - marginscale, n.m_q.z() - marginscale));
+					minLink.setX(btMin(n.m_x.x() - margin - marginscale, n.m_q.x() - margin - marginscale));
+					minLink.setY(btMin(n.m_x.y() - margin - marginscale, n.m_q.y() - margin - marginscale));
+					minLink.setZ(btMin(n.m_x.z() - margin - marginscale, n.m_q.z() - margin - marginscale));
 
-					maxLink.setX(btMax(n.m_x.x() + marginscale, n.m_q.x() + marginscale));
-					maxLink.setY(btMax(n.m_x.y() + marginscale, n.m_q.y() + marginscale));
-					maxLink.setZ(btMax(n.m_x.z() + marginscale, n.m_q.z() + marginscale));
+					maxLink.setX(btMax(n.m_x.x() + margin + marginscale, n.m_q.x() + margin + marginscale));
+					maxLink.setY(btMax(n.m_x.y() + margin + marginscale, n.m_q.y() + margin + marginscale));
+					maxLink.setZ(btMax(n.m_x.z() + margin + marginscale, n.m_q.z() + margin + marginscale));
 
 					btVector3 mins, maxs;
-					
+
 					if (obj->getCollisionShape()->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 					{
 						btTransform WorldToLocalMatrix = btTransform(obj->getWorldTransform());
-						
+
 						btCompoundShape* temp = (btCompoundShape*)obj->getCollisionShape();
-						recursiveBroadPhase(obj, &n, temp, &nodePairContact, minLink, maxLink , WorldToLocalMatrix);
+						recursiveBroadPhase(obj, &n, temp, &nodePairContact, minLink, maxLink, WorldToLocalMatrix);
 					}
 					else
 					{
@@ -151,25 +146,16 @@ void btCable::solveConstraints()
 							auto temp = NodePairNarrowPhase();
 							temp.body = BroadPhaseOutput[j];
 							temp.node = &n;
+							temp.node->m_nbCollidingObject++;
 							temp.m_Xout = PositionStartRayCalculation(&n, BroadPhaseOutput[j]);
 							temp.collisionShape = obj->getCollisionShape();
 							nodePairContact.push_back(temp);
 						}
 					}
-
 				}
 			}
 		}
 	}
-
-	auto posBroadPhase = high_resolution_clock::now();
-	auto duration = duration_cast<microseconds>(posBroadPhase - PreBroadphase);
-	cout << "BroadphaseTime " << duration.count() << " microseconds" << endl;
-	cout << "Contact created " << nodePairContact.size() << endl;
-
-	btScalar sumDist = 0;
-	btScalar sumColli = 0;
-
 	for (int i = 0; i < m_cfg.piterations; ++i)
 	{
 		anchorConstraint();
@@ -178,17 +164,8 @@ void btCable::solveConstraints()
 		if (useBending && i%2 == 0) bendingConstraintDistance();
 		if (useCollision && i%2 == 0) solveContact(nodePairContact);
 	}
+	
 	if (useCollision) solveContact(nodePairContact);
-
-
-	auto end = high_resolution_clock::now();
-	duration = duration_cast<microseconds>(end - posBroadPhase);
-
-	cout << " / * DistanceConstraintTime : " << sumDist << " microseconds" << endl;
-	cout << " / * CollisionTime : " << sumColli << " microseconds" << endl;
-	cout << " / * TotalTime : " << duration.count() << " microseconds" << endl;
-
-
 
 	BroadPhaseOutput.clear();
 	nodePairContact.clear();
@@ -201,19 +178,7 @@ void btCable::solveConstraints()
 		n.m_f = btVector3(0, 0, 0);
 	}
 
-	// Move Body
-	btCollisionObject* obj = collisionObjectList.at(2);
-	btTransform t = obj->getWorldTransform();
-	t.setOrigin(t.getOrigin() + btVector3(0.0, 0, 0.05));
-	//obj->setWorldTransform(t);
-
-	btCollisionObject* obj2 = collisionObjectList.at(1);
-	btTransform t2 = obj2->getWorldTransform();
-	t2.setOrigin(t2.getOrigin() + btVector3(0.05, 0, 0.00));
-	//obj2->setWorldTransform(t2);
 	
-	cout << "Tension : " << this->getImpulse(0).length() << endl;
-
 	/*
 	btVector3 positionStartRay = btVector3(1.101, 0, 0);
 	btVector3 positionEndRay = btVector3(0, 0, 0);
@@ -270,6 +235,7 @@ void btCable::recursiveBroadPhase(btCollisionObject* obj,Node *n , btCompoundSha
 				nodePair.body = obj;
 				nodePair.collisionShape = temp;
 				nodePair.node = n;
+				nodePair.node->m_nbCollidingObject++;
 				nodePair.m_Xout = PositionStartRayCalculation(n, obj);
 				nodePairContact->push_back(nodePair);
 				// debug
@@ -633,7 +599,7 @@ btVector3 btCable::PositionStartRayCalculation(Node *n, btCollisionObject * obj)
 	if (obj->getInternalType() == CO_RIGID_BODY)
 	{
 		btRigidBody* rb = (btRigidBody*)obj;
-	velocity = rb->getVelocityInLocalPoint(n->m_x - rb->getWorldTransform().getOrigin());
+		velocity = rb->getVelocityInLocalPoint(n->m_x - rb->getWorldTransform().getOrigin());
 	}
 	else
 		velocity = obj->getInterpolationLinearVelocity();
@@ -648,7 +614,11 @@ btVector3 btCable::PositionStartRayCalculation(Node *n, btCollisionObject * obj)
 // Do nbSubStep times the resolution to valid a good collision
 void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairContact) {
 
-	int nbSubStep = 5;
+	btScalar correctionNormal = 0.002;
+	btScalar safeDirectionThreshold = 0.01;
+	btScalar sleepingThreshold = 0.0001;
+
+	int nbSubStep = 3;
 	int size = nodePairContact.size();
 	btVector3 positionStartRay;
 	btVector3 positionEndRay;
@@ -656,6 +626,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 	btTransform m_rayFromTrans;
 	btTransform m_rayToTrans;
 	btScalar marginNode = this->getCollisionShape()->getMargin();
+	btScalar marginBody;
 	
 	btScalar margin;
 	Node* n;
@@ -676,403 +647,143 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 		{
 
 			n = nodePairContact[i].node;
+			// If the node only collide 1 body we don t have to update nbSubStep times
+			if (n->m_nbCollidingObject == 1 && j>0)
+				continue;
+
 			obj = nodePairContact[i].body;
 			shape = nodePairContact[i].collisionShape;
 			indexNode = n->index;
-			n->m_splitv = btVector3(1, 0, 0);
-
+			bool isSphereShape = shape->getShapeType() == SPHERE_SHAPE_PROXYTYPE;
 			
 			// SphereShape margin is sphereShape Radius, not a safe margin
-			if (shape->getShapeType() == SPHERE_SHAPE_PROXYTYPE)
+			if (isSphereShape)
 			{
-				margin = marginNode + 0.01;
+				marginBody = 0.00;
+				margin = marginNode;  //+ marginBody;
 			}
 			else
 			{
+				marginBody = shape->getMargin();
 				margin = marginNode + shape->getMargin(); 
-			
 			}
+
 			positionStartRay = nodePairContact[i].m_Xout;
 			positionEndRay = n->m_x;
+
+			btVector3 dir = btVector3(0, 0, 0);
+
+			btScalar len = (positionEndRay - positionStartRay).length();
+
+			if (btFuzzyZero(len))
+				continue;
+			if (len <= sleepingThreshold)
+			{
+				//n->m_x = nodePairContact[i].m_Xout;
+				continue;
+			}
+				
+			dir = (positionEndRay - positionStartRay) / len;
+			
+			
+			
+			btVector3 start = positionStartRay - dir * safeDirectionThreshold;
+
+			btVector3 end = positionEndRay;  
+
+			m_rayFromTrans.setIdentity();
+			m_rayFromTrans.setOrigin(start);
+
+			m_rayToTrans.setIdentity();
+			m_rayToTrans.setOrigin(end);
+
+			btCollisionWorld::ClosestRayResultCallback m_resultCallback(start, end);
 
 			// If the body is not a compound it s the simplest case
 			// We use the object collision shape, no need to get the collision shape of the compound component  
 			if (!obj->getCollisionShape()->isCompound())
 			{
-
-				btVector3 start = positionStartRay;
-				btVector3 end = positionEndRay;
-
-
-				m_rayFromTrans.setIdentity();
-				m_rayFromTrans.setOrigin(start);
-				m_rayToTrans.setIdentity();
-				m_rayToTrans.setOrigin(end);
-
-				btCollisionWorld::ClosestRayResultCallback m_resultCallback(start, end);
-
+				
 				m_world->rayTestSingleWithMargin(m_rayFromTrans, m_rayToTrans,
 												 obj,
-												 obj->getCollisionShape(),
+												 shape,
 												 obj->getWorldTransform(),
 												 m_resultCallback, marginNode);
-
-				if (m_resultCallback.hasHit())
-				{
-					nBefore = &m_nodes[indexNode - 1];
-					nAfter = &m_nodes[indexNode + 1];
-
-					rlLinkBefore = m_links[indexNode - 1].m_rl;
-					rlLinkAfter = m_links[indexNode].m_rl;
-
-					btVector3 correctionBefore = btVector3(0, 0, 0);
-					{
-						btVector3 linkBefore = nBefore->m_x - n->m_x;
-						btScalar len = linkBefore.length();
-						if (len > rlLinkBefore)
-						{
-							btVector3 dirBefore = linkBefore / len;
-							btVector3 extraSizeLinkBefore = linkBefore - dirBefore * rlLinkBefore;
-							btVector3 tangentDirBefore = dirBefore.cross(m_resultCallback.m_hitNormalWorld);
-							tangentDirBefore = m_resultCallback.m_hitNormalWorld.cross(tangentDirBefore).normalized();
-
-							correctionBefore = extraSizeLinkBefore.dot(-m_resultCallback.m_hitNormalWorld) * tangentDirBefore;
-						}
-					}
-
-					btVector3 correctionAfter = btVector3(0, 0, 0);
-					{
-						btVector3 linkAfter = nAfter->m_x - n->m_x;
-						btScalar len = linkAfter.length();
-						if (len > rlLinkAfter)
-						{
-							btVector3 dirAfter = linkAfter / len;
-							btVector3 extraSizeLinkAfter = linkAfter - dirAfter * rlLinkAfter;
-							btVector3 tangentDirAfter = dirAfter.cross(m_resultCallback.m_hitNormalWorld);
-							tangentDirAfter = m_resultCallback.m_hitNormalWorld.cross(tangentDirAfter).normalized();
-
-							correctionAfter = extraSizeLinkAfter.dot(-m_resultCallback.m_hitNormalWorld) * tangentDirAfter;
-						}
-					}
-
-					btVector3 contactPoint = m_resultCallback.m_hitPointWorld;
-					btVector3 marginOut = m_resultCallback.m_hitNormalWorld * margin;
-
-					if (obj->getInternalType() == CO_RIGID_BODY)
-					{
-						btRigidBody* rb = (btRigidBody*)btRigidBody::upcast(obj);
-						moveBodyCollision(rb, n, m_resultCallback.m_hitNormalWorld, contactPoint+marginOut);
-					}
-					// Replace node
-					btVector3 newPosOut = contactPoint + marginOut + correctionBefore + correctionAfter; 
-					n->m_x = newPosOut;
-					nodePairContact[i].m_Xout = newPosOut;
-				}
 			}
-
+			// case of a coumpound shape
 			else
 			{
-				
-				btVector3 start = positionStartRay;
-				btVector3 end = positionEndRay;
-
-				m_rayFromTrans.setIdentity();
-				m_rayFromTrans.setOrigin(start);
-				m_rayToTrans.setIdentity();
-				m_rayToTrans.setOrigin(end);
-
-				btCollisionWorld::ClosestRayResultCallback m_resultCallback(start, end);
 				t = nodePairContact[i].worldToLocal;
-
-
 				m_world->rayTestSingleWithMargin(m_rayFromTrans, m_rayToTrans,
 												 obj,
 												 shape,
 												 t,
-												 m_resultCallback, marginNode);
+												 m_resultCallback, marginNode);		
+			}
+			if (m_resultCallback.hasHit())
+			{
 
-				if (m_resultCallback.hasHit())
+				btVector3 correctionBefore = btVector3(0, 0, 0);
+				btVector3 correctionAfter = btVector3(0, 0, 0);
+
+				/* Deactivated for now cause it can cause some issues
+				
+				// Link mouvement to avoid node getting stuck 
+				btVector3 correctionBefore = btVector3(0, 0, 0);
+				if (indexNode > 0 && !isSphereShape)
 				{
 					nBefore = &m_nodes[indexNode - 1];
-					nAfter = &m_nodes[indexNode + 1];
-
 					rlLinkBefore = m_links[indexNode - 1].m_rl;
-					rlLinkAfter = m_links[indexNode].m_rl;
-
-					btVector3 correctionBefore = btVector3(0, 0, 0);
+					btVector3 linkBefore = nBefore->m_x - n->m_x;
+					btScalar len = linkBefore.length();
+					if (len > rlLinkBefore)
 					{
-						btVector3 linkBefore = nBefore->m_x - n->m_x;
-						btScalar len = linkBefore.length();
-						if (len > rlLinkBefore)
-						{
-							btVector3 dirBefore = linkBefore/len;
-							btVector3 extraSizeLinkBefore = linkBefore - dirBefore * rlLinkBefore;
-							btVector3 tangentDirBefore = dirBefore.cross(m_resultCallback.m_hitNormalWorld);
-							tangentDirBefore = m_resultCallback.m_hitNormalWorld.cross(tangentDirBefore).normalized();
-
-							correctionBefore = extraSizeLinkBefore.dot(-m_resultCallback.m_hitNormalWorld) * tangentDirBefore; 
-						}
-					} 
-
-					btVector3 correctionAfter = btVector3(0, 0, 0);
-					{
-						btVector3 linkAfter = nBefore->m_x - n->m_x;
-						btScalar len = linkAfter.length();
-						if (len > rlLinkAfter)
-						{
-							btVector3 dirAfter = linkAfter / len;
-							btVector3 extraSizeLinkAfter = linkAfter - dirAfter * rlLinkAfter;
-							btVector3 tangentDirAfter = dirAfter.cross(m_resultCallback.m_hitNormalWorld);
-							tangentDirAfter = m_resultCallback.m_hitNormalWorld.cross(tangentDirAfter).normalized();
-
-							correctionAfter = extraSizeLinkAfter.dot(-m_resultCallback.m_hitNormalWorld) * tangentDirAfter;
-						}
-					} 
-
-
-					btVector3 contactPoint = m_resultCallback.m_hitPointWorld;
-					btVector3 marginOut = m_resultCallback.m_hitNormalWorld * margin;
-
-					if (obj->getInternalType() == CO_RIGID_BODY)
-					{
-						btRigidBody* rb = (btRigidBody*)btRigidBody::upcast(obj);
-						moveBodyCollision(rb, n, m_resultCallback.m_hitNormalWorld, contactPoint + marginOut);
+						btVector3 dirBefore = linkBefore / len;
+						btVector3 extraSizeLinkBefore = linkBefore - dirBefore * rlLinkBefore;
+						btVector3 tangentDirBefore = dirBefore.cross(m_resultCallback.m_hitNormalWorld);
+						tangentDirBefore = m_resultCallback.m_hitNormalWorld.cross(tangentDirBefore).normalized();
+						//correctionBefore = extraSizeLinkBefore.dot(-m_resultCallback.m_hitNormalWorld) * tangentDirBefore;
 					}
-					// Replace node
-					btVector3 newPosOut = contactPoint + marginOut + correctionBefore + correctionAfter;
-					n->m_x = newPosOut;
-					nodePairContact[i].m_Xout = newPosOut;
-				}				
+				}
+
+				btVector3 correctionAfter = btVector3(0, 0, 0);
+				
+				 
+				// Link mouvement to avoid node getting stuck
+				if (indexNode < this->m_nodes.size() - 1 && !isSphereShape)
+				{
+					nAfter = &m_nodes[indexNode + 1];
+					rlLinkAfter = m_links[indexNode].m_rl;
+					btVector3 linkAfter = nAfter->m_x - n->m_x;
+					btScalar len = linkAfter.length();
+					if (len > rlLinkAfter)
+					{
+						btVector3 dirAfter = linkAfter / len;
+						btVector3 extraSizeLinkAfter = linkAfter - dirAfter * rlLinkAfter;
+						btVector3 tangentDirAfter = dirAfter.cross(m_resultCallback.m_hitNormalWorld);
+						tangentDirAfter = m_resultCallback.m_hitNormalWorld.cross(tangentDirAfter).normalized();
+						//correctionAfter = extraSizeLinkAfter.dot(-m_resultCallback.m_hitNormalWorld) * tangentDirAfter;
+					}
+				}
+				*/
+
+				btVector3 contactPoint = m_resultCallback.m_hitPointWorld;
+
+				btVector3 outMouvementPos = m_resultCallback.m_hitNormalWorld * correctionNormal;
+
+				if (obj->getInternalType() == CO_RIGID_BODY)
+				{
+					btRigidBody* rb = (btRigidBody*)btRigidBody::upcast(obj);
+					moveBodyCollision(rb, n, m_resultCallback.m_hitNormalWorld, contactPoint - margin * m_resultCallback.m_hitNormalWorld);
+				}
+				// Replace node
+				btVector3 newPosOut = contactPoint + outMouvementPos + correctionBefore + correctionAfter;
+				n->m_x = newPosOut;
+				nodePairContact[i].m_Xout = newPosOut ;
 			}
 		}
 	}
 }
-
-/*
-void btCable::solveContact(btAlignedObjectArray<int> broadphaseNodeList)
-{
-	
-	// Prepare Conctact Resolution
-	//std::list<int> listNodeContact;
-	btScalar margin = getCollisionShape()->getMargin();
-
-	btVector3 up = btVector3(0, margin, 0);
-	btVector3 down = btVector3(0, -margin, 0);
-	btVector3 left = btVector3(margin, 0, 0);
-	btVector3 right = btVector3(-margin, 0, 0);
-	btVector3 front = btVector3(0, 0, margin);
-	btVector3 back = btVector3(0, 0, -margin);
-
-	const btScalar dt = m_sst.sdt;
-	
-	{
-		int nodeBroad;
-		
-		// Get throw all rays threw node position differences
-		#pragma omp parallel
-		{
-			#pragma omp for 
-			
-			for (nodeBroad = 0; nodeBroad < broadphaseNodeList.size(); nodeBroad++)
-			{
-				int i = broadphaseNodeList.at(nodeBroad);
-				Node* n = &m_nodes[i];
-				// Last position out of the body known
-				btVector3 posFrom = m_nodes[i].m_xOut;
-				btVector3 posNode = m_nodes[i].m_x;
-
-				// PosTo had to be the opposide side of the sphere, for a full detection we use
-				// the opposide corner box of the node bounding box.
-				btVector3 nodeMouvement = (posNode - posFrom);
-				btScalar nodeMouvementDist = nodeMouvement.length();
-				if (nodeMouvementDist < DBL_EPSILON)
-				{
-					continue;
-				}
-
-				// Simple Ray in from both center
-				nodeMouvement /= nodeMouvementDist;
-				btCollisionWorld::AllHitsRayResultCallback rayLink(posFrom, posNode);  
-				m_world->rayTest(posFrom, posNode, rayLink);                           
-				int indexValidCollision = -1;
-				if (rayLink.hasHit())
-				{
-					for (int j = 0; j < rayLink.m_hitPointWorld.size(); j++)
-					{
-						if (rayLink.m_collisionObjects[j]->hasContactResponse() && m_collisionDisabledObjects.findLinearSearch(rayLink.m_collisionObject) == m_collisionDisabledObjects.size())
-						{
-							int indexValidCollision = j;
-							const btCollisionObject* objectTouched = rayLink.m_collisionObjects[j];
-							btVector3 normalDir = rayLink.m_hitNormalWorld[indexValidCollision];
-
-							btVector3 mouvementToOutside = normalDir * margin;
-							btVector3 newPos = rayLink.m_hitPointWorld[indexValidCollision] + mouvementToOutside;
-							n->m_x = newPos;
-							
-							// Check if the new node pos is in a body
-							bool outside = false;
-							int test = 0;
-							// Test 5 times max to avoid infinite loop
-							while (!outside && test < 5)
-							{
-								if (test > 2)
-									int a = 1;
-								n->m_x = newPos;
-								outside = true;
-								if (checkCollide(i))
-								{
-									btCollisionWorld::AllHitsRayResultCallback checkPosRay(posFrom, newPos);
-									m_world->rayTest(posFrom, newPos, checkPosRay);
-
-									if (checkPosRay.hasHit())
-									{
-										for (int indexHit = 0; j < checkPosRay.m_hitPointWorld.size(); indexHit++)
-										{
-											if (checkPosRay.m_collisionObjects[indexHit]->hasContactResponse() && m_collisionDisabledObjects.findLinearSearch(checkPosRay.m_collisionObject) == m_collisionDisabledObjects.size())
-											{
-												normalDir = checkPosRay.m_hitNormalWorld[indexHit];
-												newPos = checkPosRay.m_hitPointWorld[indexHit] + normalDir * margin;
-												outside = false;
-												break;
-											}
-										}
-									}
-								}
-								test++;
-							}
-							if (outside){
-								btRigidBody* rigidCol;
-								if (objectTouched->getInternalType() == btCollisionObject::CO_RIGID_BODY)
-								{
-									rigidCol = (btRigidBody*)btRigidBody::upcast(objectTouched);
-									moveBodyCollision(rigidCol, i, normalDir, newPos);
-								}
-								n->m_x = newPos;
-								n->m_xOut = n->m_x;
-							}
-							else
-							{
-								n->m_splitv = btVector3(1, 0, 0);
-								n->m_x = n->m_xOut;
-							}
-							break;
-						}
-					}
-				}
-				
-				if (indexValidCollision < 0)
-				{
-					// New node broadphase Just on the new node position to guess if it will be usefull
-					if (!checkCollide(i))
-					{
-						continue;
-					}
-
-					bool hit = false;
-					btVector3 to;
-					for (int j = 0; j < 6; j++)
-					{
-						if (j == 0) to = posNode + up;
-						if (j == 1) to = posNode + down;
-						if (j == 2) to = posNode + left;
-						if (j == 3) to = posNode + right;
-						if (j == 4) to = posNode + front;
-						if (j == 5) to = posNode + back;
-
-						btCollisionWorld::AllHitsRayResultCallback NodeMultiple(posFrom, to);
-						m_world->rayTest(posFrom, to, NodeMultiple);
-						if (NodeMultiple.hasHit())
-						{
-							for (int k = 0; k < NodeMultiple.m_hitPointWorld.size(); k++)
-							{
-								if (NodeMultiple.m_collisionObjects[k]->hasContactResponse() && m_collisionDisabledObjects.findLinearSearch(NodeMultiple.m_collisionObject) == m_collisionDisabledObjects.size())
-								{
-									btVector3 normalDir = NodeMultiple.m_hitNormalWorld[k];
-
-									const btCollisionObject* objectTouched = NodeMultiple.m_collisionObjects[k];
-
-									btCollisionWorld::AllHitsRayResultCallback outPos(posFrom, posNode - margin * normalDir);
-									m_world->rayTest(posFrom, posNode - margin * normalDir, outPos);
-									if (outPos.hasHit())
-									{
-										for (int k = 0; k < outPos.m_hitPointWorld.size(); k++)
-										{
-											btVector3 normal = outPos.m_hitNormalWorld[k];
-											btVector3 mouvementToOutside = normal * margin;
-											btVector3 newPos = outPos.m_hitPointWorld[k] + mouvementToOutside;
-
-
-											// Check if the new node pos is in a body
-											bool outside = false;
-											int test = 0;
-											// Test 5 times max to avoid infinite loop
-											while (!outside && test < 5)
-											{
-												n->m_x = newPos;
-												outside = true;
-												if (checkCollide(i))
-												{
-													btCollisionWorld::AllHitsRayResultCallback checkPosRay(posFrom, newPos);
-													m_world->rayTest(posFrom, newPos, checkPosRay);
-
-													if (checkPosRay.hasHit())
-													{
-														for (int indexHit = 0; j < checkPosRay.m_hitPointWorld.size(); indexHit++)
-														{
-															if (checkPosRay.m_collisionObjects[indexHit]->hasContactResponse() && m_collisionDisabledObjects.findLinearSearch(checkPosRay.m_collisionObject) == m_collisionDisabledObjects.size())
-															{
-																normalDir = checkPosRay.m_hitNormalWorld[indexHit];
-																newPos = checkPosRay.m_hitPointWorld[indexHit] + normalDir * margin;
-																outside = false;
-																break;
-															}
-														}
-													}
-												}
-												test++;
-											}
-											if (outside)
-											{
-												btRigidBody* rigidCol;
-												
-												if (outPos.m_collisionObjects[k]->getInternalType() == btCollisionObject::CO_RIGID_BODY)
-												{
-													rigidCol = (btRigidBody*)btRigidBody::upcast(outPos.m_collisionObjects[k]);
-													moveBodyCollision(rigidCol, i, normal, newPos);
-												}
-
-												// Update node position
-												n->m_x = newPos;
-												// Setup the last position outside of the rigidbody
-												n->m_xOut = n->m_x;
-												hit = true;
-												break;
-											}
-											else
-											{
-												n->m_splitv = btVector3(1, 0, 0);
-												n->m_x = n->m_xOut;
-												hit = true;
-												break;
-											}
-
-										}
-									}
-								}
-								if (hit) break;
-							}
-						}
-						if (hit)
-							break;
-					}
-				}
-			}
-	
-		} 
-
-	}
-}*/
-
 
 void btCable::moveBodyCollision(btRigidBody* obj, Node* n, btVector3 normale, btVector3 hitPosition)
 {	
@@ -1106,7 +817,6 @@ void btCable::moveBodyCollision(btRigidBody* obj, Node* n, btVector3 normale, bt
 
 		btVector3 impulse = impulseMat *  distPenetration;
 		obj->applyImpulse(impulse, ra);
-
 	}
 }
 

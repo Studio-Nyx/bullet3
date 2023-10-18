@@ -303,8 +303,8 @@ void btCollisionWorld::rayTestSingleInternal(const btTransform& rayFromTrans, co
 											 const btCollisionObjectWrapper* collisionObjectWrap, 
 											 RayResultCallback& resultCallback, const btScalar margin)
 {
-	btSphereShape pointShape(0);
-	pointShape.setMargin(margin);
+	btSphereShape pointShape(margin);
+	pointShape.setMargin(0);
 	const btConvexShape* castShape = &pointShape;
 	const btCollisionShape* collisionShape = collisionObjectWrap->getCollisionShape();
 	const btTransform& colObjWorldTransform = collisionObjectWrap->getWorldTransform();
