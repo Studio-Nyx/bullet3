@@ -57,7 +57,7 @@ private:
 	bool checkCollide(int indexNode);
 	void solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairContact);
 	void solveContactLink(btAlignedObjectArray<int> broadphaseNodeList);
-	void moveBodyCollision(btRigidBody* body, Node* n, btVector3 normale, btVector3 hitPosition);
+	void moveBodyCollision(btRigidBody* body,btScalar margin ,  Node* n, btVector3 normale, btVector3 hitPosition);
 	btVector3 PositionStartRayCalculation(Node* n, btCollisionObject* obj);
 	void recursiveBroadPhase(btCollisionObject* obj, Node* n, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink,btTransform transform);
 

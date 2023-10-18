@@ -14,7 +14,7 @@
 #include "../../Extras/Serialize/BulletWorldImporter/btWorldImporter.h"
 #include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
 
-
+#define SLEEPINGTHRESHOLD 0.0001
 using namespace std::chrono;
 
 
@@ -616,7 +616,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 
 	btScalar correctionNormal = 0.002;
 	btScalar safeDirectionThreshold = 0.01;
-	btScalar sleepingThreshold = 0.0001;
+	btScalar sleepingThreshold = SLEEPINGTHRESHOLD;
 
 	int nbSubStep = 3;
 	int size = nodePairContact.size();
@@ -774,7 +774,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 				if (obj->getInternalType() == CO_RIGID_BODY)
 				{
 					btRigidBody* rb = (btRigidBody*)btRigidBody::upcast(obj);
-					moveBodyCollision(rb, n, m_resultCallback.m_hitNormalWorld, contactPoint - margin * m_resultCallback.m_hitNormalWorld);
+					moveBodyCollision(rb, marginNode ,n, m_resultCallback.m_hitNormalWorld, contactPoint);
 				}
 				// Replace node
 				btVector3 newPosOut = contactPoint + outMouvementPos + correctionBefore + correctionAfter;
@@ -785,14 +785,13 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 	}
 }
 
-void btCable::moveBodyCollision(btRigidBody* obj, Node* n, btVector3 normale, btVector3 hitPosition)
+void btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node * n, btVector3 normale, btVector3 hitPosition)
 {	
 	// a = node
 	// b = body
 	btScalar ima = n->m_im;
 	btScalar imb = obj->getInvMass();
 	btScalar dt = this->m_sst.sdt;
-	btScalar margin = this->m_collisionShape->getMargin();
 	if (imb == 0) return;
 
 	btScalar totalMass = ima + imb;
@@ -811,7 +810,7 @@ void btCable::moveBodyCollision(btRigidBody* obj, Node* n, btVector3 normale, bt
 	btScalar dn = btDot(vRelative, normale);
 	if (dn <= SIMD_EPSILON)
 	{
-		btScalar offset = (n->m_x - hitPosition).length();
+		btScalar offset = btMin( (n->m_x - hitPosition).length() , margin );
 		btMatrix3x3 impulseMat = ImpulseMatrix(dt,ima,imb,iwi,ra);
 		auto distPenetration = (-normale * (offset*coef));
 
@@ -931,6 +930,7 @@ void btCable::bendingConstraintDistance()
 		Node* before = m_links[i - 1].m_n[0];  // Node before;
 		Node* current = m_links[i].m_n[0];     // Current Node
 		Node* after = m_links[i].m_n[1];       // Node After
+		
 		btVector3 delta1 = current->m_x - before->m_x;
 		btVector3 delta2 = after->m_x - current->m_x;
 
