@@ -43,6 +43,7 @@ private:
 	bool useBending = true;
 	bool useGravity = true;
 	bool useCollision = true;
+	bool useHydroAero = true;
 	btScalar maxAngle = 0.1;
 	btScalar bendingStiffness = 0.1;
 
@@ -63,23 +64,48 @@ private:
 
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
+	
+	int startIndex = 0;
+    int endIndex = 0;
 
 	struct CableData
 	{
-		bool useHydroAero;
-		double cableRadius;
+		double radius;
+		float mass;
 		float tangentDragCoefficient;
 		float normalDragCoefficient;
-		int nodeStartIndex;
-		int nodeEndIndex;
+		float HorizonDrop;
 	};
 	static const int CableDataSize = sizeof(CableData);
+	
+	struct NodePos
+    {
+    	float x;
+    	float y;
+    	float z;
+    };
+    static const int NodePosSize = sizeof(NodePos);
+    	
+    struct NodeData
+    {
+    	float velocity_x;
+        float velocity_y;
+        float velocity_z;
+    	float volume;
+    	int indexCable;
+    };
+    static const int NodeDataSize = sizeof(NodeData);
+    
+    CableData* m_cableData;
+    NodeData* m_nodePos;
+    NodePos* m_nodeData;
 
 private:
-	CableData* m_cableData;
+
 
 #pragma region Use methods
 public:
+	
 	btScalar getLengthPosition();
 	btScalar getLengthRestlength();
 
@@ -106,6 +132,12 @@ public:
 
 	void setUseCollision(bool active);
 	bool getUseCollision();
+	
+	void setUseHydroAero(bool active);
+    bool getUseHydroAero();
+    
+    void setHorizonDrop(float value);
+	
 	bool UpdateCableData(btCable::CableData &cableData);
 
 #pragma endregion

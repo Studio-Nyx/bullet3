@@ -112,6 +112,26 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 
 	///update soft bodies
 	m_softBodySolver->updateSoftBodies();
+	
+	//Set Arrays
+	int ArrayIndex = 0;
+    for (int i = 0; i < m_softBodies.size(); i++)
+    {
+    	btCable* cable = reinterpret_cast<btCable*>(m_softBodies[i]);
+    	
+    	// Set Start and End Indexes
+    	cable.startIndex = ArrayIndex;
+    	cable.endIndex = ArrayIndex + cable.m_nodes.size();
+    	
+    	// TODO cable index here ?
+    	
+    	// Copy CableData into global Array
+    	memcpy(m_cablesData, cable.m_cableData, ArrayIndex, m_softBodies.size() * cable.CableDataSize);
+    	// Copy NodePos into global Array
+    	memcpy(m_nodesPos, cable.m_nodePos, ArrayIndex,cable.m_nodes.size() * cable.NodePosSize);
+    	// Copy CableData into global Array
+    	memcpy(m_nodesData, cable.m_nodeData, ArrayIndex,cable.m_nodes.size() * cable.NodeDataSize);
+    }
 
 	// End solver-wise simulation step
 	// ///////////////////////////////
@@ -368,14 +388,6 @@ bool btSoftRigidDynamicsWorld::updateCableForces(btSoftBody::NodeForces* co, int
 	int copySize = m_nodeForcesNumber * btSoftBody::nodeForcesCapacity;
 
 	memcpy(m_nodeForces, co, copySize);
-
-	//for (int i = 0; i < m_nodeForcesNumber; ++i)
-	//{
-	//	btSoftBody::NodeForces f = m_nodeForces[i];
-	//	if (co->x != f.x || co->y != f.y || co->z != f.z)
-	//		test = false;
-	//	co++;
-	//}
 
 	return test;
 }

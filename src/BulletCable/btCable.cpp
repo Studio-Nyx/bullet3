@@ -22,6 +22,8 @@ using namespace std::chrono;
 btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
 {
 	m_world = world;
+	m_cableData = new CableData();
+	
 	impulses = new btVector3[2]{btVector3(0, 0, 0)};
 	for (int i = 0; i < this->m_nodes.size(); i++)
 	{
@@ -32,9 +34,27 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 		{
 			appendLink(i - 1, i);
 		}
+		
+		// Set Node pos Struct
+		m_nodePos[i].x = m_nodes[i].m_x.getX();
+		m_nodePos[i].y = m_nodes[i].m_x.getY();
+		m_nodePos[i].z = m_nodes[i].m_x.getZ();
+		
+		// Set Node Data Struct
+		m_nodeData[i].velocity_x = m_nodes[i].m_v.getX();
+        m_nodeData[i].velocity_y = m_nodes[i].m_v.getY();
+        m_nodeData[i].velocity_z = m_nodes[i].m_v.getZ();
+        // TODO Volume
+        //m_nodeData[i].volume = m_node[i]
 	}
-	m_cableData = new CableData();
-	m_cableData->nodeStartIndex = 0;
+
+    // Set Cable Data Struct
+    // Using second node we set mass cable value
+    m_cableData.mass = getMass(1);
+    // Using getCollisionShape we set the cable radius
+    m_cableData.radius = getCollisionShape()->getMargin();
+     
+	//m_cableData->nodeStartIndex = 0;
 }
 
 
@@ -416,7 +436,7 @@ void btCable::solveContactLink(btAlignedObjectArray<int> broadphaseNodeList)
 					btVector3 rayVector = posNodeBefore - posNode;
 					btScalar distanceRay = rayVector.length();
 
-					// Vecteur du lien projeté sur la normale
+					// Vecteur du lien projetï¿½ sur la normale
 					btVector3 debugPoint = rayVector.dot(normale) * normale;
 					
 					btVector3 newFromTest;
@@ -1247,6 +1267,21 @@ void btCable::setUseCollision(bool active)
 bool btCable::getUseCollision()
 {
 	return useCollision;
+}
+
+void setUseHydroAero(bool active) 
+{
+    useHydroAero = active;
+}
+
+bool btCable::getUseHydroAero()
+{
+	return useHydroAero;
+}
+    
+void setHorizonDrop(float value)
+{
+    m_cableData.horizonDrop = value;
 }
 
 bool btCable::UpdateCableData(btCable::CableData &cableData)

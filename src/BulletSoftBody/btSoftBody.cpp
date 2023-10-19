@@ -140,7 +140,7 @@ btSoftBody::btSoftBody(btSoftBodyWorldInfo* worldInfo, int node_count, const btV
 	pm->m_kVST = 1;
 	pm->m_flags = fMaterial::Default;
 
-	/* Nodes			*/
+	/* Nodes	*/
 	const btScalar margin = getCollisionShape()->getMargin();
 	m_nodes.resize(node_count);
 	m_X.resize(node_count);

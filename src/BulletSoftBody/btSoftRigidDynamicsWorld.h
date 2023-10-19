@@ -19,6 +19,8 @@ subject to the following restrictions:
 
 #include "BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h"
 #include "btSoftBody.h"
+// add btCable include
+#include "BulletCable/btCable.h"
 
 typedef btAlignedObjectArray<btSoftBody*> btSoftBodyArray;
 
@@ -106,6 +108,9 @@ public:
 	bool updateCableForces(btSoftBody::NodeForces* co, int size);
 
 	btSoftBody::NodeForces* m_nodeForces;
+	CableData* m_cablesData;
+	NodePos* m_nodesPos;
+	NodeData* m_nodesData;
 
 };
 
