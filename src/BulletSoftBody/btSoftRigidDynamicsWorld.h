@@ -105,13 +105,21 @@ public:
 
 	virtual void serialize(btSerializer* serializer);
 
+	void updateCablesNodesData();
+
 	bool updateCableForces(btSoftBody::NodeForces* co, int size);
 
-	btSoftBody::NodeForces* m_nodeForces;
-	CableData* m_cablesData;
-	NodePos* m_nodesPos;
-	NodeData* m_nodesData;
+	void* btSoftRigidDynamicsWorld::getCablesData();
+	void* btSoftRigidDynamicsWorld::getNodesPos();
+	void* btSoftRigidDynamicsWorld::getNodesData();
+	int* getCableIndexesArray();
 
+	btSoftBody::NodeForces* m_nodeForces;
+	btCable::CableData* m_cablesData;
+	btCable::NodePos* m_nodesPos;
+	btCable::NodeData* m_nodesData;
+
+	int* m_cableIndexesArray;
 };
 
 #endif  //BT_SOFT_RIGID_DYNAMICS_WORLD_H

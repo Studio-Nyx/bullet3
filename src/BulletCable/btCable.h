@@ -43,9 +43,11 @@ private:
 	bool useBending = true;
 	bool useGravity = true;
 	bool useCollision = true;
-	bool useHydroAero = true;
 	btScalar maxAngle = 0.1;
 	btScalar bendingStiffness = 0.1;
+
+	// Node forces members
+	bool useHydroAero = true;
 
 	void distanceConstraint();
 	void LRAConstraint();
@@ -70,11 +72,11 @@ public:
 
 	struct CableData
 	{
-		double radius;
+		float radius;
 		float mass;
 		float tangentDragCoefficient;
 		float normalDragCoefficient;
-		float HorizonDrop;
+		float horizonDrop;
 	};
 	static const int CableDataSize = sizeof(CableData);
 	
@@ -92,13 +94,12 @@ public:
         float velocity_y;
         float velocity_z;
     	float volume;
-    	int indexCable;
     };
     static const int NodeDataSize = sizeof(NodeData);
     
-    CableData* m_cableData;
-    NodeData* m_nodePos;
-    NodePos* m_nodeData;
+    btCable::CableData* m_cableData;
+	btCable::NodeData* m_nodeData;
+    btCable::NodePos* m_nodePos;
 
 private:
 
@@ -133,9 +134,8 @@ public:
 	void setUseCollision(bool active);
 	bool getUseCollision();
 	
-	void setUseHydroAero(bool active);
     bool getUseHydroAero();
-    
+	void setUseHydroAero(bool active);
     void setHorizonDrop(float value);
 	
 	bool UpdateCableData(btCable::CableData &cableData);

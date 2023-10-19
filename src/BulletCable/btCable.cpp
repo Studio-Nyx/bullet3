@@ -49,11 +49,12 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 	}
 
     // Set Cable Data Struct
+	m_cableData = new CableData();
     // Using second node we set mass cable value
-    m_cableData.mass = getMass(1);
+    m_cableData->mass = getMass(1);
     // Using getCollisionShape we set the cable radius
-    m_cableData.radius = getCollisionShape()->getMargin();
-     
+	m_cableData->radius = getCollisionShape()->getMargin();
+
 	//m_cableData->nodeStartIndex = 0;
 }
 
@@ -1111,10 +1112,10 @@ void btCable::predictMotion(btScalar dt)
 		Node& n = m_nodes[i];
 		n.m_q = n.m_x;
 
-		if (m_cableData->useHydroAero)
+		if (useHydroAero)
 		{  
 			// Apply Hydro and Aero forces
-			NodeForces currentNodeForces = nodeForces[m_cableData->nodeStartIndex + i];
+			NodeForces currentNodeForces = nodeForces[startIndex + i];
 			n.m_f.setValue(n.m_f.getX() + currentNodeForces.x, n.m_f.getY() + currentNodeForces.y, n.m_f.getZ() + currentNodeForces.z);
 		}
 
@@ -1269,9 +1270,9 @@ bool btCable::getUseCollision()
 	return useCollision;
 }
 
-void setUseHydroAero(bool active) 
+void btCable::setUseHydroAero(bool active) 
 {
-    useHydroAero = active;
+	useHydroAero = active;
 }
 
 bool btCable::getUseHydroAero()
@@ -1279,9 +1280,9 @@ bool btCable::getUseHydroAero()
 	return useHydroAero;
 }
     
-void setHorizonDrop(float value)
+void btCable::setHorizonDrop(float value)
 {
-    m_cableData.horizonDrop = value;
+	m_cableData->horizonDrop = value;
 }
 
 bool btCable::UpdateCableData(btCable::CableData &cableData)
