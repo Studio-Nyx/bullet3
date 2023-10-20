@@ -110,16 +110,6 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 
 	///solve soft bodies constraints
 	solveSoftBodiesConstraints(timeStep);
-
-	//self collisions
-	for (int i = 0; i < m_softBodies.size(); i++)
-	{
-		btSoftBody* psb = (btSoftBody*)m_softBodies[i];
-		psb->defaultCollisionHandler(psb);
-	}
-
-	///update soft bodies
-	m_softBodySolver->updateSoftBodies();
 	
 	//Set Arrays
 	int ArrayIndex = 0;
@@ -131,7 +121,7 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
     	cable->startIndex = ArrayIndex;
 		cable->endIndex = ArrayIndex + cable->m_nodes.size();
     	
-    	// TODO cable index here ?
+    	// Copy cable index into gloabal int Array
 		memset(m_cableIndexesArray + ArrayIndex, i, cable->m_nodes.size()); 
 
     	// Copy CableData into global Array

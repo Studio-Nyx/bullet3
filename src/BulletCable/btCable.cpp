@@ -44,18 +44,14 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 		m_nodeData[i].velocity_x = m_nodes[i].m_v.getX();
         m_nodeData[i].velocity_y = m_nodes[i].m_v.getY();
         m_nodeData[i].velocity_z = m_nodes[i].m_v.getZ();
-        // TODO Volume
-        //m_nodeData[i].volume = m_node[i]
 	}
 
     // Set Cable Data Struct
 	m_cableData = new CableData();
     // Using second node we set mass cable value
-    m_cableData->mass = getMass(1);
+    m_cableData->nodeMass = getMass(1);
     // Using getCollisionShape we set the cable radius
 	m_cableData->radius = getCollisionShape()->getMargin();
-
-	//m_cableData->nodeStartIndex = 0;
 }
 
 
@@ -195,13 +191,83 @@ void btCable::solveConstraints()
 	nodePairContact.clear();
 
 	const btScalar vc = m_sst.isdt * (1 - m_cfg.kDP);
+
+	lenght = 0;
+
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
 		Node& n = m_nodes[i];
 		n.m_v = (n.m_x - n.m_q) * vc;
 		n.m_f = btVector3(0, 0, 0);
+
+		// Update NodePos
+		m_nodePos[i].x = m_nodes[i].m_x.getX();
+		m_nodePos[i].y = m_nodes[i].m_x.getY();
+		m_nodePos[i].z = m_nodes[i].m_x.getZ();
+
+		// Update NodeData
+		m_nodeData[i].velocity_x = m_nodes[i].m_v.getX();
+		m_nodeData[i].velocity_y = m_nodes[i].m_v.getY();
+		m_nodeData[i].velocity_z = m_nodes[i].m_v.getZ();
+
+		// Calculate Volume
+		float sizeElement = 0;
+
+		if (i == 0)
+		{
+			sizeElement = (m_nodes[i].m_x - m_nodes[i+1].m_x).length();
+			// Calculate cable Lenght
+			lenght += sizeElement;
+		}
+		else if (i == m_nodes.size() - 1)
+		{
+			sizeElement = (m_nodes[i].m_x - m_nodes[i-1].m_x).length(); 
+		}
+		else
+		{
+			sizeElement = (m_nodes[i].m_x - m_nodes[i-1].m_x).length(); 
+			// Calculate cable Lenght
+			lenght += sizeElement;
+
+			sizeElement += (m_nodes[i].m_x - m_nodes[i+1].m_x).length(); 
+		}
+
+		// Using a cylinder volume calculation
+		m_nodeData[i].volume = SIMD_PI * m_cableData->radius * m_cableData->radius * sizeElement;
+		// Divide it by two cause every node is used twice in the calculation
+		m_nodeData[i].volume = m_nodeData[i].volume / 2;
 	}
+
+	// Update mass using second node if it was updated in unity side
+	m_cableData->nodeMass = getMass(1);
+
+	/*
+	btVector3 positionStartRay = btVector3(1.101, 0, 0);
+	btVector3 positionEndRay = btVector3(0, 0, 0);
+
+	btCollisionObject* obj = m_world->getCollisionObjectArray().at(1);
+
+	btTransform m_rayFromTrans;
+	btTransform m_rayToTrans;
+
+	m_rayFromTrans.setIdentity();
+	m_rayFromTrans.setOrigin(positionStartRay);
+	m_rayToTrans.setIdentity();
+	m_rayToTrans.setOrigin(positionEndRay);
+
+	btCollisionWorld::ClosestRayResultCallback m_resultCallback(positionStartRay, positionEndRay);
+	m_world->rayTestSingleWithMargin(m_rayFromTrans, m_rayToTrans,
+									 obj,
+									 obj->getCollisionShape(),
+									 obj->getWorldTransform(),
+									 m_resultCallback,0.1);
+
+	if (m_resultCallback.hasHit())
+	{
+		cout << "touche" << endl;
+	} */
 }
+
 
 void btCable::recursiveBroadPhase(btCollisionObject* obj,Node *n , btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase> *nodePairContact, btVector3 minLink, btVector3 maxLink,btTransform transformLocal)
 {
@@ -1157,7 +1223,7 @@ void btCable::anchorConstraint()
 
 #pragma region Getter/Setter
 
-btScalar btCable::getLengthRestlength()
+btScalar btCable::getRestLength()
 {
 	btScalar length = 0;
 	for (int i = 0; i < m_links.size(); ++i)
@@ -1165,18 +1231,19 @@ btScalar btCable::getLengthRestlength()
 	return length;
 }
 
-btScalar btCable::getLengthPosition()
+btScalar btCable::getLength()
 {
-	btScalar length = 0;
+	/*btScalar length = 0;
 	for (int i = 0; i < m_links.size(); ++i)
 	{
 		Link& l = m_links[i];
 		Node& a = *l.m_n[0];
 		Node& b = *l.m_n[1];
 		length += (b.m_x - a.m_x).length();
-	}
+	}*/
 
-	return length;
+	//return length;
+	return lenght;
 }
 
 btVector3* btCable::getImpulses()

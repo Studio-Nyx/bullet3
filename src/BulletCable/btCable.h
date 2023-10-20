@@ -67,13 +67,14 @@ private:
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
 	
+	float lenght = 0;
 	int startIndex = 0;
     int endIndex = 0;
 
 	struct CableData
 	{
 		float radius;
-		float mass;
+		float nodeMass;
 		float tangentDragCoefficient;
 		float normalDragCoefficient;
 		float horizonDrop;
@@ -107,8 +108,8 @@ private:
 #pragma region Use methods
 public:
 	
-	btScalar getLengthPosition();
-	btScalar getLengthRestlength();
+	btScalar getLength();
+	btScalar getRestLength();
 
 	btVector3* getImpulses();
 	btVector3 getImpulse(int index);
