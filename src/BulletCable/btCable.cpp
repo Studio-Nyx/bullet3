@@ -614,7 +614,9 @@ btVector3 btCable::PositionStartRayCalculation(Node *n, btCollisionObject * obj)
 // Do nbSubStep times the resolution to valid a good collision
 void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairContact) {
 
+	// The margin add after node placement
 	btScalar correctionNormal = 0.002;
+	// The margin add on the start ray postion 
 	btScalar safeDirectionThreshold = 0.01;
 	btScalar sleepingThreshold = SLEEPINGTHRESHOLD;
 
