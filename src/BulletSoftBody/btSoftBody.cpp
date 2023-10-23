@@ -1140,6 +1140,17 @@ void btSoftBody::rotate(const btQuaternion& rot)
 }
 
 //
+void btSoftBody::rotateWithTranslation(const btQuaternion& rot, const btVector3& trs)
+{
+	translate(-trs);
+	btTransform t;
+	t.setIdentity();
+	t.setRotation(rot);
+	t.setOrigin(trs);
+	transform(t);
+}
+
+//
 void btSoftBody::scale(const btVector3& scl)
 {
 	const btScalar margin = getCollisionShape()->getMargin();

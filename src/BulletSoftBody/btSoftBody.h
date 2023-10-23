@@ -1023,8 +1023,10 @@ public:
 	virtual void transform(const btTransform& trs);
 	/* Translate															*/
 	virtual void translate(const btVector3& trs);
-	/* Rotate															*/
+	/* Rotate																*/
 	virtual void rotate(const btQuaternion& rot);
+	/* Rotate With Translation												*/
+	virtual void rotateWithTranslation(const btQuaternion& rot, const btVector3& trs);
 	/* Scale																*/
 	virtual void scale(const btVector3& scl);
 	/* Get link resting lengths scale										*/
