@@ -1361,4 +1361,17 @@ bool btCable::UpdateCableData(btCable::CableData &cableData)
 	return true;
 }
 
+btCable::NodePos* btCable::getActiveNodesPos()
+{
+	return m_nodePos;
+}
+
+int btCable::getActiveNodesNumber()
+{
+	return this->m_nodes.size();
+}
+
+
+
+
 #pragma endregion

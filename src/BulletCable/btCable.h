@@ -136,12 +136,16 @@ public:
 
 	void setUseCollision(bool active);
 	bool getUseCollision();
-	
+
     bool getUseHydroAero();
 	void setUseHydroAero(bool active);
     void setHorizonDrop(float value);
 	
 	bool UpdateCableData(btCable::CableData &cableData);
+
+	NodePos* getActiveNodesPos();
+
+	int getActiveNodesNumber();
 
 #pragma endregion
 };
