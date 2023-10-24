@@ -68,8 +68,8 @@ public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
 	
 	float lenght = 0;
-	int startIndex = 0;
-    int endIndex = 0;
+	/*int startIndex = 0;
+    int endIndex = 0;*/
 
 	struct CableData
 	{
@@ -78,6 +78,8 @@ public:
 		float tangentDragCoefficient;
 		float normalDragCoefficient;
 		float horizonDrop;
+		int startIndex;
+		int endIndex;
 	};
 	static const int CableDataSize = sizeof(CableData);
 	

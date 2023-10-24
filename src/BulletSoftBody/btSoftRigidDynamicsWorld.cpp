@@ -62,13 +62,14 @@ btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
 	m_nodeForces = new btSoftBody::NodeForces[m_sizeOfNodeForcesStruct];
 	m_nodesPos = new btCable::NodePos[m_sizeOfNodeForcesStruct];
 	m_nodesData = new btCable::NodeData[m_sizeOfNodeForcesStruct];
+	m_cableIndexesArray = new int[m_sizeOfNodeForcesStruct];
 
 	// Pool of max nbr of cable
 	m_cablesData = new btCable::CableData[100];
 
 	int arraySize = btSoftBody::nodeForcesCapacity * m_sizeOfNodeForcesStruct;
 
-	m_cableIndexesArray = new int[8192];
+
 
 	memset(m_nodeForces, 0, arraySize);
 }
@@ -112,27 +113,31 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 	solveSoftBodiesConstraints(timeStep);
 	
 	//Set Arrays
-	int ArrayIndex = 0;
-    for (int i = 0; i < m_softBodies.size(); i++)
+	int NodesIndex = 0;
+    for (uint8_t i = 0; i < m_softBodies.size(); i++)
     {
     	btCable* cable = reinterpret_cast<btCable*>(m_softBodies[i]);
     	
     	// Set Start and End Indexes
-    	cable->startIndex = ArrayIndex;
-		cable->endIndex = ArrayIndex + cable->m_nodes.size();
+		cable->m_cableData->startIndex = NodesIndex;
     	
     	// Copy cable index into gloabal int Array
-		memset(m_cableIndexesArray + ArrayIndex, i, cable->m_nodes.size()); 
+		memset(m_cableIndexesArray + NodesIndex, i, cable->m_nodes.size() * sizeof(int)); 
 
-    	// Copy CableData into global Array
-		memcpy(m_cablesData + ArrayIndex, cable->m_cableData, m_softBodies.size() * cable->CableDataSize);
+    	// Copy NodeData into global Array
+		memcpy(m_nodesData + NodesIndex, cable->m_nodeData, cable->m_nodes.size() * cable->NodeDataSize);
+
     	// Copy NodePos into global Array
-		memcpy(m_nodesPos + ArrayIndex, cable->m_nodePos, cable->m_nodes.size() * cable->NodePosSize);
+		memcpy(m_nodesPos + NodesIndex, cable->m_nodePos, cable->m_nodes.size() * cable->NodePosSize);
     	// Copy CableData into global Array
-		memcpy(m_nodesData + i, cable->m_nodeData, cable->m_nodes.size() * cable->NodeDataSize);
+		memcpy(m_cablesData + i, cable->m_cableData, m_softBodies.size() * cable->CableDataSize);
 
-		ArrayIndex = cable->endIndex++;
+		NodesIndex += cable->m_nodes.size();
+
+		cable->m_cableData->endIndex = NodesIndex - 1;  
     }
+
+	m_hydroCableNodesNumber = NodesIndex;
 
 	// End solver-wise simulation step
 	// ///////////////////////////////
@@ -381,15 +386,16 @@ void btSoftRigidDynamicsWorld::serialize(btSerializer* serializer)
 	serializer->finishSerialization();
 }
 
-void btSoftRigidDynamicsWorld::updateCablesNodesData()
+int btSoftRigidDynamicsWorld::getHydroNodesNumber()
 {
-	for (size_t i = 0; i < m_softBodies.size(); i++)
-	{
-		btCable* cable = reinterpret_cast<btCable*>(m_softBodies[i]);
-
-
-	}
+	return m_hydroCableNodesNumber;
 }
+
+int btSoftRigidDynamicsWorld::getActiveNodesNumber()
+{
+	return m_activeNodesNumber;
+}
+
 
 bool btSoftRigidDynamicsWorld::updateCableForces(btSoftBody::NodeForces* co, int size)
 {

@@ -22,7 +22,11 @@ using namespace std::chrono;
 btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
 {
 	m_world = world;
+
+	// Initialize Data
 	m_cableData = new CableData();
+	m_nodePos = new NodePos[8192];
+	m_nodeData = new NodeData[8192];
 	
 	impulses = new btVector3[2]{btVector3(0, 0, 0)};
 	for (int i = 0; i < this->m_nodes.size(); i++)
@@ -46,8 +50,6 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
         m_nodeData[i].velocity_z = m_nodes[i].m_v.getZ();
 	}
 
-    // Set Cable Data Struct
-	m_cableData = new CableData();
     // Using second node we set mass cable value
     m_cableData->nodeMass = getMass(1);
     // Using getCollisionShape we set the cable radius
@@ -1181,7 +1183,7 @@ void btCable::predictMotion(btScalar dt)
 		if (useHydroAero)
 		{  
 			// Apply Hydro and Aero forces
-			NodeForces currentNodeForces = nodeForces[startIndex + i];
+			NodeForces currentNodeForces = nodeForces[m_cableData->startIndex + i];
 			n.m_f.setValue(n.m_f.getX() + currentNodeForces.x, n.m_f.getY() + currentNodeForces.y, n.m_f.getZ() + currentNodeForces.z);
 		}
 

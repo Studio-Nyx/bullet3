@@ -49,6 +49,8 @@ protected:
 
 	int m_sizeOfNodeForcesStruct;
 	int m_nodeForcesNumber;
+	int m_hydroCableNodesNumber;
+	int m_activeNodesNumber;
 
 
 public:
@@ -105,7 +107,8 @@ public:
 
 	virtual void serialize(btSerializer* serializer);
 
-	void updateCablesNodesData();
+	int getHydroNodesNumber();
+	int getActiveNodesNumber();
 
 	bool updateCableForces(btSoftBody::NodeForces* co, int size);
 
