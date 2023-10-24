@@ -114,28 +114,32 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 	
 	//Set Arrays
 	int NodesIndex = 0;
-    for (uint8_t i = 0; i < m_softBodies.size(); i++)
-    {
-    	btCable* cable = reinterpret_cast<btCable*>(m_softBodies[i]);
-    	
-    	// Set Start and End Indexes
-		cable->m_cableData->startIndex = NodesIndex;
-    	
-    	// Copy cable index into gloabal int Array
-		memset(m_cableIndexesArray + NodesIndex, i, cable->m_nodes.size() * sizeof(int)); 
+	for (uint8_t i = 0; i < m_softBodies.size(); i++)
+	{
+		btCable* cable = reinterpret_cast<btCable*>(m_softBodies[i]);
 
-    	// Copy NodeData into global Array
-		memcpy(m_nodesData + NodesIndex, cable->m_nodeData, cable->m_nodes.size() * cable->NodeDataSize);
+		// Set Arrays for cable with Hydro and Aero Forces
+		if (cable->isActive() && cable->getUseHydroAero())
+		{
+			// Set Start and End Indexes
+			cable->m_cableData->startIndex = NodesIndex;
 
-    	// Copy NodePos into global Array
-		memcpy(m_nodesPos + NodesIndex, cable->m_nodePos, cable->m_nodes.size() * cable->NodePosSize);
-    	// Copy CableData into global Array
-		memcpy(m_cablesData + i, cable->m_cableData, m_softBodies.size() * cable->CableDataSize);
+			// Copy cable index into gloabal int Array
+			memset(m_cableIndexesArray + NodesIndex, i, cable->m_nodes.size() * sizeof(int));
 
-		NodesIndex += cable->m_nodes.size();
+			// Copy NodeData into global Array
+			memcpy(m_nodesData + NodesIndex, cable->m_nodeData, cable->m_nodes.size() * cable->NodeDataSize);
 
-		cable->m_cableData->endIndex = NodesIndex - 1;  
-    }
+			// Copy NodePos into global Array
+			memcpy(m_nodesPos + NodesIndex, cable->m_nodePos, cable->m_nodes.size() * cable->NodePosSize);
+			// Copy CableData into global Array
+			memcpy(m_cablesData + i, cable->m_cableData, m_softBodies.size() * cable->CableDataSize);
+
+			NodesIndex += cable->m_nodes.size();
+
+			cable->m_cableData->endIndex = NodesIndex - 1;
+		}
+	}
 
 	m_hydroCableNodesNumber = NodesIndex;
 

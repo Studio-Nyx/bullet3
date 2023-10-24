@@ -113,6 +113,8 @@ public:
 	btScalar getLength();
 	btScalar getRestLength();
 
+	int getNodesNumber();
+
 	btVector3* getImpulses();
 	btVector3 getImpulse(int index);
 
@@ -141,7 +143,9 @@ public:
 	void setUseHydroAero(bool active);
     void setHorizonDrop(float value);
 	
-	bool UpdateCableData(btCable::CableData &cableData);
+	bool updateCableData(btCable::CableData &cableData);
+
+	void* getCableNodesPos();
 
 	NodePos* getActiveNodesPos();
 

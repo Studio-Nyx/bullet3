@@ -1180,7 +1180,7 @@ void btCable::predictMotion(btScalar dt)
 		Node& n = m_nodes[i];
 		n.m_q = n.m_x;
 
-		if (useHydroAero)
+		if (isActive() && useHydroAero)
 		{  
 			// Apply Hydro and Aero forces
 			NodeForces currentNodeForces = nodeForces[m_cableData->startIndex + i];
@@ -1235,17 +1235,12 @@ btScalar btCable::getRestLength()
 
 btScalar btCable::getLength()
 {
-	/*btScalar length = 0;
-	for (int i = 0; i < m_links.size(); ++i)
-	{
-		Link& l = m_links[i];
-		Node& a = *l.m_n[0];
-		Node& b = *l.m_n[1];
-		length += (b.m_x - a.m_x).length();
-	}*/
-
-	//return length;
 	return lenght;
+}
+
+int btCable::getNodesNumber()
+{
+	return m_nodes.size();
 }
 
 btVector3* btCable::getImpulses()
@@ -1286,14 +1281,17 @@ void btCable::setBendingMaxAngle(btScalar angle)
 {
 	this->maxAngle = angle;
 }
+
 btScalar btCable::getBendingMaxAngle()
 {
 	return maxAngle;
 }
+
 void btCable::setBendingStiffness(btScalar stiffness)
 {
 	this->bendingStiffness = stiffness;
 }
+
 btScalar btCable::getBendingStiffness()
 {
 	return this->bendingStiffness;
@@ -1354,24 +1352,16 @@ void btCable::setHorizonDrop(float value)
 	m_cableData->horizonDrop = value;
 }
 
-bool btCable::UpdateCableData(btCable::CableData &cableData)
+bool btCable::updateCableData(btCable::CableData &cableData)
 {
 	memcpy(m_cableData, &cableData, CableDataSize);
 
 	return true;
 }
 
-btCable::NodePos* btCable::getActiveNodesPos()
+void* btCable::getCableNodesPos() 
 {
 	return m_nodePos;
 }
-
-int btCable::getActiveNodesNumber()
-{
-	return this->m_nodes.size();
-}
-
-
-
 
 #pragma endregion
