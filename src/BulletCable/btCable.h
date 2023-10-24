@@ -85,9 +85,9 @@ public:
 	
 	struct NodePos
     {
-    	float x;
-    	float y;
-    	float z;
+    	double x;
+		double y;
+		double z;
     };
     static const int NodePosSize = sizeof(NodePos);
     	
