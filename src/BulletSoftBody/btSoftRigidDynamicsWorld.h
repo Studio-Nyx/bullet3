@@ -19,7 +19,7 @@ subject to the following restrictions:
 
 #include "BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h"
 #include "btSoftBody.h"
-// add btCable include
+// add btCable include for sending data
 #include "BulletCable/btCable.h"
 
 typedef btAlignedObjectArray<btSoftBody*> btSoftBodyArray;
@@ -54,7 +54,8 @@ protected:
 
 
 public:
-	btSoftRigidDynamicsWorld(btDispatcher* dispatcher, btBroadphaseInterface* pairCache, btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration, btSoftBodySolver* softBodySolver = 0);
+	//btSoftRigidDynamicsWorld(btDispatcher* dispatcher, btBroadphaseInterface* pairCache, btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration, btSoftBodySolver* softBodySolver = 0);
+	btSoftRigidDynamicsWorld(btSoftBodyWorldInfo* worldInfo, btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration, btSoftBodySolver* softBodySolver = 0);
 
 	virtual ~btSoftRigidDynamicsWorld();
 

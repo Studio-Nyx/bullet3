@@ -23,14 +23,65 @@ subject to the following restrictions:
 #include "btDefaultSoftBodySolver.h"
 #include "LinearMath/btSerializer.h"
 
+//btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
+//	btDispatcher* dispatcher,
+//	btBroadphaseInterface* pairCache,
+//	btConstraintSolver* constraintSolver,
+//	btCollisionConfiguration* collisionConfiguration,
+//	btSoftBodySolver* softBodySolver) : btDiscreteDynamicsWorld(dispatcher, pairCache, constraintSolver, collisionConfiguration),
+//										m_softBodySolver(softBodySolver),
+//										m_ownsSolver(false)
+//{
+//	if (!m_softBodySolver)
+//	{
+//		void* ptr = btAlignedAlloc(sizeof(btDefaultSoftBodySolver), 16);
+//		m_softBodySolver = new (ptr) btDefaultSoftBodySolver();
+//		m_ownsSolver = true;
+//	}
+//
+//	m_drawFlags = fDrawFlags::Std;
+//	m_drawNodeTree = true;
+//	m_drawFaceTree = false;
+//	m_drawClusterTree = false;
+//	m_sbi.m_broadphase = pairCache;
+//	m_sbi.m_dispatcher = dispatcher;
+//	m_sbi.m_sparsesdf.Initialize();
+//	m_sbi.m_sparsesdf.Reset();
+//
+//	m_sbi.air_density = (btScalar)1.2;
+//	m_sbi.water_density = 0;
+//	m_sbi.water_offset = 0;
+//	m_sbi.water_normal = btVector3(0, 0, 0);
+//	m_sbi.m_gravity.setValue(0, -10, 0);
+//
+//	m_sbi.m_sparsesdf.Initialize();
+//
+//	m_nodeForcesNumber = 0;
+//	m_sizeOfNodeForcesStruct = 8192;
+//
+//	m_nodeForces = new btSoftBody::NodeForces[m_sizeOfNodeForcesStruct];
+//	m_nodesPos = new btCable::NodePos[m_sizeOfNodeForcesStruct];
+//	m_nodesData = new btCable::NodeData[m_sizeOfNodeForcesStruct];
+//	m_cableIndexesArray = new int[m_sizeOfNodeForcesStruct];
+//
+//	// Pool of max nbr of cable
+//	m_cablesData = new btCable::CableData[100];
+//
+//	int arraySize = btSoftBody::nodeForcesSize * m_sizeOfNodeForcesStruct;
+//
+//
+//
+//	memset(m_nodeForces, 0, arraySize);
+//}
+
 btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
-	btDispatcher* dispatcher,
-	btBroadphaseInterface* pairCache,
+	btSoftBodyWorldInfo* worldInfo,
 	btConstraintSolver* constraintSolver,
 	btCollisionConfiguration* collisionConfiguration,
-	btSoftBodySolver* softBodySolver) : btDiscreteDynamicsWorld(dispatcher, pairCache, constraintSolver, collisionConfiguration),
+	btSoftBodySolver* softBodySolver) : btDiscreteDynamicsWorld(worldInfo->m_dispatcher, worldInfo->m_broadphase, constraintSolver, collisionConfiguration),
 										m_softBodySolver(softBodySolver),
 										m_ownsSolver(false)
+
 {
 	if (!m_softBodySolver)
 	{
@@ -43,36 +94,25 @@ btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
 	m_drawNodeTree = true;
 	m_drawFaceTree = false;
 	m_drawClusterTree = false;
-	m_sbi.m_broadphase = pairCache;
-	m_sbi.m_dispatcher = dispatcher;
-	m_sbi.m_sparsesdf.Initialize();
-	m_sbi.m_sparsesdf.Reset();
+	m_sbi = *worldInfo;
 
-	m_sbi.air_density = (btScalar)1.2;
-	m_sbi.water_density = 0;
-	m_sbi.water_offset = 0;
-	m_sbi.water_normal = btVector3(0, 0, 0);
-	m_sbi.m_gravity.setValue(0, -10, 0);
-
-	m_sbi.m_sparsesdf.Initialize();
-
+	// Check if it's unecessary
+	//m_sbi.m_sparsesdf.Initialize();
+	
 	m_nodeForcesNumber = 0;
-	m_sizeOfNodeForcesStruct = 8192;
-
-	m_nodeForces = new btSoftBody::NodeForces[m_sizeOfNodeForcesStruct];
-	m_nodesPos = new btCable::NodePos[m_sizeOfNodeForcesStruct];
-	m_nodesData = new btCable::NodeData[m_sizeOfNodeForcesStruct];
-	m_cableIndexesArray = new int[m_sizeOfNodeForcesStruct];
+	m_nodeForces = new btSoftBody::NodeForces[m_sbi.maxNodeNumber];
+	m_nodesPos = new btCable::NodePos[m_sbi.maxNodeNumber];
+	m_nodesData = new btCable::NodeData[m_sbi.maxNodeNumber];
+	m_cableIndexesArray = new int[m_sbi.maxNodeNumber];
 
 	// Pool of max nbr of cable
-	m_cablesData = new btCable::CableData[100];
+	m_cablesData = new btCable::CableData[m_sbi.maxCableNumber];
 
-	int arraySize = btSoftBody::nodeForcesSize * m_sizeOfNodeForcesStruct;
-
-
+	int arraySize = btSoftBody::nodeForcesSize * m_sbi.maxNodeNumber;
 
 	memset(m_nodeForces, 0, arraySize);
 }
+
 
 btSoftRigidDynamicsWorld::~btSoftRigidDynamicsWorld()
 {
@@ -132,6 +172,7 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 
 			// Copy NodePos into global Array
 			memcpy(m_nodesPos + NodesIndex, cable->m_nodePos, cable->m_nodes.size() * cable->NodePosSize);
+
 			// Copy CableData into global Array
 			memcpy(m_cablesData + i, cable->m_cableData, m_softBodies.size() * cable->CableDataSize);
 
