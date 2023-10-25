@@ -67,7 +67,7 @@ btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
 	// Pool of max nbr of cable
 	m_cablesData = new btCable::CableData[100];
 
-	int arraySize = btSoftBody::nodeForcesCapacity * m_sizeOfNodeForcesStruct;
+	int arraySize = btSoftBody::nodeForcesSize * m_sizeOfNodeForcesStruct;
 
 
 
@@ -406,7 +406,7 @@ bool btSoftRigidDynamicsWorld::updateCableForces(btSoftBody::NodeForces* co, int
 	bool test = true;
 
 	m_nodeForcesNumber = size;
-	int copySize = m_nodeForcesNumber * btSoftBody::nodeForcesCapacity;
+	int copySize = m_nodeForcesNumber * btSoftBody::nodeForcesSize;
 
 	memcpy(m_nodeForces, co, copySize);
 
