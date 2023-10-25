@@ -299,7 +299,7 @@ public:
 		float y;
 		float z;
 	};
-	static const int nodeForcesCapacity = sizeof(NodeForces);
+	static const int nodeForcesSize = sizeof(NodeForces);
 	/* Link			*/
 	ATTRIBUTE_ALIGNED16(struct)
 	Link : Feature

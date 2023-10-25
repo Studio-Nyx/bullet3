@@ -68,8 +68,6 @@ public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
 	
 	float lenght = 0;
-	/*int startIndex = 0;
-    int endIndex = 0;*/
 
 	struct CableData
 	{
@@ -113,8 +111,6 @@ public:
 	btScalar getLength();
 	btScalar getRestLength();
 
-	int getNodesNumber();
-
 	btVector3* getImpulses();
 	btVector3 getImpulse(int index);
 
@@ -146,10 +142,6 @@ public:
 	bool updateCableData(btCable::CableData &cableData);
 
 	void* getCableNodesPos();
-
-	NodePos* getActiveNodesPos();
-
-	int getActiveNodesNumber();
 
 #pragma endregion
 };

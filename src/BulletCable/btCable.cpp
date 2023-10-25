@@ -1238,11 +1238,6 @@ btScalar btCable::getLength()
 	return lenght;
 }
 
-int btCable::getNodesNumber()
-{
-	return m_nodes.size();
-}
-
 btVector3* btCable::getImpulses()
 {
 	return impulses;
