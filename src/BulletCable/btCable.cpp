@@ -42,10 +42,10 @@ void btCable::solveConstraints()
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
 		m_nodes[i].m_nbCollidingObject = 0;
-
 		// debug draw
 		m_nodes[i].m_splitv = btVector3(0, 0, 0);
 	}
+
 	// Prepare links
 	for (i = 0, ni = m_links.size(); i < ni; ++i)
 	{
@@ -177,33 +177,6 @@ void btCable::solveConstraints()
 		n.m_v = (n.m_x - n.m_q) * vc;
 		n.m_f = btVector3(0, 0, 0);
 	}
-
-	
-	/*
-	btVector3 positionStartRay = btVector3(1.101, 0, 0);
-	btVector3 positionEndRay = btVector3(0, 0, 0);
-
-	btCollisionObject* obj = m_world->getCollisionObjectArray().at(1);
-
-	btTransform m_rayFromTrans;
-	btTransform m_rayToTrans;
-
-	m_rayFromTrans.setIdentity();
-	m_rayFromTrans.setOrigin(positionStartRay);
-	m_rayToTrans.setIdentity();
-	m_rayToTrans.setOrigin(positionEndRay);
-
-	btCollisionWorld::ClosestRayResultCallback m_resultCallback(positionStartRay, positionEndRay);
-	m_world->rayTestSingleWithMargin(m_rayFromTrans, m_rayToTrans,
-									 obj,
-									 obj->getCollisionShape(),
-									 obj->getWorldTransform(),
-									 m_resultCallback,0.1);
-
-	if (m_resultCallback.hasHit())
-	{
-		cout << "touche" << endl;
-	} */
 }
 
 void btCable::recursiveBroadPhase(btCollisionObject* obj,Node *n , btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase> *nodePairContact, btVector3 minLink, btVector3 maxLink,btTransform transformLocal)
@@ -620,7 +593,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 	btScalar safeDirectionThreshold = 0.01;
 	btScalar sleepingThreshold = SLEEPINGTHRESHOLD;
 
-	int nbSubStep = 3;
+	int nbSubStep = 5;
 	int size = nodePairContact.size();
 	btVector3 positionStartRay;
 	btVector3 positionEndRay;
@@ -1070,51 +1043,54 @@ void btCable::distanceConstraint()
 		Node& b = *l.m_n[1];
 		btVector3 AB = b.m_x - a.m_x;
 		btVector3 ABNormalized = AB.normalized();
+		if (ABNormalized.fuzzyZero()) continue;
 		btScalar normAB = AB.length();
 		btScalar k = m_materials[0]->m_kLST;
-		btVector3 errAB = k * (normAB - l.m_rl) * ((1 / normAB) * AB);
-
 		btScalar sumInvMass = a.m_im + b.m_im;
-		btVector3 deltap1;
-		btVector3 deltap2;
-		if (sumInvMass != 0 && a.m_im != 0 && b.m_im != 0)
+		if (sumInvMass >= 0)
 		{
-			deltap1 = a.m_im / sumInvMass * (normAB - l.m_rl) * ABNormalized;
-			deltap2 = b.m_im / sumInvMass * (normAB - l.m_rl) * ABNormalized;
+			a.m_x += a.m_im / sumInvMass * (normAB - l.m_rl) * ABNormalized;
+			b.m_x -= b.m_im / sumInvMass * (normAB - l.m_rl) * ABNormalized;
 		}
-		a.m_x += deltap1;
-		b.m_x -= deltap2;
 	}
 }
 
 void btCable::predictMotion(btScalar dt)
 {
 	int i, ni;
-
-	// Prepare
+	/* Update                */
+	if (m_bUpdateRtCst)
+	{
+		m_bUpdateRtCst = false;
+		updateConstants();
+		m_fdbvt.clear();
+		if (m_cfg.collisions & fCollision::VF_SS)
+		{
+			initializeFaceTree();
+		}
+	}
+	/* Prepare                */
 	m_sst.sdt = dt * m_cfg.timescale;
 	m_sst.isdt = 1 / m_sst.sdt;
 	m_sst.velmrg = m_sst.sdt * 3;
 	m_sst.radmrg = getCollisionShape()->getMargin();
 	m_sst.updmrg = m_sst.radmrg * (btScalar)0.25;
-
-	// Forces
-	if (useGravity) addVelocity(m_worldInfo->m_gravity * m_sst.sdt);
-
+	/* Forces                */
+	if(useGravity) addVelocity(m_worldInfo->m_gravity * m_sst.sdt);
+	/* Integrate            */
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
 		Node& n = m_nodes[i];
 		n.m_q = n.m_x;
 		btVector3 deltaV = n.m_f * n.m_im * m_sst.sdt;
 		n.m_v += deltaV;
-		n.m_v *= (1 - m_cfg.kDP);
 		n.m_x += n.m_v * m_sst.sdt;
 		n.m_f = btVector3(0, 0, 0);
 	}
-
+	/* Bounds                */
 	updateBounds();
 
-	// Clear contacts
+	/* Clear contacts        */
 	m_rcontacts.resize(0);
 	m_scontacts.resize(0);
 }
