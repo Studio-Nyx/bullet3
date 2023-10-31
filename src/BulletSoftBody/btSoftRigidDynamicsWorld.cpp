@@ -94,20 +94,19 @@ btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
 	m_drawNodeTree = true;
 	m_drawFaceTree = false;
 	m_drawClusterTree = false;
-	m_sbi = *worldInfo;
 
+	m_sbi = btSoftBodyWorldInfo(worldInfo);
 	// Check if it's unecessary
 	//m_sbi.m_sparsesdf.Initialize();
 	
 	m_nodeForcesNumber = 0;
+
 	m_nodeForces = new btSoftBody::NodeForces[m_sbi.maxNodeNumber];
 	m_nodesPos = new btCable::NodePos[m_sbi.maxNodeNumber];
 	m_nodesData = new btCable::NodeData[m_sbi.maxNodeNumber];
 	m_cableIndexesArray = new int[m_sbi.maxNodeNumber];
-
 	// Pool of max nbr of cable
 	m_cablesData = new btCable::CableData[m_sbi.maxCableNumber];
-
 	int arraySize = btSoftBody::nodeForcesSize * m_sbi.maxNodeNumber;
 
 	memset(m_nodeForces, 0, arraySize);

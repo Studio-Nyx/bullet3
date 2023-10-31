@@ -74,6 +74,20 @@ struct btSoftBodyWorldInfo
 		  maxNodeNumber(8192)
 	{
 	}
+
+	btSoftBodyWorldInfo(btSoftBodyWorldInfo* worldInfo)
+		: air_density(worldInfo->air_density),
+		  water_density(worldInfo->water_density),
+		  water_offset(worldInfo->water_offset),
+		  m_maxDisplacement(worldInfo->m_maxDisplacement),  //avoid soft body from 'exploding' so use some upper threshold of maximum motion that a node can travel per frame
+		  water_normal(worldInfo->water_normal),
+		  m_broadphase(worldInfo->m_broadphase),
+		  m_dispatcher(worldInfo->m_dispatcher),
+		  m_gravity(worldInfo->m_gravity),
+		  maxCableNumber(worldInfo->maxCableNumber),
+		  maxNodeNumber(worldInfo->maxNodeNumber)
+	{
+	}
 };
 
 ///The btSoftBody is an class to simulate cloth and volumetric soft bodies.
