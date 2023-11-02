@@ -54,7 +54,6 @@ protected:
 
 
 public:
-	//btSoftRigidDynamicsWorld(btDispatcher* dispatcher, btBroadphaseInterface* pairCache, btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration, btSoftBodySolver* softBodySolver = 0);
 	btSoftRigidDynamicsWorld(btSoftBodyWorldInfo* worldInfo, btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration, btSoftBodySolver* softBodySolver = 0);
 
 	virtual ~btSoftRigidDynamicsWorld();
