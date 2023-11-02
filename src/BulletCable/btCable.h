@@ -67,6 +67,15 @@ public:
 	
 	float lenght = 0;
 
+	enum CableState
+	{
+		Valid = 0,
+		InternalForcesError = 1,
+		ExternalForcesError = 2
+	};
+
+	CableState cableState = Valid;
+
 	struct CableData
 	{
 		float radius;
@@ -139,6 +148,8 @@ public:
 	bool updateCableData(btCable::CableData &cableData);
 
 	void* getCableNodesPos();
+
+	int getCableState();
 
 #pragma endregion
 };

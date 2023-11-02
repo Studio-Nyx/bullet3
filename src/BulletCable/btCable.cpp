@@ -833,6 +833,8 @@ void btCable::distanceConstraint()
 
 void btCable::predictMotion(btScalar dt)
 {
+	cableState = Valid;
+
 	int i, ni;
 	/* Update                */
 	if (m_bUpdateRtCst)
@@ -866,9 +868,19 @@ void btCable::predictMotion(btScalar dt)
 
 		if (isActive() && useHydroAero)
 		{  
+
 			// Apply Hydro and Aero forces
 			NodeForces currentNodeForces = nodeForces[m_cableData->startIndex + i];
-			n.m_f.setValue(n.m_f.getX() + currentNodeForces.x, n.m_f.getY() + currentNodeForces.y, n.m_f.getZ() + currentNodeForces.z);
+
+			// We check if currentNodeForces Are Correct, if it's not then we dont apply these forces.
+			if (std::isinf(currentNodeForces.x) || std::isnan(currentNodeForces.x) || std::isinf(currentNodeForces.y) || std::isnan(currentNodeForces.y) || std::isinf(currentNodeForces.z) || std::isnan(currentNodeForces.z))
+			{
+				cableState = InternalForcesError;
+			}
+			else
+			{
+				n.m_f.setValue(n.m_f.getX() + currentNodeForces.x, n.m_f.getY() + currentNodeForces.y, n.m_f.getZ() + currentNodeForces.z);
+			}
 		}
 
 		btVector3 deltaV = n.m_f * n.m_im * m_sst.sdt;
@@ -1020,6 +1032,11 @@ bool btCable::updateCableData(btCable::CableData &cableData)
 void* btCable::getCableNodesPos() 
 {
 	return m_nodePos;
+}
+
+int btCable::getCableState()
+{
+	return (int)cableState;
 }
 
 #pragma endregion
