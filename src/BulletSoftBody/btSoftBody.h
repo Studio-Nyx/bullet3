@@ -464,9 +464,10 @@ public:
 		btVector3 m_local;    // Anchor position in body space
 		btRigidBody* m_body;  // Body
 		btScalar m_influence;
-		btMatrix3x3 m_c0;  // Impulse matrix
-		btVector3 m_c1;    // Relative anchor
-		btScalar m_c2;     // ima*dt
+		btMatrix3x3 m_c0;	// Impulse matrix
+		btVector3 m_c1;		// Relative anchor
+		btScalar m_c2;		// ima*dt
+		btVector3 tension;  // tension at this anchor
 	};
 	/* Note			*/
 	struct Note : Element

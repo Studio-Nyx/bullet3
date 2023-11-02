@@ -272,9 +272,19 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 			{
 				const btSoftBody::Node& n = psb->m_nodes[i];
 				if (0 == (n.m_material->m_flags & btSoftBody::fMaterial::DebugDraw)) continue;
-				idraw->drawLine(n.m_x - btVector3(scl, 0, 0), n.m_x + btVector3(scl, 0, 0), btVector3(1, 0, 0));
-				idraw->drawLine(n.m_x - btVector3(0, scl, 0), n.m_x + btVector3(0, scl, 0), btVector3(0, 1, 0));
-				idraw->drawLine(n.m_x - btVector3(0, 0, scl), n.m_x + btVector3(0, 0, scl), btVector3(0, 0, 1));
+				if (n.m_splitv == btVector3(0, 0, 0))
+				{
+					idraw->drawLine(n.m_x - btVector3(scl, 0, 0), n.m_x + btVector3(scl, 0, 0), btVector3(1, 0, 0));
+					idraw->drawLine(n.m_x - btVector3(0, scl, 0), n.m_x + btVector3(0, scl, 0), btVector3(0, 1, 0));
+					idraw->drawLine(n.m_x - btVector3(0, 0, scl), n.m_x + btVector3(0, 0, scl), btVector3(0, 0, 1));
+				}
+				else
+				{
+					idraw->drawLine(n.m_x - btVector3(scl, 0, 0), n.m_x + btVector3(scl, 0, 0), btVector3(1, 1, 1));
+					idraw->drawLine(n.m_x - btVector3(0, scl, 0), n.m_x + btVector3(0, scl, 0), btVector3(1, 1, 1));
+					idraw->drawLine(n.m_x - btVector3(0, 0, scl), n.m_x + btVector3(0, 0, scl), btVector3(1, 1, 1));
+				}
+
 			}
 		}
 		/* Links	*/

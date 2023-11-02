@@ -68,7 +68,8 @@ struct NewtonsRopeCradleExample : public CommonRigidBodyBase
 
 		m_solver = new btSequentialImpulseConstraintSolver;
 
-		m_dynamicsWorld = new btSoftRigidDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfiguration);
+		m_dynamicsWorld = new btSoftRigidDynamicsWorld(&softBodyWorldInfo, m_solver, m_collisionConfiguration);
+
 		m_dynamicsWorld->setGravity(btVector3(0, -10, 0));
 
 		softBodyWorldInfo.m_broadphase = m_broadphase;

@@ -2467,7 +2467,8 @@ void SoftDemo::initPhysics()
 #endif  //USE_AMD_OPENCL
 
 	//btDiscreteDynamicsWorld* world = new btSoftRigidDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfiguration);
-	btSoftRigidDynamicsWorld* world = new btSoftRigidDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfiguration, softBodySolver);
+	btSoftRigidDynamicsWorld* world = new btSoftRigidDynamicsWorld(&m_softBodyWorldInfo, m_solver, m_collisionConfiguration, softBodySolver);
+
 	m_dynamicsWorld = world;
 	m_dynamicsWorld->setInternalTickCallback(pickingPreTickCallback, this, true);
 
