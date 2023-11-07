@@ -368,7 +368,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 	btScalar safeDirectionThreshold = 0.01;
 	btScalar sleepingThreshold = SLEEPINGTHRESHOLD;
 
-	int nbSubStep = 5;
+	int nbSubStep = 3;
 	int size = nodePairContact.size();
 
 	btVector3 positionStartRay;
@@ -1038,5 +1038,35 @@ int btCable::getCableState()
 {
 	return (int)cableState;
 }
+
+void btCable::appendNode(const btVector3& x, btScalar m)
+{
+	if (m_nodes.capacity() == m_nodes.size())
+	{
+		pointersToIndices();
+		m_nodes.reserve(m_nodes.size() * 2 + 1);
+		indicesToPointers();
+	}
+	const btScalar margin = getCollisionShape()->getMargin();
+	m_nodes.push_back(Node());
+	Node& n = m_nodes[m_nodes.size() - 1];
+	ZeroInitialize(n);
+	n.m_x = x;
+	n.m_q = n.m_x;
+	n.m_im = m > 0 ? 1 / m : 0;
+	n.m_material = m_materials[0];
+	
+	for (int i = m_nodes.size()-3; i < m_nodes.size(); i++)
+	{
+		// Update NodePos
+		m_nodePos[i].x = m_nodes[i].m_x.getX();
+		m_nodePos[i].y = m_nodes[i].m_x.getY();
+		m_nodePos[i].z = m_nodes[i].m_x.getZ();
+	}
+
+
+	
+}
+
 
 #pragma endregion

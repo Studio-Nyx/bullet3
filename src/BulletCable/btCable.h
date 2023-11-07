@@ -151,6 +151,8 @@ public:
 
 	int getCableState();
 
+	void appendNode(const btVector3& x, btScalar m) override;
+
 #pragma endregion
 };
 #endif  //_BT_CABLE_H

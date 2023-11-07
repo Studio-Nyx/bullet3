@@ -961,7 +961,7 @@ public:
 					const btVector3& o,
 					Face* feature);
 	/* Append node															*/
-	void appendNode(const btVector3& x, btScalar m);
+	virtual void appendNode(const btVector3& x, btScalar m);
 	/* Append link															*/
 	void appendLink(int model = -1, Material* mat = 0);
 	void appendLink(int node0,

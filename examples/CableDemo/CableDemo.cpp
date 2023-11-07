@@ -170,6 +170,10 @@ public:
 		{
 			PrintDistance_DemoCableForce();
 		}
+
+		if (key == 'h' && state)
+			Grow();
+
 		if (key == 'x' && state)
 		{
 			m_moveBody = true;
@@ -205,6 +209,15 @@ public:
 
 	void mouseFunc(int button, int state, int x, int y);
 	void mouseMotionFunc(int x, int y);
+
+
+	void Grow()
+	{
+		btCable* psb = (btCable*)getSoftDynamicsWorld()->getSoftBodyArray()[0];
+		psb->appendNode(btVector3(0,0,0),1);
+		psb->appendLink(psb->m_nodes.size() - 2, psb->m_nodes.size() - 1);
+		psb->resetLinkRestLengths();
+	}
 
 	GUIHelperInterface* getGUIHelper()
 	{
@@ -1088,14 +1101,15 @@ static void Init_TestCollisionCableRigid(CableDemo* pdemo)
 	transformRight.setIdentity();
 	transformRight.setOrigin(btVector3(5, 2, 0));
 	
-	btRigidBody* bodyRightAnchor = pdemo->createRigidBody(10, transformRight, new btBoxShape(btVector3(1, 1, 1)));
+	//btRigidBody* bodyRightAnchor = pdemo->createRigidBody(10, transformRight, new btBoxShape(btVector3(1, 1, 1)));
 
 	btTransform transformLeft = btTransform();
 	transformLeft.setIdentity();
 	transformLeft.setOrigin(btVector3(-5, 2, 0));
-	btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(100, transformLeft, new btBoxShape(btVector3(1, 1, 1)));
+	//btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(100, transformLeft, new btBoxShape(btVector3(1, 1, 1)));
 
-	btCable* cable = pdemo->createCable(resolution, iterations, 1, transformRight.getOrigin() + btVector3(0, 1.1, 0), transformLeft.getOrigin() + btVector3(0, 1.1, 0), bodyLeftAnchor, bodyRightAnchor, false, false);
+	//btCable* cable = pdemo->createCable(resolution, iterations, 1, transformRight.getOrigin() + btVector3(0, 1.1, 0), transformLeft.getOrigin() + btVector3(0, 1.1, 0), bodyLeftAnchor, bodyRightAnchor, false, false);
+	btCable* cable = pdemo->createCable(resolution, iterations, 1, transformRight.getOrigin() + btVector3(0, 1.1, 0), transformLeft.getOrigin() + btVector3(0, 1.1, 0), nullptr, nullptr, false, false);
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(true);
