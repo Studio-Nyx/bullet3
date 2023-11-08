@@ -5,7 +5,6 @@
 #include <BulletCollision/CollisionShapes/btSphereShape.h>
 #include <BulletCollision/CollisionShapes/btCapsuleShape.h>
 #include <Bullet3Common/b3Logging.h>
-#include <BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.h>
 #include <vector>
 #include <algorithm>
 #include <chrono>

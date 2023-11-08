@@ -14,8 +14,6 @@
 #include "BulletDynamics/Featherstone/btMultiBodyConstraint.h"
 #include "BulletSoftBody/btSoftBody.h"
 #include "BulletCollision/CollisionDispatch/btCollisionWorld.h"
-#include "BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h"
-#include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <list>
 #include <vector>
