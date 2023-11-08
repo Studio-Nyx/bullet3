@@ -1029,7 +1029,7 @@ public:
 	/* Get total mass														*/
 	btScalar getTotalMass() const;
 	/* Set total mass (weighted by previous masses)							*/
-	void setTotalMass(btScalar mass,
+	virtual void setTotalMass(btScalar mass,
 					  bool fromfaces = false);
 	/* Set total density													*/
 	void setTotalDensity(btScalar density);

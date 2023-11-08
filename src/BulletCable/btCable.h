@@ -167,6 +167,8 @@ public:
 
 	void appendNode(const btVector3& x, btScalar m) override;
 
+	void setTotalMass(btScalar mass, bool fromfaces = false) override;
+
 #pragma endregion
 };
 #endif  //_BT_CABLE_H

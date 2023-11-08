@@ -824,19 +824,15 @@ void btCable::distanceConstraint()
 void btCable::predictMotion(btScalar dt)
 {
 	cableState = Valid;
-
 	int i, ni;
+
 	/* Update                */
 	if (m_bUpdateRtCst)
 	{
 		m_bUpdateRtCst = false;
 		updateConstants();
-		m_fdbvt.clear();
-		if (m_cfg.collisions & fCollision::VF_SS)
-		{
-			initializeFaceTree();
-		}
 	}
+
 	/* Prepare                */
 	m_sst.sdt = dt * m_cfg.timescale;
 	m_sst.isdt = 1 / m_sst.sdt;
@@ -902,6 +898,7 @@ void btCable::anchorConstraint()
 		const btVector3 vb = n.m_x - n.m_q;
 		const btVector3 vr = (va - vb) + (wa - n.m_x) * kAHR;
 		const btVector3 impulse = a.m_c0 * vr * a.m_influence;
+		// n.m_x += impulse * a.m_c2;
 		n.m_x = a.m_body->getCenterOfMassPosition() + a.m_c1;
 		a.m_body->applyImpulse(-impulse, a.m_c1);
 
@@ -1052,6 +1049,17 @@ void btCable::appendNode(const btVector3& x, btScalar m)
 		m_nodePos[i].x = m_nodes[i].m_x.getX();
 		m_nodePos[i].y = m_nodes[i].m_x.getY();
 		m_nodePos[i].z = m_nodes[i].m_x.getZ();
+	}
+
+	n.index = m_nodes.size() - 1;	
+}
+
+void btCable::setTotalMass(btScalar mass, bool fromfaces)
+{
+	btScalar massNode = mass / m_nodes.size();
+	for (int i = 0; i < m_nodes.size(); ++i)
+	{
+		m_nodes[i].m_im = 1.0 / massNode;
 	}
 }
 
