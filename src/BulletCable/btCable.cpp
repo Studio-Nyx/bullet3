@@ -189,7 +189,7 @@ void btCable::solveConstraints()
 		distanceConstraint(); 
 		if (useLRA) LRAConstraint();
 		if (useBending && i%2 == 0) bendingConstraintDistance();
-		if (useCollision && i%2 == 0) solveContact(nodePairContact);
+		if (useCollision && i%m_substepDelayCollision == 0) solveContact(nodePairContact);
 	}
 	
 	if (useCollision) solveContact(nodePairContact);
@@ -361,14 +361,7 @@ btVector3 btCable::PositionStartRayCalculation(Node *n, btCollisionObject * obj)
 // Resolve iteratively all the contact constraint
 // Do nbSubStep times the resolution to valid a good collision
 void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairContact) {
-
-	// The margin add after node placement
-	btScalar correctionNormal = 0.005;
-	// The margin add on the start ray postion 
-	btScalar safeDirectionThreshold = 0.01;
-	btScalar sleepingThreshold = SLEEPINGTHRESHOLD;
-
-	int nbSubStep = 3;
+	int nbSubStep = m_subIterationCollision;
 	int size = nodePairContact.size();
 
 	btVector3 positionStartRay;
@@ -412,7 +405,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 			// SphereShape margin is sphereShape Radius, not a safe margin
 			if (isSphereShape)
 			{
-				marginBody = 0.01;
+				marginBody = 0.005;
 				margin = marginNode + marginBody;
 			}
 			else
@@ -431,7 +424,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 			if (btFuzzyZero(len))
 				continue;
 
-			if (len <= sleepingThreshold)
+			if (len <= m_collisionSleepingThreshold)
 			{
 				continue;
 			}
@@ -439,7 +432,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 			dir = (positionEndRay - positionStartRay) / len;
 			
 			
-			btVector3 start = positionStartRay - dir * safeDirectionThreshold;
+			btVector3 start = positionStartRay - dir * m_safeDirectionThreshold;
 
 			btVector3 end = positionEndRay;  
 
@@ -477,9 +470,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 
 				btVector3 correctionBefore = btVector3(0, 0, 0);
 				btVector3 correctionAfter = btVector3(0, 0, 0);
-
-				// Deactivated for now cause it can cause some issues
-				
+								
 				// Link mouvement to avoid node getting stuck 
 				if (indexNode > 0 && !isSphereShape)
 				{
@@ -517,7 +508,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairCon
 
 				btVector3 contactPoint = m_resultCallback.m_hitPointWorld;
 
-				btVector3 outMouvementPos = m_resultCallback.m_hitNormalWorld * correctionNormal;
+				btVector3 outMouvementPos = m_resultCallback.m_hitNormalWorld * m_correctionNormal;
 				btVector3 newPosOut = contactPoint + outMouvementPos + correctionBefore + correctionAfter;
 
 
@@ -1063,10 +1054,15 @@ void btCable::appendNode(const btVector3& x, btScalar m)
 		m_nodePos[i].y = m_nodes[i].m_x.getY();
 		m_nodePos[i].z = m_nodes[i].m_x.getZ();
 	}
-
-
-	
 }
 
+void btCable::setCollisionParameters(int substepDelayCollision, int subIterationCollision, btScalar correctionNormal, btScalar safeDirectionThreshold, btScalar collisionSleepingThreshold)
+{
+	m_substepDelayCollision = substepDelayCollision;
+	m_subIterationCollision = subIterationCollision;
+	m_correctionNormal = correctionNormal;
+	m_safeDirectionThreshold = safeDirectionThreshold;
+	m_collisionSleepingThreshold = collisionSleepingThreshold;
+}
 
 #pragma endregion

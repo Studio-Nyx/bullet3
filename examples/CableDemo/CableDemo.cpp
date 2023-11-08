@@ -1119,8 +1119,8 @@ static void Init_TestCollisionCableRigid(CableDemo* pdemo)
 static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 {
 	// Resolution's cable
-	int resolution = 50;
-	int iterations = 100;
+	int resolution = 100;
+	int iterations = 50;
 	btScalar margin = 0.05;
 
 	// Shape
@@ -1169,6 +1169,8 @@ static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(true);
+	cable->setCollisionParameters(10, 1, 0.003, 0.01, 0);
+
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 0));
 }
 
@@ -1215,7 +1217,7 @@ static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 {
 	// Resolution's cable
 	int resolution = 50;
-	int iterations = 200;
+	int iterations = 100;
 	btScalar margin = 0.01;
 
 	// Shape
@@ -1248,7 +1250,6 @@ static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 	shape->initializePolyhedralFeatures();
 
 
-	btCapsuleShapeX * capsule = new btCapsuleShapeX(1, 1);
 	btTransform t = btTransform();
 	t.setIdentity();
 	t.setOrigin(btVector3(0, 3, 0));
@@ -1270,12 +1271,15 @@ static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 	btTransform transformLeft = btTransform();
 	transformLeft.setIdentity();
 	transformLeft.setOrigin(btVector3(-5, 7, 0));
-	btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(100, transformLeft, new btBoxShape(btVector3(1, 1, 1)));
+	btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(1000, transformLeft, new btBoxShape(btVector3(1, 1, 1)));
 
 	btCable* cable = pdemo->createCable(resolution, iterations, 1, transformRight.getOrigin(), transformLeft.getOrigin() + btVector3(1, 0, 0), bodyLeftAnchor, bodyRightAnchor);
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
-	cable->setUseLRA(true);
+	cable->setUseLRA(false);
+
+	cable->setCollisionParameters(5, 1, 0.003, 0.01, 0);
+
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 0));
 }
 

@@ -23,7 +23,6 @@
 using namespace std;
 
 
-
 ///The btCable is a class that inherits from btSoftBody.
 ///Its purpose is to be able to create a cable/rope with our own method parameters that Bullet does not implement.
 class btCable : public btSoftBody
@@ -44,6 +43,21 @@ private:
 	bool useCollision = true;
 	btScalar maxAngle = 0.1;
 	btScalar bendingStiffness = 0.1;
+
+	// The margin add after node placement
+	btScalar m_correctionNormal = 0.005;
+
+	// The margin add on the ray start postion
+	btScalar m_safeDirectionThreshold = 0.01;
+
+	// disabled collision detection if this movement 
+	btScalar m_collisionSleepingThreshold = 0.0001;
+
+	// number of iteration step between each iteration of the collision constraint 
+	int m_substepDelayCollision = 2;
+
+	// number of iteration of the resolution on multi-collision node
+	int m_subIterationCollision = 3;
 
 	// Node forces members
 	bool useHydroAero = true;
@@ -140,6 +154,8 @@ public:
 
 	void setUseCollision(bool active);
 	bool getUseCollision();
+
+	void setCollisionParameters(int substepDelayCollision, int subIterationCollision, btScalar correctionNormal, btScalar safeDirectionThreshold, btScalar sleepingThreshold);
 
     bool getUseHydroAero();
 	void setUseHydroAero(bool active);
