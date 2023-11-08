@@ -62,7 +62,9 @@ bool btDefaultSoftBodySolver::checkInitialized()
 
 void btDefaultSoftBodySolver::solveConstraints(btScalar solverdt)
 {
+
 	// Solve constraints for non-solver softbodies
+	#pragma omp parallel for
 	for (int i = 0; i < m_softBodySet.size(); ++i)
 	{
 		btSoftBody *psb = static_cast<btSoftBody *>(m_softBodySet[i]);
@@ -71,6 +73,8 @@ void btDefaultSoftBodySolver::solveConstraints(btScalar solverdt)
 			psb->solveConstraints();
 		}
 	}
+	
+	
 }  // btDefaultSoftBodySolver::solveConstraints
 
 void btDefaultSoftBodySolver::copySoftBodyToVertexBuffer(const btSoftBody *const softBody, btVertexBufferDescriptor *vertexBuffer)
