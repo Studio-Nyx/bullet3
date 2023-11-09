@@ -830,7 +830,7 @@ void btCable::predictMotion(btScalar dt)
 	if (m_bUpdateRtCst)
 	{
 		m_bUpdateRtCst = false;
-		updateConstants();
+		updateLinkConstants();
 	}
 
 	/* Prepare                */
