@@ -307,7 +307,7 @@ public:
 			current_ticks = clock();
 
 
-			int subStep = 5;
+			int subStep = 4;
 			m_dynamicsWorld->stepSimulation(deltaTime, subStep, deltaTime / subStep);
 		
 			delta_ticks = clock() - current_ticks;
@@ -407,6 +407,7 @@ public:
 		cable->setTotalMass(totalMass);
 		cable->m_cfg.piterations = iteration;
 		cable->m_cfg.kAHR = 1;
+		cable->setUseLRA(true);
 
 		// Add cable to the world
 		getSoftDynamicsWorld()->addSoftBody(cable);
@@ -1113,6 +1114,7 @@ static void Init_TestCollisionCableRigid(CableDemo* pdemo)
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(true);
+	cable->setCollisionParameters(2,1,0.003,0.01,0);
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 5));
 }
 
@@ -1209,7 +1211,7 @@ static void Init_TestDynamicsCollisionCable(CableDemo* pdemo)
 	btCable* cable = pdemo->createCable(resolution, iterations, 1, transformRight.getOrigin(), transformLeft.getOrigin() + btVector3(1,0,0), bodyLeftAnchor, bodyRightAnchor);
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
-	cable->setUseLRA(false);
+	cable->setUseLRA(true);
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 0));
 }
 
@@ -1591,6 +1593,12 @@ void CableDemo::exitPhysics()
 
 	//remove the rigidbodies from the dynamics world and delete them
 	int i;
+	for (i = m_dynamicsWorld->getNumConstraints() - 1; i >= 0; i--)
+	{
+		btTypedConstraint* constraint = m_dynamicsWorld->getConstraint(i);
+		m_dynamicsWorld->removeConstraint(constraint);
+		delete constraint;
+	}
 	for (i = m_dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--)
 	{
 		btCollisionObject* obj = m_dynamicsWorld->getCollisionObjectArray()[i];

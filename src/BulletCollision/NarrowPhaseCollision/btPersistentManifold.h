@@ -63,13 +63,14 @@ enum btContactManifoldTypes
 ATTRIBUTE_ALIGNED16(class)
 btPersistentManifold : public btTypedObject
 {
-	btManifoldPoint m_pointCache[MANIFOLD_CACHE_SIZE];
+	btManifoldPoint* m_pointCache;
 
 	/// this two body pointers can point to the physics rigidbody class.
 	const btCollisionObject* m_body0;
 	const btCollisionObject* m_body1;
 
 	int m_cachedPoints;
+	int m_cacheSize;
 
 	btScalar m_contactBreakingThreshold;
 	btScalar m_contactProcessingThreshold;
@@ -89,7 +90,7 @@ public:
 
 	btPersistentManifold();
 
-	btPersistentManifold(const btCollisionObject* body0, const btCollisionObject* body1, int, btScalar contactBreakingThreshold, btScalar contactProcessingThreshold)
+	btPersistentManifold(const btCollisionObject* body0, const btCollisionObject* body1, int, btScalar contactBreakingThreshold, btScalar contactProcessingThreshold, int cacheSize = 4)
 		: btTypedObject(BT_PERSISTENT_MANIFOLD_TYPE),
 		  m_body0(body0),
 		  m_body1(body1),
@@ -100,6 +101,8 @@ public:
 		  m_companionIdB(0),
 		  m_index1a(0)
 	{
+		m_cacheSize = cacheSize;
+		m_pointCache = new btManifoldPoint[cacheSize];
 	}
 
 	SIMD_FORCE_INLINE const btCollisionObject* getBody0() const { return m_body0; }

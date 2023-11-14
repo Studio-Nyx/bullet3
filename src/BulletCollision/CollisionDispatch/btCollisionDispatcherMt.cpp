@@ -59,7 +59,12 @@ btPersistentManifold* btCollisionDispatcherMt::getNewManifold(const btCollisionO
 			return 0;
 		}
 	}
-	btPersistentManifold* manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
+	// RigidBody only
+	btPersistentManifold* manifold;
+	if (body0->getInternalType() == 2 && body1->getInternalType() == 2) 
+ 		manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
+	else 
+		manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold,1024);
 	if (!m_batchUpdating)
 	{
 		// batch updater will update manifold pointers array after finishing, so

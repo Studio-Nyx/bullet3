@@ -217,9 +217,9 @@ int btPersistentManifold::addManifoldPoint(const btManifoldPoint& newPoint, bool
 	}
 
 	int insertIndex = getNumContacts();
-	if (insertIndex == MANIFOLD_CACHE_SIZE)
+	if (insertIndex == m_cacheSize)
 	{
-#if MANIFOLD_CACHE_SIZE >= 4
+#if m_cacheSize >= 4
 		//sort cache so best points come first, based on area
 		insertIndex = sortCachedPoints(newPoint);
 #else

@@ -25,14 +25,31 @@ using namespace std;
 ///Its purpose is to be able to create a cable/rope with our own method parameters that Bullet does not implement.
 class btCable : public btSoftBody
 {
+	struct BroadPhasePair
+	{
+		btCollisionObject* body;
+		bool haveManifoldsRegister;
+		btPersistentManifold* manifold;
+	};
+
 	struct NodePairNarrowPhase
 	{
 		Node* node;
 		btCollisionShape* collisionShape;
-		btCollisionObject* body;
+		BroadPhasePair* pair;
 		btTransform worldToLocal;
 		btVector3 m_Xout;
+		btVector3 lastPosition;
+		btVector3 normal;
+		bool hit = false;
 	};
+
+	//
+	~btCable()
+	{
+		manifolds.clear();
+	}
+	
 
 private:
 	bool useLRA = true;
@@ -43,13 +60,13 @@ private:
 	btScalar bendingStiffness = 0.1;
 
 	// The margin add after node placement
-	btScalar m_correctionNormal = 0.005;
+	btScalar m_correctionNormal = 0.003;
 
 	// The margin add on the ray start postion
 	btScalar m_safeDirectionThreshold = 0.01;
 
 	// disabled collision detection if this movement 
-	btScalar m_collisionSleepingThreshold = 0.0001;
+	btScalar m_collisionSleepingThreshold = 0.0;
 
 	// number of iteration step between each iteration of the collision constraint 
 	int m_substepDelayCollision = 2;
@@ -60,6 +77,8 @@ private:
 	// Node forces members
 	bool useHydroAero = true;
 
+	btAlignedObjectArray<btPersistentManifold*> manifolds;
+
 	void distanceConstraint();
 	void LRAConstraint();
 	void LRAConstraint(int level, int idxAnchor);
@@ -69,10 +88,12 @@ private:
 	void solveConstraints() override;
 	void anchorConstraint();
 	bool checkCollide(int indexNode);
-	void solveContact(btAlignedObjectArray<NodePairNarrowPhase> nodePairContact);
+	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 	void moveBodyCollision(btRigidBody* body,btScalar margin ,  Node* n, btVector3 normale, btVector3 hitPosition);
 	btVector3 PositionStartRayCalculation(Node* n, btCollisionObject* obj);
-	void recursiveBroadPhase(btCollisionObject* obj, Node* n, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink,btTransform transform);
+	void recursiveBroadPhase(BroadPhasePair* obj, Node* n, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
+
+	void clearManifold(btAlignedObjectArray<BroadPhasePair*> objs, bool init);
 
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
