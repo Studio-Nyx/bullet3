@@ -40,7 +40,9 @@ class btCable : public btSoftBody
 		btTransform worldToLocal;
 		btVector3 m_Xout;
 		btVector3 lastPosition;
+		btVector3 impulse;
 		btVector3 normal;
+		btScalar distance;
 		bool hit = false;
 	};
 
@@ -89,7 +91,7 @@ private:
 	void anchorConstraint();
 	bool checkCollide(int indexNode);
 	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
-	void moveBodyCollision(btRigidBody* body,btScalar margin ,  Node* n, btVector3 normale, btVector3 hitPosition);
+	btVector3 moveBodyCollision(btRigidBody* body, btScalar margin, Node* n, btVector3 normale, btVector3 hitPosition);
 	btVector3 PositionStartRayCalculation(Node* n, btCollisionObject* obj);
 	void recursiveBroadPhase(BroadPhasePair* obj, Node* n, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
 

@@ -215,7 +215,7 @@ void btCable::solveConstraints()
 			manifold = nodePairContact.at(i).pair->manifold;
 		else
 		{
-			manifold = m_world->getDispatcher()->getNewManifold(this, nodePairContact[i].pair->body);
+			manifold = m_world->getDispatcher()->getNewManifold( this,nodePairContact[i].pair->body);
 			manifolds.push_back(manifold);
 			nodePairContact.at(i).pair->manifold = manifold;
 			nodePairContact.at(i).pair->haveManifoldsRegister = true;
@@ -224,12 +224,17 @@ void btCable::solveConstraints()
 		// Obj 0 = Cable
 		// Obj 1 = RigidBody
 		//btManifoldPoint(const btVector3& pointA, const btVector3& pointB,const btVector3& normal,btScalar distance)
-		const btVector3& pointA = nodePairContact.at(i).lastPosition;
+
+		const btVector3& pointB = nodePairContact.at(i).lastPosition;
 		const btVector3& normal = nodePairContact.at(i).normal;
-		const btVector3& pointB = nodePairContact.at(i).lastPosition - normal*this->getCollisionShape()->getMargin();
+		const btScalar distance = nodePairContact.at(i).distance;
 
 
-		btManifoldPoint newPoint = btManifoldPoint(pointA, pointB, normal, btDistance(pointA, pointB));
+		btManifoldPoint newPoint = btManifoldPoint(btVector3(0, 0, 0), btVector3(0, 0, 0),normal,distance);
+		newPoint.m_positionWorldOnA = pointB + normal * distance;
+		newPoint.m_positionWorldOnB = pointB;
+
+		newPoint.m_appliedImpulse = nodePairContact.at(i).impulse.length();
 		manifold->addManifoldPoint(newPoint, true);
 		btManifoldPoint temp = manifold->getContactPoint(manifold->getNumContacts() - 1);
 		
@@ -579,17 +584,20 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 
 				btVector3 outMouvementPos = m_resultCallback.m_hitNormalWorld * m_correctionNormal;
 				btVector3 newPosOut = contactPoint + outMouvementPos;
+				btVector3 impulse = btVector3(0,0,0);
 
+				btScalar offset = (n->m_x - contactPoint).length();
+				btScalar distPenetration = (m_resultCallback.m_hitNormalWorld * offset).length();
 
 				if (obj->getInternalType() == CO_RIGID_BODY)
 				{
 					btRigidBody* rb = (btRigidBody*)btRigidBody::upcast(obj);
 					if (!obj->isStaticOrKinematicObject())
-						moveBodyCollision(rb, margin, n, m_resultCallback.m_hitNormalWorld, contactPoint);
+						impulse = moveBodyCollision(rb, margin, n, m_resultCallback.m_hitNormalWorld, contactPoint);
 				}
+				
 				// Replace node
-				n->m_x = newPosOut;
-
+				n->m_x = contactPoint + outMouvementPos;
 
 				btVector3 correctionBefore = btVector3(0, 0, 0);
 				btVector3 correctionAfter = btVector3(0, 0, 0);
@@ -628,24 +636,28 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 					}
 				}
 
-				n->m_x = newPosOut + correctionBefore + correctionAfter;
+				// Add correction
+				n->m_x = n->m_x + correctionBefore + correctionAfter;
+
+				nodePairContact->at(i).impulse = impulse;
 				nodePairContact->at(i).m_Xout = n->m_x;
 				nodePairContact->at(i).lastPosition = contactPoint - margin * m_resultCallback.m_hitNormalWorld;
 				nodePairContact->at(i).hit = true;
 				nodePairContact->at(i).normal = m_resultCallback.m_hitNormalWorld;
+				nodePairContact->at(i).distance = distPenetration;
 			}
 		}
 	}
 }
 
-void btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node * n, btVector3 normale, btVector3 hitPosition)
+btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n, btVector3 normale, btVector3 hitPosition)
 {	
 	// a = node
 	// b = body
 	btScalar ima = n->m_im;
 	btScalar imb = obj->getInvMass();
 	btScalar dt = this->m_sst.sdt;
-	if (imb == 0) return;
+	if (imb == 0) return btVector3(0,0,0);
 
 	btScalar totalMass = ima + imb;
 	btTransform wtr = obj->getWorldTransform();
@@ -670,7 +682,9 @@ void btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node * n, btV
 
 		btVector3 impulse = impulseMat *  distPenetration;
 		obj->applyImpulse(impulse, ra);
+		return impulse;
 	}
+	return btVector3(0, 0, 0);
 }
 
 
