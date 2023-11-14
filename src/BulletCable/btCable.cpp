@@ -111,6 +111,13 @@ void btCable::solveConstraints()
 			{
 				// Add Object to the potential list
 				btCollisionObject* rb = (btCollisionObject*)temp[w].m_pProxy1->m_clientObject;
+
+				// Entity is set with collision
+				if (rb->getBroadphaseHandle()->m_collisionFilterMask == 0)
+				{
+					continue;
+				}
+
 				if (rb->hasContactResponse() && this->m_collisionDisabledObjects.findLinearSearch(rb) == m_collisionDisabledObjects.size())
 				{
 					BroadPhasePair* temp = new BroadPhasePair();
@@ -123,6 +130,13 @@ void btCable::solveConstraints()
 			{
 				// Add the node to the potential list of node collision
 				btCollisionObject* rb = (btCollisionObject*)temp[w].m_pProxy0->m_clientObject;
+
+				// Entity is set with collision
+				if (rb->getBroadphaseHandle()->m_collisionFilterMask == 0)
+				{
+					continue;
+				}
+
 				if (rb->hasContactResponse() && this->m_collisionDisabledObjects.findLinearSearch(rb) == m_collisionDisabledObjects.size())
 				{
 					BroadPhasePair* temp = new BroadPhasePair();
@@ -202,17 +216,19 @@ void btCable::solveConstraints()
 	
 	if (useCollision) solveContact(&nodePairContact);
 
-
+	// Remove unused manifold 
 	clearManifold(BroadPhaseOutput,false);
-	int numManifold = 0;
+
 	for (i = 0; i < nodePairContact.size(); i++)
 	{
 		NodePairNarrowPhase nodePair = nodePairContact.at(i);
 		if (!nodePair.hit)
 			continue;
 		btPersistentManifold* manifold; 
+		// If the manifold exist, use it
 		if (nodePairContact.at(i).pair->haveManifoldsRegister)
 			manifold = nodePairContact.at(i).pair->manifold;
+		// Else create one 
 		else
 		{
 			manifold = m_world->getDispatcher()->getNewManifold( this,nodePairContact[i].pair->body);
@@ -223,12 +239,10 @@ void btCable::solveConstraints()
 
 		// Obj 0 = Cable
 		// Obj 1 = RigidBody
-		//btManifoldPoint(const btVector3& pointA, const btVector3& pointB,const btVector3& normal,btScalar distance)
 
 		const btVector3& pointB = nodePairContact.at(i).lastPosition;
 		const btVector3& normal = nodePairContact.at(i).normal;
 		const btScalar distance = nodePairContact.at(i).distance;
-
 
 		btManifoldPoint newPoint = btManifoldPoint(btVector3(0, 0, 0), btVector3(0, 0, 0),normal,distance);
 		newPoint.m_positionWorldOnA = pointB + normal * distance;
@@ -237,10 +251,8 @@ void btCable::solveConstraints()
 		newPoint.m_appliedImpulse = nodePairContact.at(i).impulse.length();
 		manifold->addManifoldPoint(newPoint, true);
 		btManifoldPoint temp = manifold->getContactPoint(manifold->getNumContacts() - 1);
-		
-		numManifold++;
 	}
-	cout << "num manifold add " << numManifold << endl;
+	// Clear manifolds without contact point
 	clearManifold(BroadPhaseOutput, true);
 
 	BroadPhaseOutput.clear();
@@ -312,7 +324,6 @@ void btCable::clearManifold(btAlignedObjectArray<BroadPhasePair *> objs,bool ini
 		// Remove body that aren t in the broadphase anymore
 		if (!init)
 		{
-			cout << count << endl;
 			bool isCreated = false;
 			for (int i = 0; i < count; i++)
 			{
@@ -356,7 +367,6 @@ void btCable::clearManifold(btAlignedObjectArray<BroadPhasePair *> objs,bool ini
 					total += manifolds.at(i)->getNumContacts();
 				}
 			}
-			cout << "NbTotalContact = " << total << endl;
 		}
 		
 	}
