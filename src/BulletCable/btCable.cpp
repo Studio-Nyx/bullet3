@@ -21,7 +21,7 @@ using namespace std::chrono;
 btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
 {
 	m_world = world;
-
+	m_solverSubStep = worldInfo->numIteration;
 	// Initialize Data
 	m_cableData = new CableData();
 	m_nodePos = new NodePos[8192];
@@ -56,10 +56,28 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 
 #pragma region Constraints
 
+void btCable::resetManifoldLifeTime()
+{
+	int size = manifolds.size();
+	for (int i = 0; i < size; i++)
+	{
+		manifolds.at(i)->lifeTime = m_solverSubStep;
+	}
+}
+
 
 void btCable::solveConstraints()
 {
 	int i, ni;
+
+	// If first iteration reset Manifold lifeTime
+	if (m_cpt = 0)
+	{
+		resetManifoldLifeTime();	
+	}
+
+
+	
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
 		m_nodes[i].m_nbCollidingObject = 0;
@@ -232,7 +250,10 @@ void btCable::solveConstraints()
 		else
 		{
 			manifold = m_world->getDispatcher()->getNewManifold( this,nodePairContact[i].pair->body);
-			manifolds.push_back(manifold);
+			CableManifolds* cm = new CableManifolds();
+			cm->lifeTime = m_solverSubStep;
+			cm->manifold = manifold;
+			manifolds.push_back(cm);
 			nodePairContact.at(i).pair->manifold = manifold;
 			nodePairContact.at(i).pair->haveManifoldsRegister = true;
 		}
@@ -250,7 +271,6 @@ void btCable::solveConstraints()
 
 		newPoint.m_appliedImpulse = nodePairContact.at(i).impulse.length();
 		manifold->addManifoldPoint(newPoint, true);
-		btManifoldPoint temp = manifold->getContactPoint(manifold->getNumContacts() - 1);
 	}
 	// Clear manifolds without contact point
 	clearManifold(BroadPhaseOutput, true);
@@ -312,7 +332,7 @@ void btCable::solveConstraints()
 }
 
 
-void btCable::clearManifold(btAlignedObjectArray<BroadPhasePair *> objs,bool init)
+void btCable::clearManifold(btAlignedObjectArray<BroadPhasePair *> broadphasePair,bool init)
 {
 	if (manifolds.size() == 0)
 	{
@@ -321,52 +341,41 @@ void btCable::clearManifold(btAlignedObjectArray<BroadPhasePair *> objs,bool ini
 	else
 	{
 		int count = manifolds.size();
+		bool haveManifold = false;
 		// Remove body that aren t in the broadphase anymore
 		if (!init)
 		{
-			bool isCreated = false;
 			for (int i = 0; i < count; i++)
 			{
-				for (int j = 0; j < objs.size(); j++)
+				for (int j = 0; j < broadphasePair.size(); j++)
 				{
 					// Body 0 is always the cable
-					if (manifolds.at(i)->getBody1() == objs.at(j)->body)
+					if (manifolds.at(i)->manifold->getBody1() == broadphasePair.at(j)->body)
 					{
-						objs.at(j)->haveManifoldsRegister = true;
-						objs.at(j)->manifold = manifolds.at(i);
-						isCreated = true;
+						broadphasePair.at(j)->haveManifoldsRegister = true;
+						manifolds.at(i)->manifold->clearManifold();
+						broadphasePair.at(j)->manifold = manifolds.at(i)->manifold;
+						haveManifold = true;
 						break;
 					}
-				}
-				// remove unused manifolds
-				if (!isCreated)
-				{
-					m_world->getDispatcher()->releaseManifold(manifolds.at(i));
-					manifolds.removeAtIndex(i);
-					count--;
-				}
-				else
-				{
-					manifolds.at(i)->clearManifold();
+					
 				}
 			}
 		}
-		// Remouve the body that have no contact point 
+		// Remouve the body that have no contact point and lifeTime=0
 		else
 		{
-			int total = 0;
 			for (int i = 0; i < count; i++)
 			{
-				if (manifolds.at(i)->getNumContacts() == 0)
+				if (manifolds.at(i)->manifold->getNumContacts() <= 0)
 				{
-					m_world->getDispatcher()->releaseManifold(manifolds.at(i));
-					manifolds.removeAtIndex(i);
-					count--;
-					i--;
-				}
-				else
-				{
-					total += manifolds.at(i)->getNumContacts();
+					manifolds.at(i)->lifeTime--;
+					if (manifolds.at(i)->lifeTime == 0){
+						m_world->getDispatcher()->releaseManifold(manifolds.at(i)->manifold);
+						manifolds.removeAtIndex(i);
+						count--;
+						i--;
+					}
 				}
 			}
 		}
@@ -654,7 +663,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 
 				nodePairContact->at(i).impulse = impulse;
 				nodePairContact->at(i).m_Xout = n->m_x;
-				nodePairContact->at(i).lastPosition = contactPoint - margin * m_resultCallback.m_hitNormalWorld;
+				nodePairContact->at(i).lastPosition = contactPoint - marginBody * m_resultCallback.m_hitNormalWorld;
 				nodePairContact->at(i).hit = true;
 				nodePairContact->at(i).normal = m_resultCallback.m_hitNormalWorld;
 				nodePairContact->at(i).distance = distPenetration;

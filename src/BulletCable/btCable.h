@@ -46,6 +46,13 @@ class btCable : public btSoftBody
 		bool hit = false;
 	};
 
+	struct CableManifolds
+	{
+		btPersistentManifold* manifold;
+		int lifeTime;
+	};
+	
+
 	//
 	~btCable()
 	{
@@ -54,6 +61,11 @@ class btCable : public btSoftBody
 	
 
 private:
+	// Number of solverIteration for 1 deltaTime passed
+	int m_solverSubStep;
+	// Actual iteration
+	int m_cpt;
+
 	bool useLRA = true;
 	bool useBending = true;
 	bool useGravity = true;
@@ -79,7 +91,7 @@ private:
 	// Node forces members
 	bool useHydroAero = true;
 
-	btAlignedObjectArray<btPersistentManifold*> manifolds;
+	btAlignedObjectArray<CableManifolds*> manifolds;
 
 	void distanceConstraint();
 	void LRAConstraint();
@@ -95,6 +107,7 @@ private:
 	btVector3 PositionStartRayCalculation(Node* n, btCollisionObject* obj);
 	void recursiveBroadPhase(BroadPhasePair* obj, Node* n, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
 
+	void resetManifoldLifeTime();
 	void clearManifold(btAlignedObjectArray<BroadPhasePair*> objs, bool init);
 
 public:

@@ -173,7 +173,7 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 							 btIDebugDraw* idraw,
 							 int drawflags)
 {
-	const btScalar scl = (btScalar)0.1;
+	const btScalar scl = (btScalar)0.01;
 	const btScalar nscl = scl * 5;
 	const btVector3 lcolor = btVector3(0, 0, 0);
 	const btVector3 ncolor = btVector3(1, 1, 1);
@@ -270,6 +270,7 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 		{
 			for (i = 0; i < psb->m_nodes.size(); ++i)
 			{
+				
 				const btSoftBody::Node& n = psb->m_nodes[i];
 				if (0 == (n.m_material->m_flags & btSoftBody::fMaterial::DebugDraw)) continue;
 				if (n.m_splitv == btVector3(0, 0, 0))
