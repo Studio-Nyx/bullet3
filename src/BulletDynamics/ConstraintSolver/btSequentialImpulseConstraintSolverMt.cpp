@@ -396,6 +396,10 @@ void btSequentialImpulseConstraintSolverMt::internalCollectContactManifoldCached
 		btCollisionObject* colObj0 = (btCollisionObject*)manifold->getBody0();
 		btCollisionObject* colObj1 = (btCollisionObject*)manifold->getBody1();
 
+		// Disabled contact computation for softbody
+		if (colObj0->getInternalType() == 8)
+			continue;
+
 		int solverBodyIdA = getOrInitSolverBodyThreadsafe(*colObj0, infoGlobal.m_timeStep);
 		int solverBodyIdB = getOrInitSolverBodyThreadsafe(*colObj1, infoGlobal.m_timeStep);
 

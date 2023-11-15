@@ -1155,6 +1155,9 @@ void btSequentialImpulseConstraintSolver::convertContacts(btPersistentManifold**
 	for (i = 0; i < numManifolds; i++)
 	{
 		manifold = manifoldPtr[i];
+		// Disabled contact computation for softbody
+		if (manifold->getBody0()->getInternalType() == 8) 
+			continue;
 		convertContact(manifold, infoGlobal);
 	}
 }

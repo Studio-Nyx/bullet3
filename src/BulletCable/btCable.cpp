@@ -341,6 +341,7 @@ void btCable::clearManifold(btAlignedObjectArray<BroadPhasePair *> objs,bool ini
 				// remove unused manifolds
 				if (!isCreated)
 				{
+					m_world->getDispatcher()->releaseManifold(manifolds.at(i));
 					manifolds.removeAtIndex(i);
 					count--;
 				}
@@ -358,6 +359,7 @@ void btCable::clearManifold(btAlignedObjectArray<BroadPhasePair *> objs,bool ini
 			{
 				if (manifolds.at(i)->getNumContacts() == 0)
 				{
+					m_world->getDispatcher()->releaseManifold(manifolds.at(i));
 					manifolds.removeAtIndex(i);
 					count--;
 					i--;
@@ -599,16 +601,17 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 				btScalar offset = (n->m_x - contactPoint).length();
 				btScalar distPenetration = (m_resultCallback.m_hitNormalWorld * offset).length();
 
+
 				if (obj->getInternalType() == CO_RIGID_BODY)
 				{
 					btRigidBody* rb = (btRigidBody*)btRigidBody::upcast(obj);
 					if (!obj->isStaticOrKinematicObject())
 						impulse = moveBodyCollision(rb, margin, n, m_resultCallback.m_hitNormalWorld, contactPoint);
 				}
+				n->m_x = contactPoint + outMouvementPos;
 				
 				// Replace node
-				n->m_x = contactPoint + outMouvementPos;
-
+				
 				btVector3 correctionBefore = btVector3(0, 0, 0);
 				btVector3 correctionAfter = btVector3(0, 0, 0);
 
