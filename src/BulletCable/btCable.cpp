@@ -14,7 +14,6 @@
 #include "../../Extras/Serialize/BulletWorldImporter/btWorldImporter.h"
 #include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
 
-#define SLEEPINGTHRESHOLD 0.0001
 using namespace std::chrono;
 
 
@@ -22,6 +21,7 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 {
 	m_world = world;
 	m_solverSubStep = worldInfo->numIteration;
+	m_cpt = 0;
 	// Initialize Data
 	m_cableData = new CableData();
 	m_nodePos = new NodePos[8192];
@@ -70,13 +70,19 @@ void btCable::solveConstraints()
 {
 	int i, ni;
 
-	// If first iteration reset Manifold lifeTime
-	if (m_cpt = 0)
+	// SolveConstraint could be called more than once per frame
+	// To keep contact manifold during all these iteration we had to them a certain lifetime
+	// At the last iteration if the lifeTime =0 we could remove the manifold
+	if (m_cpt == m_solverSubStep)
+	{
+		m_cpt = 0;
+	}
+	if (m_cpt == 0)
 	{
 		resetManifoldLifeTime();	
 	}
-
-
+	m_cpt++;	
+	
 	
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
@@ -328,7 +334,6 @@ void btCable::solveConstraints()
 
 	// Update mass using second node if it was updated in unity side
 	m_cableData->nodeMass = getMass(1);
-
 }
 
 
@@ -358,19 +363,20 @@ void btCable::clearManifold(btAlignedObjectArray<BroadPhasePair *> broadphasePai
 						haveManifold = true;
 						break;
 					}
-					
 				}
 			}
 		}
-		// Remouve the body that have no contact point and lifeTime=0
+		// Remove the body that have no contact point and lifeTime = 0
 		else
 		{
 			for (int i = 0; i < count; i++)
 			{
 				if (manifolds.at(i)->manifold->getNumContacts() <= 0)
 				{
+					int a = manifolds.at(i)->lifeTime;
 					manifolds.at(i)->lifeTime--;
-					if (manifolds.at(i)->lifeTime == 0){
+
+					if (manifolds.at(i)->lifeTime <= 0){
 						m_world->getDispatcher()->releaseManifold(manifolds.at(i)->manifold);
 						manifolds.removeAtIndex(i);
 						count--;

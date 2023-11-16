@@ -58,6 +58,9 @@ class btCable : public btSoftBody
 	{
 		manifolds.clear();
 	}
+
+	btAlignedObjectArray<CableManifolds*> manifolds;
+
 	
 
 private:
@@ -91,7 +94,6 @@ private:
 	// Node forces members
 	bool useHydroAero = true;
 
-	btAlignedObjectArray<CableManifolds*> manifolds;
 
 	void distanceConstraint();
 	void LRAConstraint();

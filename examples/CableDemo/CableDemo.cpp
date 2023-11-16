@@ -1576,6 +1576,7 @@ void CableDemo::initPhysics()
 	m_softBodyWorldInfo.water_offset = 0;
 	m_softBodyWorldInfo.water_normal = btVector3(0, 0, 0);
 	m_softBodyWorldInfo.m_gravity.setValue(0, -9.81, 0);
+	m_softBodyWorldInfo.numIteration = 4;
 
 	m_autocam = false;
 	m_raycast = false;
