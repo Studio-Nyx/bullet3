@@ -56,6 +56,11 @@ class btCable : public btSoftBody
 	//
 	~btCable()
 	{
+		int size = manifolds.size();
+		for (int i = 0; i < size; i++)
+		{
+			m_world->getDispatcher()->releaseManifold(manifolds.at(i)->manifold);
+		}
 		manifolds.clear();
 	}
 
