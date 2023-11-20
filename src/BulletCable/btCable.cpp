@@ -665,10 +665,10 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 				}
 
 				// Add correction
-				n->m_x = n->m_x + correctionBefore + correctionAfter;
+				//n->m_x = n->m_x + correctionBefore + correctionAfter;
 
 				nodePairContact->at(i).impulse = impulse;
-				nodePairContact->at(i).m_Xout = n->m_x;
+				nodePairContact->at(i).m_Xout = n->m_x + (0.5 * correctionBefore + correctionAfter) ;
 				nodePairContact->at(i).lastPosition = contactPoint - marginBody * m_resultCallback.m_hitNormalWorld;
 				nodePairContact->at(i).hit = true;
 				nodePairContact->at(i).normal = m_resultCallback.m_hitNormalWorld;
