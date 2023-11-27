@@ -46,8 +46,6 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 		m_nodeData[i].velocity_x = m_nodes[i].m_v.getX();
 		m_nodeData[i].velocity_y = m_nodes[i].m_v.getY();
 		m_nodeData[i].velocity_z = m_nodes[i].m_v.getZ();
-
-		m_nodeData[i].mass = 1.0 / m_nodes[i].m_im;
 	}
 
 	// Using getCollisionShape we set the cable radius
@@ -330,8 +328,6 @@ void btCable::solveConstraints()
 		m_nodeData[i].volume = SIMD_PI * m_cableData->radius * m_cableData->radius * sizeElement;
 		// Divide it by two cause every node is used twice in the calculation
 		m_nodeData[i].volume = m_nodeData[i].volume / 2;
-
-		m_nodeData[i].mass = 1.0 / m_nodes[i].m_im;
 	}
 }
 

@@ -156,7 +156,6 @@ public:
         float velocity_y;
         float velocity_z;
 		float volume;
-		float mass;
     };
     static const int NodeDataSize = sizeof(NodeData);
     
