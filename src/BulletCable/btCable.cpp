@@ -101,13 +101,31 @@ void btCable::solveConstraints()
 	for (i = 0, ni = this->m_anchors.size(); i < ni; ++i)
 	{
 		Anchor& a = this->m_anchors[i];
-		
 		const btVector3 ra = a.m_body->getWorldTransform().getBasis() * a.m_local;
+
+		const double invMassBody = a.m_body->getInvMass();
+		const double invMassNode = a.m_node->m_im;
+		const auto& invInertiaTensorWorld = a.m_body->getInvInertiaTensorWorld();
+
+		// Compute the real impulse matrix to be able to later compute the cable tension
 		a.m_c0 = ImpulseMatrix(m_sst.sdt,
-							   a.m_node->m_im,
-							   a.m_body->getInvMass(),
-							   a.m_body->getInvInertiaTensorWorld(),
+							   invMassNode,
+							   invMassBody,
+							   invInertiaTensorWorld,
 							   ra);
+
+		// Compute a tweaked impulse matrix used to stabilized distance body / anchor
+		// 0.2% of body mass added to anchor node
+		const double bodyMassRatio = 0.002;
+		const double nodeMass = (1.0 / invMassNode);
+		//const double tweakedMass = min(nodeMass + a.m_body->getMass() * bodyMassRatio, 1000 * nodeMass);
+		const double tweakedMass = nodeMass + a.m_body->getMass() * bodyMassRatio;
+		a.m_c0_massBalance = ImpulseMatrix(m_sst.sdt,
+										   1 / tweakedMass,
+										   invMassBody,
+										   invInertiaTensorWorld,
+										   ra);
+
 		a.m_c1 = ra;
 		a.m_c2 = m_sst.sdt * a.m_node->m_im;
 		a.m_body->activate();
@@ -1037,10 +1055,10 @@ void btCable::anchorConstraint()
 	BT_PROFILE("PSolve_Anchors");
 	const btScalar kAHR = m_cfg.kAHR * 1;
 	const btScalar dt = m_sst.sdt;
-	
+
 	for (int i = 0, ni = this->m_anchors.size(); i < ni; ++i)
 	{
-		Anchor& a =this->m_anchors[i];
+		Anchor& a = this->m_anchors[i];
 		const btTransform& t = a.m_body->getWorldTransform();
 		Node& n = *a.m_node;
 		const btVector3 wa = t * a.m_local;
@@ -1048,9 +1066,12 @@ void btCable::anchorConstraint()
 		const btVector3 vb = n.m_x - n.m_q;
 		const btVector3 vr = (va - vb) + (wa - n.m_x) * kAHR;
 		const btVector3 impulse = a.m_c0 * vr * a.m_influence;
+
+		// Use of the tweaked impulse matrix to stabilized distance body / anchor
+		const btVector3 impulse_massBalance = a.m_c0_massBalance * vr * a.m_influence;
 		// n.m_x += impulse * a.m_c2;
 		n.m_x = a.m_body->getCenterOfMassPosition() + a.m_c1;
-		a.m_body->applyImpulse(-impulse, a.m_c1);
+		a.m_body->applyImpulse(-impulse_massBalance, a.m_c1);
 
 		//impulses[i] += impulse / dt;
 		a.tension += impulse / dt;
