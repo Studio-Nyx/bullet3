@@ -134,7 +134,6 @@ public:
 	struct CableData
 	{
 		float radius;
-		float nodeMass;
 		float tangentDragCoefficient;
 		float normalDragCoefficient;
 		float horizonDrop;
@@ -156,7 +155,8 @@ public:
     	float velocity_x;
         float velocity_y;
         float velocity_z;
-    	float volume;
+		float volume;
+		float mass;
     };
     static const int NodeDataSize = sizeof(NodeData);
     

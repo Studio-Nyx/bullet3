@@ -26,7 +26,7 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 	m_cableData = new CableData();
 	m_nodePos = new NodePos[8192];
 	m_nodeData = new NodeData[8192];
-	
+
 	for (int i = 0; i < this->m_nodes.size(); i++)
 	{
 		m_nodes[i].m_battach = 0;
@@ -36,21 +36,21 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 		{
 			appendLink(i - 1, i);
 		}
-		
+
 		// Set Node pos Struct
 		m_nodePos[i].x = m_nodes[i].m_x.getX();
 		m_nodePos[i].y = m_nodes[i].m_x.getY();
 		m_nodePos[i].z = m_nodes[i].m_x.getZ();
-		
+
 		// Set Node Data Struct
 		m_nodeData[i].velocity_x = m_nodes[i].m_v.getX();
-        m_nodeData[i].velocity_y = m_nodes[i].m_v.getY();
-        m_nodeData[i].velocity_z = m_nodes[i].m_v.getZ();
+		m_nodeData[i].velocity_y = m_nodes[i].m_v.getY();
+		m_nodeData[i].velocity_z = m_nodes[i].m_v.getZ();
+
+		m_nodeData[i].mass = 1.0 / m_nodes[i].m_im;
 	}
 
-    // Using second node we set mass cable value
-    m_cableData->nodeMass = getMass(1);
-    // Using getCollisionShape we set the cable radius
+	// Using getCollisionShape we set the cable radius
 	m_cableData->radius = getCollisionShape()->getMargin();
 }
 
@@ -330,10 +330,9 @@ void btCable::solveConstraints()
 		m_nodeData[i].volume = SIMD_PI * m_cableData->radius * m_cableData->radius * sizeElement;
 		// Divide it by two cause every node is used twice in the calculation
 		m_nodeData[i].volume = m_nodeData[i].volume / 2;
-	}
 
-	// Update mass using second node if it was updated in unity side
-	m_cableData->nodeMass = getMass(1);
+		m_nodeData[i].mass = 1.0 / m_nodes[i].m_im;
+	}
 }
 
 
