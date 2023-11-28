@@ -103,7 +103,7 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 	
 	//Set Arrays
 	int NodesIndex = 0;
-	for (uint8_t i = 0; i < m_softBodies.size(); i++)
+	for (int i = 0; i < m_softBodies.size(); i++)
 	{
 		btCable* cable = reinterpret_cast<btCable*>(m_softBodies[i]);
 
