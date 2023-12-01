@@ -1065,9 +1065,9 @@ void btCable::anchorConstraint()
 		const btVector3 va = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt;
 		const btVector3 vb = n.m_x - n.m_q;
 		const btVector3 vr = (va - vb) + (wa - n.m_x) * kAHR;
-		const btVector3 impulse = a.m_c0 * vr * a.m_influence;
-		//n.m_x += impulse * a.m_c2;
-		//impulses[i] += impulse / dt;
+		// const btVector3 impulse = a.m_c0 * vr * a.m_influence;
+		// n.m_x += impulse * a.m_c2;
+		// impulses[i] += impulse / dt;
 
 		// Use of the tweaked impulse matrix to stabilized distance body / anchor
 		const btVector3 impulse_massBalance = a.m_c0_massBalance * vr * a.m_influence;
