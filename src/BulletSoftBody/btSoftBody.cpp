@@ -525,6 +525,9 @@ void btSoftBody::appendAnchor(int node, btRigidBody* body, const btVector3& loca
 	a.m_node->m_battach = 1;
 	a.m_influence = influence;
 	m_anchors.push_back(a);
+
+	// Keep track of the number of anchor attached to this body
+	body->m_anchorsCount += 1;
 }
 
 //

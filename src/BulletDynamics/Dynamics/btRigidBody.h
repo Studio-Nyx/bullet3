@@ -94,6 +94,9 @@ class btRigidBody : public btCollisionObject
 
 	int m_debugBodyId;
 
+public:
+	int m_anchorsCount{0};
+
 protected:
 	ATTRIBUTE_ALIGNED16(btVector3 m_deltaLinearVelocity);
 	btVector3 m_deltaAngularVelocity;
