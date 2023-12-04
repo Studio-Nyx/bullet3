@@ -18,10 +18,11 @@ subject to the following restrictions:
 #include "btGjkPairDetector.h"
 #include "btPointCollector.h"
 #include "LinearMath/btTransformUtil.h"
+#include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
 
 #ifdef BT_USE_DOUBLE_PRECISION
 //#define MAX_ITERATIONS 64
-#define MAX_ITERATIONS 32
+#define MAX_ITERATIONS 64
 #else
 #define MAX_ITERATIONS 32
 #endif
@@ -161,5 +162,147 @@ bool btGjkConvexCast::calcTimeOfImpact(
 		return true;
 	}
 
+	return false;
+}
+
+
+
+btGjkConvexCastCable::btGjkConvexCastCable(const btConvexShape* convexA, const btConvexShape* convexB, btSimplexSolverInterface* simplexSolver)
+	: m_simplexSolver(simplexSolver),
+	  m_convexA(convexA),
+	  m_convexB(convexB)
+{
+}
+bool btGjkConvexCastCable::calcTimeOfImpact(
+	const btTransform& fromA,
+	const btTransform& toA,
+	const btTransform& fromB,
+	const btTransform& toB,
+	CastResult& result)
+{
+	m_simplexSolver->reset();
+
+	/// compute linear velocity for this interval, to interpolate
+	//assume no rotation/angular velocity, assert here?
+	btVector3 linVelA, linVelB;
+	linVelA = toA.getOrigin() - fromA.getOrigin();
+	linVelB = btVector3(0, 0, 0);
+	btScalar radius = btScalar(0.001);
+	btScalar lambda = btScalar(0.);
+	btVector3 v(1, 0, 0);
+
+	int maxIter = MAX_ITERATIONS;
+
+	btVector3 n;
+	n.setValue(btScalar(0.), btScalar(0.), btScalar(0.));
+	bool hasResult = false;
+	btVector3 c;
+	btVector3 r = (linVelA - linVelB);
+
+	btScalar lastLambda = lambda;
+
+	int numIter = 0;
+	//first solution, using GJK
+
+	btTransform identityTrans;
+	identityTrans.setIdentity();
+
+	btPointCollector pointCollector;
+	btPointCollector pointCollectorAfter;
+	btGjkEpaPenetrationDepthSolver epa = btGjkEpaPenetrationDepthSolver();
+	btGjkPairDetector gjk(m_convexA, m_convexB, m_simplexSolver, &epa);
+	btGjkPairDetector::ClosestPointInput input;
+
+	//we don't use margins during CCD
+	//gjk.setIgnoreMargin(true);
+	//gjkAfter.setIgnoreMargin(true);
+
+	input.m_transformA = fromA;
+	input.m_transformB = fromB;
+	gjk.getClosestPoints(input, pointCollector, 0);
+
+	hasResult = pointCollector.m_hasResult;
+	c = pointCollector.m_pointInWorld;
+	btScalar originalDist;
+	btVector3 pointX = c;
+	if (hasResult)
+	{
+		originalDist = pointCollector.m_distance;
+		btScalar dist;
+		dist = pointCollector.m_distance;
+		n = pointCollector.m_normalOnBInWorld;
+		result.originalDist = originalDist;
+
+		//not close enough
+		while (dist > radius)
+		{
+			numIter++;
+			if (numIter > maxIter)
+			{
+				printf("too long");
+				return false;  //todo: report a failure
+			}
+			btScalar dLambda = btScalar(0.);
+
+			btScalar projectedLinearVelocity = r.dot(n);
+
+			dLambda = dist / (projectedLinearVelocity);
+
+			lambda = lambda - dLambda;
+
+			if (lambda > btScalar(1.))
+			{
+				return false;
+			}
+
+			if (lambda < btScalar(0.))
+			{
+				return false;
+			}
+
+			//todo: next check with relative epsilon
+			if (lambda <= lastLambda)
+			{
+				return false;
+				break;
+			}
+			lastLambda = lambda;
+
+			input.m_transformA.getOrigin().setInterpolate3(fromA.getOrigin(), toA.getOrigin(), lambda);
+			input.m_transformB.getOrigin().setInterpolate3(fromB.getOrigin(), toB.getOrigin(), lambda);
+
+			gjk.getClosestPoints(input, pointCollectorAfter, 0);
+
+			if (pointCollectorAfter.m_hasResult)
+			{
+				// Penetration case
+				if (pointCollectorAfter.m_distance < btScalar(0.))
+				{
+					result.m_fraction = lastLambda;
+					n = pointCollectorAfter.m_normalOnBInWorld;
+					result.m_normal = n;
+					result.m_hitPoint = pointCollectorAfter.m_pointInWorld;
+					result.m_hitTransformA = input.m_transformA;
+					return true;
+				}
+				// Update normale and contact point
+				c = pointCollectorAfter.m_pointInWorld;
+				n = pointCollectorAfter.m_normalOnBInWorld;
+				dist = pointCollectorAfter.m_distance;
+			}
+		}
+
+		if (n.dot(r) >= 0)
+		{
+			return false;
+		}
+
+		result.m_fraction = lambda;
+		result.m_normal = n;
+		result.m_hitPoint = c;
+		result.m_hitTransformA = input.m_transformA;
+
+		return true;
+	}
 	return false;
 }
