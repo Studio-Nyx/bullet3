@@ -115,11 +115,8 @@ void btCable::solveConstraints()
 							   ra);
 
 		// Compute a tweaked impulse matrix used to stabilized distance body / anchor
-		// 0.2% of body mass added to anchor node
-		const double bodyMassRatio = 0.002;
 		const double nodeMass = (1.0 / invMassNode);
-		//const double tweakedMass = min(nodeMass + a.m_body->getMass() * bodyMassRatio, 1000 * nodeMass);
-		const double tweakedMass = nodeMass + a.m_body->getMass() * bodyMassRatio;
+		const double tweakedMass = nodeMass + a.m_body->getMass() * a.BodyMassRatio * (1 / a.m_body->m_anchorsCount);
 		a.m_c0_massBalance = ImpulseMatrix(m_sst.sdt,
 										   1 / tweakedMass,
 										   invMassBody,

@@ -472,6 +472,9 @@ public:
 		btVector3 m_c1;		            // Relative anchor
 		btScalar m_c2;		            // ima*dt
 		btVector3 tension;              // tension at this anchor
+		
+		// 0.2% of body mass added to anchor node
+		static constexpr double BodyMassRatio = 0.002;
 	};
 	/* Note			*/
 	struct Note : Element
