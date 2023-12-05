@@ -297,11 +297,16 @@ void btCable::solveConstraints()
 	BroadPhaseOutput.clear();
 	nodePairContact.clear();
 
+	updateNodeData();
+}
+
+
+void btCable::updateNodeData() 
+{
 	const btScalar vc = m_sst.isdt * (1 - m_cfg.kDP);
-
 	lenght = 0;
-
-	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
+	int ni;
+	for (int i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
 		Node& n = m_nodes[i];
 		n.m_v = (n.m_x - n.m_q) * vc;
@@ -322,21 +327,21 @@ void btCable::solveConstraints()
 
 		if (i == 0)
 		{
-			sizeElement = (m_nodes[i].m_x - m_nodes[i+1].m_x).length();
+			sizeElement = (m_nodes[i].m_x - m_nodes[i + 1].m_x).length();
 			// Calculate cable Lenght
 			lenght += sizeElement;
 		}
 		else if (i == m_nodes.size() - 1)
 		{
-			sizeElement = (m_nodes[i].m_x - m_nodes[i-1].m_x).length(); 
+			sizeElement = (m_nodes[i].m_x - m_nodes[i - 1].m_x).length();
 		}
 		else
 		{
-			sizeElement = (m_nodes[i].m_x - m_nodes[i-1].m_x).length(); 
+			sizeElement = (m_nodes[i].m_x - m_nodes[i - 1].m_x).length();
 			// Calculate cable Lenght
 			lenght += sizeElement;
 
-			sizeElement += (m_nodes[i].m_x - m_nodes[i+1].m_x).length(); 
+			sizeElement += (m_nodes[i].m_x - m_nodes[i + 1].m_x).length();
 		}
 
 		// Using a cylinder volume calculation
@@ -345,7 +350,6 @@ void btCable::solveConstraints()
 		m_nodeData[i].volume = m_nodeData[i].volume / 2;
 	}
 }
-
 
 void btCable::clearManifold(btAlignedObjectArray<BroadPhasePair *> broadphasePair,bool init)
 {

@@ -120,6 +120,8 @@ private:
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
 	
+	void updateNodeData();
+
 	float lenght = 0;
 
 	enum CableState

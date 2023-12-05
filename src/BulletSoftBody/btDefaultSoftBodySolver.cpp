@@ -20,6 +20,7 @@ subject to the following restrictions:
 #include "btDefaultSoftBodySolver.h"
 #include "BulletCollision/CollisionShapes/btCapsuleShape.h"
 #include "BulletSoftBody/btSoftBody.h"
+#include <BulletCable/btCable.h>
 
 btDefaultSoftBodySolver::btDefaultSoftBodySolver()
 {
@@ -72,10 +73,17 @@ void btDefaultSoftBodySolver::solveConstraints(btScalar solverdt)
 		{
 			psb->solveConstraints();
 		}
+		else
+		{
+			btCable *cable = (btCable *)psb;
+			if (cable != nullptr)
+			{
+				cable->updateNodeData();
+			}		
+		}
 	}
-	
-	
-}  // btDefaultSoftBodySolver::solveConstraints
+} 
+// btDefaultSoftBodySolver::solveConstraints
 
 void btDefaultSoftBodySolver::copySoftBodyToVertexBuffer(const btSoftBody *const softBody, btVertexBufferDescriptor *vertexBuffer)
 {
