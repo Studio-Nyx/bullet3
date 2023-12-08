@@ -1121,25 +1121,16 @@ void btSoftBody::transform(const btTransform& trs)
 	}
 	updateNormals();
 	updateBounds();
-	updateConstants();
+	// updateConstants();
 }
 
 //
 void btSoftBody::translate(const btVector3& trs)
 {
-	for (int i = 0, ni = m_nodes.size(); i < ni; ++i)
-	{
-		Node& n = m_nodes[i];
-		n.m_x += trs;
-		n.m_q += trs;
-	}
-
-	/*
 	btTransform t;
 	t.setIdentity();
 	t.setOrigin(trs);
 	transform(t);
-	*/
 }
 
 //
