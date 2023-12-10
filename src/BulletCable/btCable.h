@@ -108,7 +108,7 @@ private:
 	void LRAConstraintNode();
 	void FABRIKChain();
 
-	void collisionParLien(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
+	void SolveLinkCollision(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 
 
 	void predictMotion(btScalar dt) override;

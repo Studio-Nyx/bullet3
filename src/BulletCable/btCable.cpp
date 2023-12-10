@@ -305,7 +305,7 @@ void btCable::solveConstraints()
 
 		// we process collision only on wanted iteration and on the last iteration
 		if (useCollision && (i % m_substepDelayCollision == 0 || i == m_cfg.piterations - 1))
-			collisionParLien(&nodePairContact);
+			SolveLinkCollision(&nodePairContact);
 		
 	}
 	// Remove unused manifold 
@@ -319,7 +319,7 @@ void btCable::solveConstraints()
 		// If the manifold exist, use it
 		if (nodePair->pair->haveManifoldsRegister)
 			manifold = nodePair->pair->manifold;
-		// Else create one 
+		// Else create a new one 
 		else
 		{
 			manifold = m_world->getDispatcher()->getNewManifold(this, nodePair->pair->body);
@@ -405,7 +405,7 @@ void btCable::updateNodeData()
 	}
 }
 
-void btCable::collisionParLien(btAlignedObjectArray<btCable::NodePairNarrowPhase>* nodePairContact)
+void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPhase>* nodePairContact)
 {
 	Node* n0;
 	Node* n1;
@@ -415,6 +415,8 @@ void btCable::collisionParLien(btAlignedObjectArray<btCable::NodePairNarrowPhase
 	btScalar marginNode = this->getCollisionShape()->getMargin();
 	btScalar marginBody,margin;
 	int nodePairContactSize = nodePairContact->size();
+
+
 	for (int j = 0; j < m_subIterationCollision; j++)
 	{
 		for (int i = 0; i < nodePairContactSize; i++)
@@ -430,7 +432,6 @@ void btCable::collisionParLien(btAlignedObjectArray<btCable::NodePairNarrowPhase
 		// Resolve each link
 		for (int i = 0; i < nodePairContactSize; i++)
 		{
-			
 			NodePairNarrowPhase* contact = &nodePairContact->at(i);
 			NodePairNarrowPhase* contactBefore; 
 			if (i!=0)
@@ -553,6 +554,8 @@ void btCable::collisionParLien(btAlignedObjectArray<btCable::NodePairNarrowPhase
 				newpointN0 = mid + displacement.rotate(t.getRotation().getAxis(), 0);
 				newpointN1 = mid - displacement.rotate(t.getRotation().getAxis(), 0);  
 
+
+				// Compute rotation for link resolution
 				btScalar lengthToMid = (mid - newpointN0).length();
 				if (!btFuzzyZero(lengthToMid))
 				{
@@ -592,11 +595,15 @@ void btCable::collisionParLien(btAlignedObjectArray<btCable::NodePairNarrowPhase
 					}
 				}
 
+				// Add correction movement on the node
 				n0->m_xOut += newpointN0 - n0->m_x;
 				n1->m_xOut += newpointN1 - n1->m_x;
 
+				// Update start position for the contact
 				contact->m_Xout = newpointN0;
 				contact->m_Xout1 = newpointN1;
+
+				// Update the impulse on the link
 				contact->impulse = impulse;
 
 				n0->areColliding++;

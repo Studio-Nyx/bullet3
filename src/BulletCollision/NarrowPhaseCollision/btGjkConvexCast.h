@@ -41,7 +41,6 @@ public:
 		const btTransform& fromB,
 		const btTransform& toB,
 		CastResult& result);
-
 };
 
 
