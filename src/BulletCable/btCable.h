@@ -84,12 +84,6 @@ private:
 	btScalar maxAngle = 0;
 	btScalar bendingStiffness = 0;
 
-	// The margin add after node placement
-	btScalar m_correctionNormal = 0;
-
-	// The margin add on the ray start postion
-	btScalar m_safeDirectionThreshold = 0;
-
 	// disabled collision detection if this movement 
 	btScalar m_collisionSleepingThreshold = 0.0;
 
@@ -205,7 +199,7 @@ public:
 	void setUseCollision(bool active);
 	bool getUseCollision();
 
-	void setCollisionParameters(int substepDelayCollision, int subIterationCollision, btScalar correctionNormal, btScalar safeDirectionThreshold, btScalar sleepingThreshold);
+	void setCollisionParameters(int substepDelayCollision, int subIterationCollision, btScalar sleepingThreshold);
 
     bool getUseHydroAero();
 	void setUseHydroAero(bool active);

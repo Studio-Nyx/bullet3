@@ -930,7 +930,7 @@ static void Init_TestCollisionCornerCube(CableDemo* pdemo)
 	cable->setUseCollision(true);
 	cable->setUseLRA(false);
 	cable->getCollisionShape()->setMargin(0.005);
-	cable->setCollisionParameters(1, 1, 0, 0, 0);
+	cable->setCollisionParameters(1, 1, 0);
 
 	pdemo->SetCameraPosition(btVector3(0, 10, 0));
 }
@@ -1054,7 +1054,7 @@ static void Init_TestSupportA18(CableDemo* pdemo)
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(true);
-	cable->setCollisionParameters(1,1, 0, 0.01, 0);
+	cable->setCollisionParameters(1,1,0);
 
 	//cout << "Link " << cable->m_links.at(1).m_rl << endl;
 
@@ -1123,15 +1123,15 @@ static void Init_TestCollisionCableRigid(CableDemo* pdemo)
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(true);
-	cable->setCollisionParameters(1,1,0.01,0.01,0);
+	cable->setCollisionParameters(1,1,0);
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 5));
 }
 
 static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 {
 	// Resolution's cable
-	int resolution = 200;
-	int iterations = 200;
+	int resolution = 100;
+	int iterations = 100;
 	btScalar margin = 0.01;
 
 	// Shape
@@ -1180,9 +1180,9 @@ static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 	btCable* cable = pdemo->createCable(resolution, iterations, 3, transformRight.getOrigin(), transformLeft.getOrigin(), bodyLeftAnchor, bodyRightAnchor,true,true);
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
-	cable->setUseLRA(true);
+	cable->setUseLRA(false);
 
-	cable->setCollisionParameters(1,5, 0.01, 0.02, 0);
+	cable->setCollisionParameters(1,3,0);
 
 	pdemo->SetCameraPosition(btVector3(0, 3.5, 0));
 }
@@ -1292,7 +1292,7 @@ static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(false);
 
-	cable->setCollisionParameters(5, 1, 0.003, 0.01, 0);
+	cable->setCollisionParameters(5,1,0);
 
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 0));
 }

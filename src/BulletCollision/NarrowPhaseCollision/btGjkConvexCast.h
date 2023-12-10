@@ -44,24 +44,8 @@ public:
 
 };
 
+#endif  //BT_GJK_CONVEX_CAST_H
 
-class btGjkConvexCastCable : public btConvexCast
-{
-	btSimplexSolverInterface* m_simplexSolver;
-	const btConvexShape* m_convexA;
-	const btConvexShape* m_convexB;
-
-public:
-	btGjkConvexCastCable(const btConvexShape* convexA, const btConvexShape* convexB, btSimplexSolverInterface* simplexSolver);
-
-	/// cast a convex against another convex object
-	virtual bool calcTimeOfImpact(
-		const btTransform& fromA,
-		const btTransform& toA,
-		const btTransform& fromB,
-		const btTransform& toB,
-		CastResult& result);
-};
 
 
 class btGjkConvexCastCable : public btConvexCast
@@ -89,8 +73,3 @@ public:
 		const btTransform& toB,
 		CastResult& result);
 };
-
-
-
-
-#endif  //BT_GJK_CONVEX_CAST_H

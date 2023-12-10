@@ -17,9 +17,32 @@
 #include <BulletCollision/NarrowPhaseCollision/btConvexCast.h>
 #include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
-#include <BulletCollision/NarrowPhaseCollision/btGjkConvexCast.cpp>
 
 using namespace std::chrono;
+
+void computeTransform(btVector3 nodeA, btVector3 nodeB, btTransform* tr)
+{
+	btQuaternion q;
+	auto v1 = btVector3(0, 1, 0);
+	auto v2 = nodeB - nodeA;
+	auto k = (v1.cross(v2));
+	if (btFuzzyZero(k.length()))
+	{
+		q.setX(v1.x());
+		q.setY(v1.y());
+		q.setZ(v1.z());
+		q.setW(sqrt(v1.length2() * v2.length2()) + v1.dot(v2));
+	}
+	else
+	{
+		q.setX(k.x());
+		q.setY(k.y());
+		q.setZ(k.z());
+		q.setW(sqrt(v1.length2() * v2.length2()) + v1.dot(v2));
+	}
+	tr->setRotation(q);
+	tr->setOrigin((nodeA + nodeB) * 0.5);
+}
 
 
 btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
@@ -427,8 +450,6 @@ void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPha
 			n1->areColliding = 0;
 		}
 
-		linkIndex = -1;
-		
 		// Resolve each link
 		for (int i = 0; i < nodePairContactSize; i++)
 		{
@@ -440,11 +461,8 @@ void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPha
 			n0 = contact->node;
 			n1 = contact->node1;
 			
-			// Premier lien
-			if (linkIndex<0)
-			{
-				linkIndex =n0->index;
-			}
+			linkIndex =n0->index;
+
 			// If object are colliding with only 1 item, only compute collision once
 			if (m_links.at(linkIndex).nbCollision == 1 && j > 0)
 			{
@@ -470,7 +488,6 @@ void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPha
 				marginBody = shapeObj->getMargin();
 				margin = marginNode + shapeObj->getMargin();
 			}
-
 
 			// Transform generation
 			btVector3 startPos0 = contact->m_Xout;
@@ -527,16 +544,16 @@ void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPha
 				btVector3 displacement = (-dir * 0.5 * dist);
 					
 				btScalar rl = m_links.at(n0->index).m_rl;
+				btVector3 movement = (m_rayToTrans.getOrigin() - m_rayFromTrans.getOrigin());
 
-				if (rl < dist)
-				{
-					distanceOut += (dist - rl) * 0.1;
-				}
+				btScalar distanceToMove = movement.length();
+				
+				// Correction depends on the link movement
+				distanceOut += distanceToMove * 0.01;
 				if (castResult.originalDist < 0)
 					distanceOut += -castResult.originalDist;
-
-				if (distanceOut > margin)
-					distanceOut = margin;
+				if (distanceOut > 0.01)
+					distanceOut = 0.01;
 
 				btVector3 safeDir = castResult.m_normal * distanceOut;
 				btVector3 mid = t.getOrigin() + safeDir;
@@ -544,12 +561,10 @@ void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPha
 
 				if (contact->pair->body->getInternalType() == CO_RIGID_BODY)
 				{
-					btVector3 movement = (m_rayToTrans.getOrigin() - m_rayFromTrans.getOrigin());
 					btScalar penetration = (m_rayToTrans.getOrigin() - t.getOrigin()).length();
 					impulse = moveBodyCollisionLink((btRigidBody*)contact->pair->body, marginNode, n0->m_im + n1->m_im, movement, penetration, castResult.m_normal, castResult.m_hitPoint);
 				}
 
-				
 				// Compute new position
 				newpointN0 = mid + displacement.rotate(t.getRotation().getAxis(), 0);
 				newpointN1 = mid - displacement.rotate(t.getRotation().getAxis(), 0);  
@@ -569,29 +584,22 @@ void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPha
 					btScalar contactStart = projectedContactOnTr.length();
 					btScalar contactEnd = (ContactPointInMiddle - newpointN1).length();
 
-					btScalar totalDist = contactStart + contactEnd;
+					btScalar ratioStart = contactStart / (contactStart + contactEnd);
+					btScalar ratioEnd = 1-ratioStart;
 
-					btScalar ratioStart = contactStart / totalDist;
-					btScalar ratioEnd = contactEnd / totalDist;
-
-
-					btVector3 testUp = dir;
-					btVector3 testLeft = endDir;
-
-					btVector3 rotateAxis = testLeft.cross(testUp);
-					btScalar rotateAngle;
+					btVector3 rotateAxis = endDir.cross(dir);
 					
-
-					if (rotateAxis.length()>0.0000001)
+					// If no rotation
+					if (rotateAxis.length()>0.00001)
 					{
-						rotateAngle = acos(testLeft.dot(testUp));
+						btScalar rotateAngle = acos(endDir.dot(dir));
 						btQuaternion rotation = btQuaternion(rotateAxis, (rotateAngle));
 						btMatrix3x3 mat = btMatrix3x3(rotation);
 
-						btVector3 test = testUp * mat;
+						btVector3 rotateVector = dir * mat * dist;
 
-						newpointN0 = (ContactPointInMiddle - dist * ratioStart * test) + safeDir;
-						newpointN1 = (ContactPointInMiddle + dist * ratioEnd * test) + safeDir;
+						newpointN0 = (ContactPointInMiddle -  ratioStart * rotateVector) + safeDir;
+						newpointN1 = (ContactPointInMiddle +  ratioEnd * rotateVector) + safeDir;
 					}
 				}
 
@@ -622,8 +630,8 @@ void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPha
 			if (m_nodes.at(x).areColliding > 0)
 			{
 				m_nodes.at(x).m_x += m_nodes.at(x).m_xOut / m_nodes.at(x).areColliding;
+				m_nodes.at(x).m_xOut = btVector3(0, 0, 0);
 			}
-			m_nodes.at(x).m_xOut = btVector3(0,0,0);
 		}
 	}
 }
@@ -873,7 +881,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 			dir = (positionEndRay - positionStartRay) / len;
 			
 			
-			btVector3 start = positionStartRay - dir * m_safeDirectionThreshold;
+			btVector3 start = positionStartRay - dir * 0;
 
 			btVector3 end = positionEndRay;  
 
@@ -910,7 +918,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 			{
 				btVector3 contactPoint = m_resultCallback.m_hitPointWorld;
 
-				btVector3 outMouvementPos = m_resultCallback.m_hitNormalWorld * m_correctionNormal;
+				btVector3 outMouvementPos = m_resultCallback.m_hitNormalWorld * 0;
 				btVector3 newPosOut = contactPoint + outMouvementPos;
 				btVector3 impulse = btVector3(0,0,0);
 
@@ -1517,7 +1525,6 @@ void btCable::appendNode(const btVector3& x, btScalar m)
 		m_nodePos[i].y = m_nodes[i].m_x.getY();
 		m_nodePos[i].z = m_nodes[i].m_x.getZ();
 	}
-
 	n.index = m_nodes.size() - 1;	
 }
 
@@ -1530,12 +1537,10 @@ void btCable::setTotalMass(btScalar mass, bool fromfaces)
 	}
 }
 
-void btCable::setCollisionParameters(int substepDelayCollision, int subIterationCollision, btScalar correctionNormal, btScalar safeDirectionThreshold, btScalar collisionSleepingThreshold)
+void btCable::setCollisionParameters(int substepDelayCollision, int subIterationCollision, btScalar collisionSleepingThreshold)
 {
 	m_substepDelayCollision = substepDelayCollision;
 	m_subIterationCollision = subIterationCollision;
-	m_correctionNormal = correctionNormal;
-	m_safeDirectionThreshold = safeDirectionThreshold;
 	m_collisionSleepingThreshold = collisionSleepingThreshold;
 }
 
