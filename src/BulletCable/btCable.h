@@ -35,10 +35,13 @@ class btCable : public btSoftBody
 	struct NodePairNarrowPhase
 	{
 		Node* node;
+		btVector3 m_Xout;
+		Node* node1;
+		btVector3 m_Xout1;
 		btCollisionShape* collisionShape;
 		BroadPhasePair* pair;
 		btTransform worldToLocal;
-		btVector3 m_Xout;
+
 		btVector3 lastPosition;
 		btVector3 impulse;
 		btVector3 normal;
@@ -66,7 +69,6 @@ class btCable : public btSoftBody
 
 	btAlignedObjectArray<CableManifolds*> manifolds;
 
-	
 
 private:
 	// Number of solverIteration for 1 deltaTime passed
@@ -78,23 +80,24 @@ private:
 	bool useBending = true;
 	bool useGravity = true;
 	bool useCollision = true;
-	btScalar maxAngle = 0.1;
-	btScalar bendingStiffness = 0.1;
+
+	btScalar maxAngle = 0;
+	btScalar bendingStiffness = 0;
 
 	// The margin add after node placement
-	btScalar m_correctionNormal = 0.003;
+	btScalar m_correctionNormal = 0;
 
 	// The margin add on the ray start postion
-	btScalar m_safeDirectionThreshold = 0.01;
+	btScalar m_safeDirectionThreshold = 0;
 
 	// disabled collision detection if this movement 
 	btScalar m_collisionSleepingThreshold = 0.0;
 
 	// number of iteration step between each iteration of the collision constraint 
-	int m_substepDelayCollision = 2;
+	int m_substepDelayCollision = 1;
 
 	// number of iteration of the resolution on multi-collision node
-	int m_subIterationCollision = 3;
+	int m_subIterationCollision = 1;
 
 	// Node forces members
 	bool useHydroAero = true;
@@ -102,17 +105,22 @@ private:
 
 	void distanceConstraint();
 	void LRAConstraint();
-	void LRAConstraint(int level, int idxAnchor);
+	void LRAConstraintNode();
 	void FABRIKChain();
-	
+
+	void collisionParLien(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
+
+
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
 	void anchorConstraint();
 	bool checkCollide(int indexNode);
 	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
+
+	btVector3 moveBodyCollisionLink(btRigidBody* obj, btScalar margin, btScalar im, btVector3 movement, btScalar penetration, btVector3 normale, btVector3 hitPosition);
 	btVector3 moveBodyCollision(btRigidBody* body, btScalar margin, Node* n, btVector3 normale, btVector3 hitPosition);
 	btVector3 PositionStartRayCalculation(Node* n, btCollisionObject* obj);
-	void recursiveBroadPhase(BroadPhasePair* obj, Node* n, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
+	void recursiveBroadPhase(BroadPhasePair* obj, Node* n, Node* n1, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
 
 	void resetManifoldLifeTime();
 	void clearManifold(btAlignedObjectArray<BroadPhasePair*> objs, bool init);
@@ -213,6 +221,7 @@ public:
 
 	void setTotalMass(btScalar mass, bool fromfaces = false) override;
 
+	bool checkCollisionAnchor(Node* n, btCollisionObject* obj);
 #pragma endregion
 };
 #endif  //_BT_CABLE_H

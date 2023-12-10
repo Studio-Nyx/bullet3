@@ -65,7 +65,7 @@ void btDefaultSoftBodySolver::solveConstraints(btScalar solverdt)
 {
 
 	// Solve constraints for non-solver softbodies
-	#pragma omp parallel for
+	//#pragma omp parallel for
 	for (int i = 0; i < m_softBodySet.size(); ++i)
 	{
 		btSoftBody *psb = static_cast<btSoftBody *>(m_softBodySet[i]);

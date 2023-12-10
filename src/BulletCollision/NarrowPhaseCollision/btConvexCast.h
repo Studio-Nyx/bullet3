@@ -25,7 +25,7 @@ class btMinkowskiSumShape;
 #ifdef BT_USE_DOUBLE_PRECISION
 
 // #define MAX_CONVEX_CAST_ITERATIONS 64
-#define MAX_CONVEX_CAST_ITERATIONS 32
+#define MAX_CONVEX_CAST_ITERATIONS 64
 #define MAX_CONVEX_CAST_EPSILON (SIMD_EPSILON * 10)
 #else
 #define MAX_CONVEX_CAST_ITERATIONS 32
@@ -67,6 +67,7 @@ public:
 
 		virtual ~CastResult(){};
 
+		btScalar originalDist = 0.0;
 		btTransform m_hitTransformA;
 		btTransform m_hitTransformB;
 		btVector3 m_normal;
@@ -86,7 +87,10 @@ public:
 		const btTransform& toA,
 		const btTransform& fromB,
 		const btTransform& toB,
-		CastResult& result) = 0;
+		CastResult& result) = 0;	
 };
+
+
+
 
 #endif  //BT_CONVEX_CAST_H
