@@ -167,10 +167,17 @@ bool btGjkConvexCast::calcTimeOfImpact(
 
 
 
-btGjkConvexCastCable::btGjkConvexCastCable(const btConvexShape* convexA, const btConvexShape* convexB, btSimplexSolverInterface* simplexSolver)
+btGjkConvexCastCable::btGjkConvexCastCable(const btConvexShape* convexA, const btConvexShape* convexB, const btVector3 m_startNode0,
+										   const btVector3 m_startNode1,
+										   const btVector3 m_endNode0,
+										   const btVector3 m_endNode1, btSimplexSolverInterface* simplexSolver)
 	: m_simplexSolver(simplexSolver),
 	  m_convexA(convexA),
-	  m_convexB(convexB)
+	  m_convexB(convexB),
+	  m_startNode0(m_startNode0),
+	  m_startNode1(m_startNode1),
+	  m_endNode0(m_endNode0),
+	  m_endNode1(m_endNode1)
 {
 }
 bool btGjkConvexCastCable::calcTimeOfImpact(
@@ -239,7 +246,6 @@ bool btGjkConvexCastCable::calcTimeOfImpact(
 			numIter++;
 			if (numIter > maxIter)
 			{
-				printf("too long");
 				return false;  //todo: report a failure
 			}
 			btScalar dLambda = btScalar(0.);
@@ -269,7 +275,6 @@ bool btGjkConvexCastCable::calcTimeOfImpact(
 			lastLambda = lambda;
 
 			input.m_transformA.getOrigin().setInterpolate3(fromA.getOrigin(), toA.getOrigin(), lambda);
-			input.m_transformB.getOrigin().setInterpolate3(fromB.getOrigin(), toB.getOrigin(), lambda);
 
 			gjk.getClosestPoints(input, pointCollectorAfter, 0);
 
@@ -292,10 +297,10 @@ bool btGjkConvexCastCable::calcTimeOfImpact(
 			}
 		}
 
-		if (n.dot(r) >= 0)
-		{
-			return false;
-		}
+		//if (n.dot(r) >= 0)
+		//{
+			//return false;
+		//}
 
 		result.m_fraction = lambda;
 		result.m_normal = n;
@@ -305,4 +310,29 @@ bool btGjkConvexCastCable::calcTimeOfImpact(
 		return true;
 	}
 	return false;
+}
+
+
+void computeTransform(btVector3 nodeA, btVector3 nodeB, btTransform* tr)
+{
+	btQuaternion q;
+	auto v1 = btVector3(0, 1, 0);
+	auto v2 = nodeB - nodeA;
+	auto k = (v1.cross(v2));
+	if (btFuzzyZero(k.length()))
+	{
+		q.setX(v1.x());
+		q.setY(v1.y());
+		q.setZ(v1.z());
+		q.setW(sqrt(v1.length2() * v2.length2()) + v1.dot(v2));
+	}
+	else
+	{
+		q.setX(k.x());
+		q.setY(k.y());
+		q.setZ(k.z());
+		q.setW(sqrt(v1.length2() * v2.length2()) + v1.dot(v2));
+	}
+	tr->setRotation(q);
+	tr->setOrigin((nodeA + nodeB) * 0.5);
 }

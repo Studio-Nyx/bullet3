@@ -294,6 +294,7 @@ public:
 	};
 	struct Node : Feature
 	{
+		btScalar areColliding;
 		btVector3 m_x;       // Position
 		btVector3 m_xOut;  // Previous step position/Test position
 		int m_nbCollidingObject;  // Number of element in potential collision
@@ -325,6 +326,7 @@ public:
 	ATTRIBUTE_ALIGNED16(struct)
 	Link : Feature
 	{
+		btScalar nbCollision;
 		btVector3 m_c3;      // gradient
 		Node* m_n[2];        // Node pointers
 		btScalar m_rl;       // Rest length

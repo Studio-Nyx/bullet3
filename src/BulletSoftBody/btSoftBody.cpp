@@ -1121,7 +1121,7 @@ void btSoftBody::transform(const btTransform& trs)
 	}
 	updateNormals();
 	updateBounds();
-	updateConstants();
+	// updateConstants();
 }
 
 //
