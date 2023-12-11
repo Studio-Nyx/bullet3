@@ -288,6 +288,7 @@ bool btGjkConvexCastCable::calcTimeOfImpact(
 					result.m_normal = n;
 					result.m_hitPoint = pointCollectorAfter.m_pointInWorld;
 					result.m_hitTransformA = input.m_transformA;
+					result.originalDist = pointCollectorAfter.m_distance;
 					return true;
 				}
 				// Update normale and contact point
@@ -297,10 +298,10 @@ bool btGjkConvexCastCable::calcTimeOfImpact(
 			}
 		}
 
-		//if (n.dot(r) >= 0)
-		//{
-			//return false;
-		//}
+		if (n.dot(r) >= 0 && (m_endNode0 - m_startNode0).dot(r) >= 0 && (m_endNode1 - m_startNode1).dot(r) >= 0)
+		{
+			return false;
+		}
 
 		result.m_fraction = lambda;
 		result.m_normal = n;

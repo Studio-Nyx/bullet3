@@ -55,7 +55,6 @@ class btCable : public btSoftBody
 		int lifeTime;
 	};
 	
-
 	//
 	~btCable()
 	{
