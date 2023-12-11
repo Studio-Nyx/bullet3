@@ -373,17 +373,15 @@ void btCable::solveConstraints()
 
 	BroadPhaseOutput.clear();
 	nodePairContact.clear();
-
-	updateNodeData();
 }
 
 
 void btCable::updateNodeData() 
 {
 	const btScalar vc = m_sst.isdt * (1 - m_cfg.kDP);
-	lenght = 0;
-	int ni;
-	for (int i = 0, ni = m_nodes.size(); i < ni; ++i)
+
+	int ni { m_nodes.size() };
+	for (int i = 0; i < ni; ++i)
 	{
 		Node& n = m_nodes[i];
 		n.m_v = (n.m_x - n.m_q) * vc;
@@ -405,8 +403,6 @@ void btCable::updateNodeData()
 		if (i == 0)
 		{
 			sizeElement = (m_nodes[i].m_x - m_nodes[i + 1].m_x).length();
-			// Calculate cable Lenght
-			lenght += sizeElement;
 		}
 		else if (i == m_nodes.size() - 1)
 		{
@@ -415,16 +411,12 @@ void btCable::updateNodeData()
 		else
 		{
 			sizeElement = (m_nodes[i].m_x - m_nodes[i - 1].m_x).length();
-			// Calculate cable Lenght
-			lenght += sizeElement;
 
 			sizeElement += (m_nodes[i].m_x - m_nodes[i + 1].m_x).length();
 		}
 
-		// Using a cylinder volume calculation
-		m_nodeData[i].volume = SIMD_PI * m_cableData->radius * m_cableData->radius * sizeElement;
-		// Divide it by two cause every node is used twice in the calculation
-		m_nodeData[i].volume = m_nodeData[i].volume / 2;
+		// Using a cylinder volume calculation and divide by 2
+		m_nodeData[i].volume = SIMD_PI * m_cableData->radius * m_cableData->radius * sizeElement * 0.5;
 	}
 }
 
