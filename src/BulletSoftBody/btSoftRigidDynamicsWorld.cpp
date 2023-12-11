@@ -110,22 +110,24 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 		// Set Arrays for cable with Hydro and Aero Forces
 		if (cable->isActive() && cable->getUseHydroAero())
 		{
+			bool const nodesCount = cable->m_nodes.size();
+
 			// Set Start and End Indexes
 			cable->m_cableData->startIndex = NodesIndex;
 
 			// Copy cable index into gloabal int Array
-			memset(m_cableIndexesArray + NodesIndex, i, cable->m_nodes.size() * sizeof(int));
+			memset(m_cableIndexesArray + NodesIndex, i, nodesCount * sizeof(int));
 
 			// Copy NodeData into global Array
-			memcpy(m_nodesData + NodesIndex, cable->m_nodeData, cable->m_nodes.size() * cable->NodeDataSize);
+			memcpy(m_nodesData + NodesIndex, cable->m_nodeData, nodesCount * cable->NodeDataSize);
 
 			// Copy NodePos into global Array
-			memcpy(m_nodesPos + NodesIndex, cable->m_nodePos, cable->m_nodes.size() * cable->NodePosSize);
+			memcpy(m_nodesPos + NodesIndex, cable->m_nodePos, nodesCount * cable->NodePosSize);
 
 			// Copy CableData into global Array
 			memcpy(m_cablesData + i, cable->m_cableData, m_softBodies.size() * cable->CableDataSize);
 
-			NodesIndex += cable->m_nodes.size();
+			NodesIndex += nodesCount;
 
 			cable->m_cableData->endIndex = NodesIndex - 1;
 		}
