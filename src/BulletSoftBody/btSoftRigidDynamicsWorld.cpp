@@ -387,12 +387,6 @@ int btSoftRigidDynamicsWorld::getHydroNodesNumber()
 	return m_hydroCableNodesNumber;
 }
 
-int btSoftRigidDynamicsWorld::getActiveNodesNumber()
-{
-	return m_activeNodesNumber;
-}
-
-
 bool btSoftRigidDynamicsWorld::updateCableForces(btSoftBody::NodeForces* co, int size)
 {
 	bool test = true;
