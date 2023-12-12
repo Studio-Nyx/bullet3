@@ -95,6 +95,7 @@ private:
 	// Node forces members
 	bool useHydroAero = true;
 
+	float collisionMargin = 0.001;
 
 	void distanceConstraint();
 	void LRAConstraint();
@@ -213,6 +214,9 @@ public:
 	void setTotalMass(btScalar mass, bool fromfaces = false) override;
 
 	bool checkCollisionAnchor(Node* n, btCollisionObject* obj);
+
+	void setCollisionMargin(float colMargin);
+	float getCollisionMargin();
 #pragma endregion
 };
 #endif  //_BT_CABLE_H

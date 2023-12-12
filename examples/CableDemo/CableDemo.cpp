@@ -1191,7 +1191,7 @@ static void Init_TestDynamicsCollisionCable(CableDemo* pdemo)
 	// Resolution's cable
 	int resolution = 40;
 	int iterations = 100;
-	btScalar margin = 0.1;
+	btScalar margin = 0.01;
 
 	btTransform t = btTransform();
 	t.setIdentity();
@@ -1213,7 +1213,7 @@ static void Init_TestDynamicsCollisionCable(CableDemo* pdemo)
 
 	btTransform transformLeft = btTransform();
 	transformLeft.setIdentity();
-	transformLeft.setOrigin(btVector3(-3, 7, 0));
+	transformLeft.setOrigin(btVector3(-3, 10, 0));
 	btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(0, transformLeft, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
 
 
@@ -1238,6 +1238,7 @@ static void Init_TestDynamicsCollisionCable(CableDemo* pdemo)
 	
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
+	cable->setCollisionMargin(margin);
 	cable->setUseLRA(false);
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 0));
 }

@@ -127,6 +127,28 @@ void btCable::solveConstraints()
 	
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
+		int minAnchorIndex;
+		int minDist;
+		int dist;
+		for (int j = 0; j < m_anchors.size(); j++)
+		{
+			Anchor a = m_anchors.at(j);
+			dist = abs(m_nodes[i].index - a.m_node->index);
+			if (j == 0)
+			{
+				minAnchorIndex = 0;
+				minDist = dist;
+			}
+			else
+			{
+				if (dist < minDist)
+				{
+					minAnchorIndex = j;
+					minDist = dist;
+				}
+			}
+		}
+		m_nodes[i].distToAnchor = minDist;
 		m_nodes[i].m_nbCollidingObject = 0;
 		// debug draw
 		m_nodes[i].m_splitv = btVector3(0, 0, 0);
@@ -179,7 +201,7 @@ void btCable::solveConstraints()
 	
 	if (useCollision)
 	{
-		btScalar marginNode = this->m_collisionShape->getMargin();
+		btScalar marginNode = collisionMargin;
 		btScalar margin;
 		ni = m_nodes.size();
 
@@ -330,8 +352,8 @@ void btCable::solveConstraints()
 	{
 		anchorConstraint();
 		distanceConstraint(); 
-		if (useLRA) LRAConstraint();
 
+		if (useLRA) LRAConstraint();
 		if (useBending && i % 2 == 0 )
 			bendingConstraintDistance();
 
@@ -440,7 +462,7 @@ void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPha
 	btScalar linkIndex;
 	btTransform m_rayFromTrans;
 	btTransform m_rayToTrans;
-	btScalar marginNode = this->getCollisionShape()->getMargin();
+	btScalar marginNode = collisionMargin;
 	btScalar marginBody,margin;
 	int nodePairContactSize = nodePairContact->size();
 
@@ -734,7 +756,7 @@ bool btCable::checkCollide(int indexNode)
 {
 	btCollisionObjectArray array = m_world->getCollisionObjectArray();
 	Node n = this->m_nodes[indexNode];
-	btScalar margin = this->getCollisionShape()->getMargin();
+	btScalar margin = collisionMargin;
 	for (int i = 0; i < array.size(); i++)
 	{
 		btVector3 minLink = btVector3(0, 0, 0);
@@ -815,7 +837,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 
 	btTransform m_rayFromTrans;
 	btTransform m_rayToTrans;
-	btScalar marginNode = this->getCollisionShape()->getMargin();
+	btScalar marginNode = collisionMargin;
 	btScalar marginBody;
 	
 	btScalar margin;
@@ -932,7 +954,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 				btVector3 correctionAfter = btVector3(0, 0, 0);
 
 				// Link mouvement to avoid node getting stuck
-				if (indexNode > 0 && !isSphereShape)
+				if (indexNode > 0 && !isSphereShape && n->distToAnchor>1)
 				{
 					nBefore = &m_nodes[indexNode - 1];
 					rlLinkBefore = m_links[indexNode - 1].m_rl;
@@ -949,7 +971,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 				}
 
 				// Link mouvement to avoid node getting stuck
-				if (indexNode < this->m_nodes.size() - 1 && !isSphereShape)
+				if (indexNode < this->m_nodes.size() - 1 && !isSphereShape && n->distToAnchor > 1)
 				{
 					nAfter = &m_nodes[indexNode + 1];
 					rlLinkAfter = m_links[indexNode].m_rl;
@@ -1540,4 +1562,12 @@ void btCable::setCollisionParameters(int substepDelayCollision, int subIteration
 	m_collisionSleepingThreshold = collisionSleepingThreshold;
 }
 
+
+void btCable::setCollisionMargin(float colMargin) {
+	this->collisionMargin = colMargin;
+}
+float btCable::getCollisionMargin()
+{
+	return this->collisionMargin;
+}
 #pragma endregion
