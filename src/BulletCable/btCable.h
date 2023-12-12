@@ -124,8 +124,6 @@ public:
 	
 	void updateNodeData();
 
-	float lenght = 0;
-
 	enum CableState
 	{
 		Valid = 0,

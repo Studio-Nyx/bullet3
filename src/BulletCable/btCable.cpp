@@ -1389,7 +1389,10 @@ btScalar btCable::getRestLength()
 
 btScalar btCable::getLength()
 {
-	return lenght;
+	btScalar length = 0;
+	for (int i = 0; i < m_links.size(); ++i)
+		length += m_links[i].m_n[0]->m_x.distance(m_links[i].m_n[1]->m_x);
+	return length;
 }
 
 btVector3 btCable::getTensionAt(int index)
