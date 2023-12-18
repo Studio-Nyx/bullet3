@@ -107,7 +107,7 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 		// Set Arrays for cable with Hydro and Aero Forces
 		if (cable->isActive() && cable->getUseHydroAero())
 		{
-			int const nodesCount = cable->m_nodes.size();
+			std::size_t const nodesCount = cable->m_nodes.size();
 
 			// Set Start and End Indexes
 			cable->m_cableData->startIndex = NodesIndex;

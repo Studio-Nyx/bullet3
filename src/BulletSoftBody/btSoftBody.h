@@ -322,7 +322,7 @@ public:
 		float y;
 		float z;
 	};
-	static const int nodeForcesSize = sizeof(NodeForces);
+	static const std::size_t nodeForcesSize = sizeof(NodeForces);
 	/* Link			*/
 	ATTRIBUTE_ALIGNED16(struct)
 	Link : Feature

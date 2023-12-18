@@ -149,7 +149,7 @@ public:
 		int startIndex;
 		int endIndex;
 	};
-	static const int CableDataSize = sizeof(CableData);
+	static const std::size_t CableDataSize = sizeof(CableData);
 	
 	struct NodePos
     {
@@ -157,7 +157,7 @@ public:
 		double y;
 		double z;
     };
-    static const int NodePosSize = sizeof(NodePos);
+	static const std::size_t NodePosSize = sizeof(NodePos);
     	
     struct NodeData
     {
@@ -166,7 +166,7 @@ public:
         float velocity_z;
 		float volume;
     };
-    static const int NodeDataSize = sizeof(NodeData);
+	static const std::size_t NodeDataSize = sizeof(NodeData);
     
     btCable::CableData* m_cableData;
 	btCable::NodeData* m_nodeData;
