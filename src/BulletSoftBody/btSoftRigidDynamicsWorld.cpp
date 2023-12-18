@@ -48,7 +48,6 @@ btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
 	// Check if it's unecessary
 	//m_sbi.m_sparsesdf.Initialize();
 	
-	m_nodeForcesNumber = 0;
 
 	m_nodeForces = new btSoftBody::NodeForces[m_sbi.maxNodeNumber];
 	m_nodesPos = new btCable::NodePos[m_sbi.maxNodeNumber];
@@ -387,16 +386,9 @@ int btSoftRigidDynamicsWorld::getHydroNodesNumber()
 	return m_hydroCableNodesNumber;
 }
 
-bool btSoftRigidDynamicsWorld::updateCableForces(btSoftBody::NodeForces* co, int size)
+void btSoftRigidDynamicsWorld::updateCableForces(btSoftBody::NodeForces* co, int size)
 {
-	bool test = true;
-
-	m_nodeForcesNumber = size;
-	int copySize = m_nodeForcesNumber * btSoftBody::nodeForcesSize;
-
-	memcpy(m_nodeForces, co, copySize);
-
-	return test;
+	memcpy(m_nodeForces, co, btSoftBody::nodeForcesSize * static_cast<std::size_t>(size));
 }
 
 void* btSoftRigidDynamicsWorld::getCablesData()
