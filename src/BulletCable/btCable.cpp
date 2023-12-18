@@ -53,8 +53,8 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 
 	// Initialize Data
 	m_cableData = new CableData();
-	m_nodePos = new NodePos[worldInfo->maxNodeNumber];
-	m_nodeData = new NodeData[worldInfo->maxNodeNumber];
+	m_nodePos = new NodePos[worldInfo->maxNodeNumber]();
+	m_nodeData = new NodeData[worldInfo->maxNodeNumber]();
 
 	for (int i = 0; i < this->m_nodes.size(); i++)
 	{

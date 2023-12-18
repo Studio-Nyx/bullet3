@@ -49,16 +49,14 @@ btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
 	//m_sbi.m_sparsesdf.Initialize();
 	
 
-	m_nodeForces = new btSoftBody::NodeForces[m_sbi.maxNodeNumber];
-	m_nodesPos = new btCable::NodePos[m_sbi.maxNodeNumber];
-	m_nodesData = new btCable::NodeData[m_sbi.maxNodeNumber];
-	m_cableIndexesArray = new int[m_sbi.maxNodeNumber];
-	int arraySize = btSoftBody::nodeForcesSize * m_sbi.maxNodeNumber;
+	// () used to force 0 initialization
+	m_nodeForces = new btSoftBody::NodeForces[m_sbi.maxNodeNumber]();
+	m_nodesPos = new btCable::NodePos[m_sbi.maxNodeNumber]();
+	m_nodesData = new btCable::NodeData[m_sbi.maxNodeNumber]();
+	m_cableIndexesArray = new int[m_sbi.maxNodeNumber]();
 
 	// Pool of max nbr of cable
-	m_cablesData = new btCable::CableData[m_sbi.maxCableNumber];
-
-	memset(m_nodeForces, 0, arraySize);
+	m_cablesData = new btCable::CableData[m_sbi.maxCableNumber]();
 }
 
 
