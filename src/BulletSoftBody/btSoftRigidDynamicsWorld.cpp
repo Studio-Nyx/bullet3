@@ -70,7 +70,22 @@ btSoftRigidDynamicsWorld::~btSoftRigidDynamicsWorld()
 
 	if (m_nodeForces != nullptr)
 	{
-		delete m_nodeForces;
+		delete[] m_nodeForces;
+	}
+
+	if (m_nodesPos != nullptr)
+	{
+		delete[] m_nodesPos;
+	}
+
+	if (m_nodesData != nullptr)
+	{
+		delete[] m_nodesData;
+	}
+
+	if (m_cablesData != nullptr)
+	{
+		delete[] m_cablesData;
 	}
 }
 

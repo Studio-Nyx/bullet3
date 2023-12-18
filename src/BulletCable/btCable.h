@@ -69,6 +69,22 @@ class btCable : public btSoftBody
 			m_world->getDispatcher()->releaseManifold(manifolds.at(i).manifold);
 		}
 		manifolds.clear();
+
+		// Release allocated data
+		if (m_cableData != nullptr)
+		{
+			delete m_cableData;
+		}
+
+		if (m_nodePos != nullptr)
+		{
+			delete[] m_nodePos;
+		}
+
+		if (m_nodeData != nullptr)
+		{
+			delete[] m_nodeData;
+		}
 	}
 
 	btAlignedObjectArray<CableManifolds> manifolds;
