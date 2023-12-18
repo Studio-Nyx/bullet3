@@ -127,8 +127,8 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 			// Set Start and End Indexes
 			cable->m_cableData->startIndex = NodesIndex;
 
-			// Copy cable index into gloabal int Array
-			memset(m_cableIndexesArray + NodesIndex, i, nodesCount * sizeof(int));
+			// Clean and fast chunks initialization (see https://godbolt.org/z/nWK63GYcc)
+			std::fill_n(m_cableIndexesArray + NodesIndex, nodesCount, i);
 
 			// Copy NodeData into global Array
 			memcpy(m_nodesData + NodesIndex, cable->m_nodeData, nodesCount * cable->NodeDataSize);
