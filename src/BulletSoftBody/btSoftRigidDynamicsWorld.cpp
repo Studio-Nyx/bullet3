@@ -119,21 +119,15 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 	{
 		btCable* cable = reinterpret_cast<btCable*>(m_softBodies[i]);
 
-		// Set Arrays for cable with Hydro and Aero Forces
+		// Store each cable data into a single one for GPU computing of Hydro and Aero Forces
 		if (cable->isActive() && cable->getUseHydroAero())
 		{
 			std::size_t const nodesCount = cable->m_nodes.size();
-
-			// Set Start and End Indexes
 			cable->m_cableData->startIndex = NodesIndex;
 
 			// Clean and fast chunks initialization (see https://godbolt.org/z/nWK63GYcc)
 			std::fill_n(m_cableIndexesArray + NodesIndex, nodesCount, i);
-
-			// Copy NodeData into global Array
 			memcpy(m_nodesData + NodesIndex, cable->m_nodeData, nodesCount * cable->NodeDataSize);
-
-			// Copy NodePos into global Array
 			memcpy(m_nodesPos + NodesIndex, cable->m_nodePos, nodesCount * cable->NodePosSize);
 
 			// First update `endIndex` before performing the copy
