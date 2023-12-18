@@ -136,12 +136,10 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 			// Copy NodePos into global Array
 			memcpy(m_nodesPos + NodesIndex, cable->m_nodePos, nodesCount * cable->NodePosSize);
 
-			// Copy CableData into global Array
-			memcpy(m_cablesData + i, cable->m_cableData, m_softBodies.size() * cable->CableDataSize);
-
+			// First update `endIndex` before performing the copy
 			NodesIndex += nodesCount;
-
 			cable->m_cableData->endIndex = NodesIndex - 1;
+			memcpy(m_cablesData + i, cable->m_cableData, cable->CableDataSize);
 		}
 	}
 
