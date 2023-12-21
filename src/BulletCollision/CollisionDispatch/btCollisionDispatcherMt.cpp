@@ -24,6 +24,7 @@ subject to the following restrictions:
 #include "LinearMath/btPoolAllocator.h"
 #include "BulletCollision/CollisionDispatch/btCollisionConfiguration.h"
 #include "BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h"
+#include <BulletCable/btCable.h>
 
 btCollisionDispatcherMt::btCollisionDispatcherMt(btCollisionConfiguration* config, int grainSize)
 	: btCollisionDispatcher(config)
@@ -63,8 +64,12 @@ btPersistentManifold* btCollisionDispatcherMt::getNewManifold(const btCollisionO
 	btPersistentManifold* manifold;
 	if (body0->getInternalType() == 2 && body1->getInternalType() == 2) 
  		manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
-	else 
-		manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold,1024);
+	else
+	{
+		// Softbody always first
+		btSoftBody* temp = (btSoftBody*)body0;
+		manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold, temp->m_nodes.size());
+	}
 	if (!m_batchUpdating)
 	{
 		// batch updater will update manifold pointers array after finishing, so
@@ -100,7 +105,7 @@ void btCollisionDispatcherMt::releaseManifold(btPersistentManifold* manifold)
 		return;
 	}
 
-	manifold->~btPersistentManifold();
+	manifold->freeContactPoint();
 	if (m_persistentManifoldPoolAllocator->validPtr(manifold))
 	{
 		m_persistentManifoldPoolAllocator->freeMemory(manifold);

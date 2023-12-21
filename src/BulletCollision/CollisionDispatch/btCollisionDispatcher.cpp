@@ -28,6 +28,7 @@ subject to the following restrictions:
 #ifdef BT_DEBUG
 #include <stdio.h>
 #endif
+#include <BulletCable/btCable.h>
 
 btCollisionDispatcher::btCollisionDispatcher(btCollisionConfiguration* collisionConfiguration) : m_dispatcherFlags(btCollisionDispatcher::CD_USE_RELATIVE_CONTACT_BREAKING_THRESHOLD),
 																								 m_collisionConfiguration(collisionConfiguration)
@@ -91,7 +92,17 @@ btPersistentManifold* btCollisionDispatcher::getNewManifold(const btCollisionObj
 			return 0;
 		}
 	}
-	btPersistentManifold* manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
+	btPersistentManifold* manifold;
+	if (body0->getInternalType() == 2 && body1->getInternalType() == 2)
+		manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
+	else
+	{
+		// Softbody always first
+		btSoftBody* temp = (btSoftBody*)body0;
+		manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold,1024);
+	
+	}
+
 	manifold->m_index1a = m_manifoldsPtr.size();
 	m_manifoldsPtr.push_back(manifold);
 
@@ -105,16 +116,14 @@ void btCollisionDispatcher::clearManifold(btPersistentManifold* manifold)
 
 void btCollisionDispatcher::releaseManifold(btPersistentManifold* manifold)
 {
-	//printf("releaseManifold: gNumManifold %d\n",gNumManifold);
 	clearManifold(manifold);
-
 	int findIndex = manifold->m_index1a;
 	btAssert(findIndex < m_manifoldsPtr.size());
 	m_manifoldsPtr.swap(findIndex, m_manifoldsPtr.size() - 1);
 	m_manifoldsPtr[findIndex]->m_index1a = findIndex;
 	m_manifoldsPtr.pop_back();
 
-	manifold->~btPersistentManifold();
+	manifold->freeContactPoint();
 	if (m_persistentManifoldPoolAllocator->validPtr(manifold))
 	{
 		m_persistentManifoldPoolAllocator->freeMemory(manifold);

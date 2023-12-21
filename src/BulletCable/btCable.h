@@ -20,7 +20,18 @@
 
 using namespace std;
 
-
+class CableManifolds
+{
+public:
+	btPersistentManifold* manifold;
+	int lifeTime;
+	CableManifolds(btPersistentManifold* mani, int time)
+	{
+		manifold = mani;
+		lifeTime = time;
+	}
+};
+	
 ///The btCable is a class that inherits from btSoftBody.
 ///Its purpose is to be able to create a cable/rope with our own method parameters that Bullet does not implement.
 class btCable : public btSoftBody
@@ -48,12 +59,6 @@ class btCable : public btSoftBody
 		btScalar distance;
 		bool hit = false;
 	};
-
-	struct CableManifolds
-	{
-		btPersistentManifold* manifold;
-		int lifeTime;
-	};
 	
 	//
 	~btCable()
@@ -61,15 +66,16 @@ class btCable : public btSoftBody
 		int size = manifolds.size();
 		for (int i = 0; i < size; i++)
 		{
-			m_world->getDispatcher()->releaseManifold(manifolds.at(i)->manifold);
+			m_world->getDispatcher()->releaseManifold(manifolds.at(i).manifold);
 		}
 		manifolds.clear();
 	}
 
-	btAlignedObjectArray<CableManifolds*> manifolds;
+	btAlignedObjectArray<CableManifolds> manifolds;
 
 
 private:
+
 	// Number of solverIteration for 1 deltaTime passed
 	int m_solverSubStep;
 	// Actual iteration
@@ -117,7 +123,8 @@ private:
 	void recursiveBroadPhase(BroadPhasePair* obj, Node* n, Node* n1, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
 
 	void resetManifoldLifeTime();
-	void clearManifold(btAlignedObjectArray<BroadPhasePair*> objs, bool init);
+	void clearManifoldContact(btAlignedObjectArray<BroadPhasePair*> objs);
+	void UpdateManifoldBroadphase(btAlignedObjectArray<BroadPhasePair*> broadphasePair);
 
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);

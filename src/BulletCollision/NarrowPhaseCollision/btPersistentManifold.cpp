@@ -43,6 +43,8 @@ btPersistentManifold::btPersistentManifold()
 {
 }
 
+
+
 #ifdef DEBUG_PERSISTENCY
 #include <stdio.h>
 void btPersistentManifold::DebugPersistency()
@@ -82,10 +84,17 @@ void btPersistentManifold::clearUserCache(btManifoldPoint& pt)
 			pt.m_userPersistentData = 0;
 		}
 
+		
 #ifdef DEBUG_PERSISTENCY
 		DebugPersistency();
 #endif
 	}
+	
+}
+
+void btPersistentManifold::freeContactPoint()
+{
+	delete (m_pointCache);
 }
 
 static inline btScalar calcArea4Points(const btVector3& p0, const btVector3& p1, const btVector3& p2, const btVector3& p3)
@@ -448,3 +457,5 @@ void btPersistentManifold::deSerialize(const struct btPersistentManifoldFloatDat
 		pt.m_contactMotion2 = manifoldDataPtr->m_pointCacheContactMotion2[i];
 	}
 }
+
+

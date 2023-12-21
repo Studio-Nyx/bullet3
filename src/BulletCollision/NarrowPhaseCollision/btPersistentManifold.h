@@ -80,6 +80,7 @@ btPersistentManifold : public btTypedObject
 
 	int findContactPoint(const btManifoldPoint* unUsed, int numUnused, const btManifoldPoint& pt);
 
+
 public:
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
@@ -89,6 +90,7 @@ public:
 	int m_index1a;
 
 	btPersistentManifold();
+	void freeContactPoint();
 
 	btPersistentManifold(const btCollisionObject* body0, const btCollisionObject* body1, int, btScalar contactBreakingThreshold, btScalar contactProcessingThreshold, int cacheSize = 4)
 		: btTypedObject(BT_PERSISTENT_MANIFOLD_TYPE),
@@ -166,6 +168,7 @@ public:
 
 	void removeContactPoint(int index)
 	{
+		
 		clearUserCache(m_pointCache[index]);
 
 		int lastUsedIndex = getNumContacts() - 1;
@@ -255,7 +258,6 @@ public:
 		{
 			clearUserCache(m_pointCache[i]);
 		}
-
 		if (gContactEndedCallback && m_cachedPoints)
 		{
 			gContactEndedCallback(this);

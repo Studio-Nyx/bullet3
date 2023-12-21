@@ -88,7 +88,7 @@ void btCable::resetManifoldLifeTime()
 	int size = manifolds.size();
 	for (int i = 0; i < size; i++)
 	{
-		manifolds.at(i)->lifeTime = m_solverSubStep;
+		manifolds.at(i).lifeTime = m_solverSubStep;
 	}
 }
 
@@ -366,35 +366,37 @@ void btCable::solveConstraints()
 		
 	}
 
-
+	
 	// Remove unused manifold 
-	clearManifold(BroadPhaseOutput,false);
+	UpdateManifoldBroadphase(BroadPhaseOutput);
+
+	
 	for (i = 0; i < nodePairContact.size(); i++)
 	{
 		NodePairNarrowPhase* nodePair = &nodePairContact.at(i);
 		if (!nodePair->hit) continue;
 		btPersistentManifold* manifold; 
 		// If the manifold exist, use it
+		
 		if (nodePair->pair->haveManifoldsRegister)
 			manifold = nodePair->pair->manifold;
 		// Else create a new one 
 		else
 		{
 			manifold = m_world->getDispatcher()->getNewManifold(this, nodePair->pair->body);
-			CableManifolds* cm = new CableManifolds();
-			cm->lifeTime = m_solverSubStep;
-			cm->manifold = manifold;
+			CableManifolds cm = CableManifolds(manifold, m_solverSubStep);
 			manifolds.push_back(cm);
 			nodePair->pair->manifold = manifold;
 			nodePair->pair->haveManifoldsRegister = true;
 		}
-
+		// Contact point
+		
 		// Obj 0 = Cable
 		// Obj 1 = RigidBody
-
 		const btVector3& pointB = nodePairContact.at(i).lastPosition;
 		const btVector3& normal = nodePairContact.at(i).normal;
 		const btScalar distance = nodePairContact.at(i).distance;
+
 
 		btManifoldPoint newPoint = btManifoldPoint(btVector3(0, 0, 0), btVector3(0, 0, 0),normal,distance);
 		newPoint.m_positionWorldOnA = pointB + normal * distance;
@@ -402,12 +404,20 @@ void btCable::solveConstraints()
 
 		newPoint.m_appliedImpulse = nodePair->impulse.length();
 		manifold->addManifoldPoint(newPoint, true);
+		// 
 	}
+	
 	// Clear manifolds without contact point
-	clearManifold(BroadPhaseOutput, true);
-
-	BroadPhaseOutput.clear();
+	clearManifoldContact(BroadPhaseOutput);
+	
 	nodePairContact.clear();
+	
+	for (int i = 0; i < BroadPhaseOutput.size(); i++)
+	{
+		delete BroadPhaseOutput.at(i);
+	}
+	BroadPhaseOutput.clear();
+	
 }
 
 
@@ -656,58 +666,44 @@ void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPha
 	}
 }
 
+void btCable::UpdateManifoldBroadphase(btAlignedObjectArray<BroadPhasePair*> broadphasePair) {
+	int count = manifolds.size();
+	for (int i = 0; i < count; i++)
+	{
+		for (int j = 0; j < broadphasePair.size(); j++)
+		{
+			// Body 0 is always the cable
+			if (manifolds.at(i).manifold->getBody1() == broadphasePair.at(j)->body)
+			{
+				broadphasePair.at(j)->haveManifoldsRegister = true;
+				manifolds.at(i).manifold->clearManifold();
+				broadphasePair.at(j)->manifold = manifolds.at(i).manifold;
+				break;
+			}
+		}
+	}
+}
 
-void btCable::clearManifold(btAlignedObjectArray<BroadPhasePair *> broadphasePair,bool init)
+void btCable::clearManifoldContact(btAlignedObjectArray<BroadPhasePair *> broadphasePair)
 {
-	if (manifolds.size() == 0)
+	int count = manifolds.size();
+	// Remove the body that have no contact point and lifeTime = 0
+	for (int i = 0; i < count; i++)
 	{
-		return;
-	}
-	else
-	{
-		int count = manifolds.size();
-		bool haveManifold = false;
-		// Remove body that aren t in the broadphase anymore
-		if (!init)
+		if (manifolds.at(i).manifold->getNumContacts() <= 0)
 		{
-			for (int i = 0; i < count; i++)
-			{
-				for (int j = 0; j < broadphasePair.size(); j++)
-				{
-					// Body 0 is always the cable
-					if (manifolds.at(i)->manifold->getBody1() == broadphasePair.at(j)->body)
-					{
-						broadphasePair.at(j)->haveManifoldsRegister = true;
-						manifolds.at(i)->manifold->clearManifold();
-						broadphasePair.at(j)->manifold = manifolds.at(i)->manifold;
-						haveManifold = true;
-						break;
-					}
-				}
-			}
-		}
-		// Remove the body that have no contact point and lifeTime = 0
-		else
-		{
-			for (int i = 0; i < count; i++)
-			{
-				if (manifolds.at(i)->manifold->getNumContacts() <= 0)
-				{
-					int a = manifolds.at(i)->lifeTime;
-					manifolds.at(i)->lifeTime--;
+			manifolds.at(i).lifeTime--;
 
-					if (manifolds.at(i)->lifeTime <= 0){
-						m_world->getDispatcher()->releaseManifold(manifolds.at(i)->manifold);
-						manifolds.removeAtIndex(i);
-						count--;
-						i--;
-					}
-				}
+			if (manifolds.at(i).lifeTime <= 0)
+			{
+				m_world->getDispatcher()->releaseManifold(manifolds.at(i).manifold);
+				manifolds.removeAtIndex(i);
+				
+				count--;
+				i--;
 			}
 		}
-		
 	}
-	
 }
 
 void btCable::recursiveBroadPhase(BroadPhasePair* obj, Node* n, Node* n1, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transformLocal)
