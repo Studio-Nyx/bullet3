@@ -95,12 +95,26 @@ void btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 	m_invMass = m_inverseMass * m_linearFactor;
 	m_pushVelocity.setZero();
 	m_turnVelocity.setZero();
+
+	m_kinematicChildren = {};
 }
 
 void btRigidBody::predictIntegratedTransform(btScalar timeStep, btTransform& predictedTransform)
 {
 	clampVelocity();
 	btTransformUtil::integrateTransform(m_worldTransform, m_linearVelocity, m_angularVelocity, timeStep, predictedTransform);
+}
+
+void btRigidBody::updateKinematicChildren()
+{
+	for (int i = 0; i < m_kinematicChildren.size(); ++i)
+	{
+		btRigidBody* kinematic = m_kinematicChildren[i];
+		// World transform kinematic = WordlTransform Parent * LocalTransform Kinematic
+		btTransform res = getWorldTransform() * kinematic->m_localTransform;
+		kinematic->setWorldTransform(res);
+		kinematic->getMotionState()->setWorldTransform(res);
+	}
 }
 
 void btRigidBody::saveKinematicState(btScalar timeStep)

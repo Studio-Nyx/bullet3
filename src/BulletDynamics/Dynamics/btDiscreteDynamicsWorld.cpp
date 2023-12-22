@@ -1048,6 +1048,8 @@ void btDiscreteDynamicsWorld::integrateTransformsInternal(btRigidBody** bodies, 
 			}
 
 			body->proceedToTransform(predictedTrans);
+
+			body->updateKinematicChildren();
 		}
 	}
 }

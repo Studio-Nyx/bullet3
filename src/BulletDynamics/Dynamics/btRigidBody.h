@@ -20,6 +20,7 @@ subject to the following restrictions:
 #include "LinearMath/btTransform.h"
 #include "BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
 #include "BulletCollision/CollisionDispatch/btCollisionObject.h"
+#include <vector>
 
 class btCollisionShape;
 class btMotionState;
@@ -96,6 +97,10 @@ class btRigidBody : public btCollisionObject
 
 public:
 	int m_anchorsCount{0};
+
+	// to synchronize the bodies of the kinematics (for Unity)
+	std::vector<btRigidBody*> m_kinematicChildren;
+	btTransform m_localTransform;
 
 protected:
 	ATTRIBUTE_ALIGNED16(btVector3 m_deltaLinearVelocity);
@@ -187,6 +192,9 @@ protected:
 	void setupRigidBody(const btRigidBodyConstructionInfo& constructionInfo);
 
 public:
+
+	void updateKinematicChildren();
+
 	void proceedToTransform(const btTransform& newTrans);
 
 	///to keep collision detection and dynamics separate we don't store a rigidbody pointer
