@@ -57,6 +57,10 @@ btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
 
 	// Pool of max nbr of cable
 	m_cablesData = new btCable::CableData[m_sbi.maxCableNumber]();
+
+	m_defaultNodeData = btCable::NodeData();
+	m_defaultNodePos = btCable::NodePos();
+	m_defaultNodeForces = btSoftBody::NodeForces();
 }
 
 
@@ -112,11 +116,19 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 
 	///solve soft bodies constraints
 	solveSoftBodiesConstraints(timeStep);
+
+	// Pool of max nbr of cable
+	m_cablesData = new btCable::CableData[m_sbi.maxCableNumber]();
+
+	// Reset arrays in order to avoid garbage values causing wrong calculations
+	std::fill_n(m_nodesData, m_sbi.maxNodeNumber, m_defaultNodeData);
+	std::fill_n(m_nodesPos, m_sbi.maxNodeNumber, m_defaultNodePos);
+	std::fill_n(m_nodeForces, m_sbi.maxNodeNumber, m_defaultNodeForces);
 	
 	//Set Arrays
 	int NodesIndex = 0;
 	for (int i = 0; i < m_softBodies.size(); i++)
-	{
+	{		
 		btCable* cable = reinterpret_cast<btCable*>(m_softBodies[i]);
 
 		// Store each cable data into a single one for GPU computing of Hydro and Aero Forces

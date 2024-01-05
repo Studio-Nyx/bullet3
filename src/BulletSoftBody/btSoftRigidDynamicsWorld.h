@@ -50,6 +50,11 @@ protected:
 	int m_sizeOfNodeForcesStruct;
 	int m_hydroCableNodesNumber;
 
+	// Default structs (with values at 0) used to reset the arrays used by the world
+	btCable::NodeData m_defaultNodeData;
+	btCable::NodePos m_defaultNodePos;
+	btSoftBody::NodeForces m_defaultNodeForces;
+
 
 public:
 	btSoftRigidDynamicsWorld(btSoftBodyWorldInfo* worldInfo, btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration, btSoftBodySolver* softBodySolver = 0);
