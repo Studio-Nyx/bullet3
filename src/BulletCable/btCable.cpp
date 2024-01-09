@@ -1292,14 +1292,21 @@ void btCable::distanceConstraint()
 		Node& b = *l.m_n[1];
 		btVector3 AB = b.m_x - a.m_x;
 		btVector3 ABNormalized = AB.normalized();
-		if (ABNormalized.fuzzyZero()) continue;
+		if (ABNormalized.fuzzyZero())
+		{
+			continue;
+		}
 		btScalar normAB = AB.length();
 		btScalar k = m_materials[0]->m_kLST;
 		btScalar sumInvMass = a.m_im + b.m_im;
-		if (sumInvMass >= 0)
+		if (sumInvMass >= SIMD_EPSILON)
 		{
-			a.m_x += a.m_im / sumInvMass * (normAB - l.m_rl) * ABNormalized;
-			b.m_x -= b.m_im / sumInvMass * (normAB - l.m_rl) * ABNormalized;
+			a.m_x += (a.m_im / sumInvMass * (normAB - l.m_rl) * ABNormalized) * k;
+			b.m_x -= (b.m_im / sumInvMass * (normAB - l.m_rl) * ABNormalized) * k;
+		}
+		else
+		{
+			continue;
 		}
 	}
 }
