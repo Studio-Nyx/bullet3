@@ -85,22 +85,32 @@ class btCable : public btSoftBody
 		{
 			delete[] m_nodeData;
 		}
+
+		if (m_section != nullptr)
+		{
+			delete[] m_section;
+		}
 	}
 
 	btAlignedObjectArray<CableManifolds> manifolds;
-
+	
 
 private:
-
+	int m_growingState=0;
 	// Number of solverIteration for 1 deltaTime passed
 	int m_solverSubStep;
 	// Actual iteration
 	int m_cpt;
-
+	int m_sectionCount = 0;
+	int m_sectionCurrent = 0;
+	btScalar m_minLength;
 	bool useLRA = true;
 	bool useBending = true;
 	bool useGravity = true;
 	bool useCollision = true;
+	btScalar m_linearMass=1.0;
+
+	btScalar m_defaultRestLength; 
 
 	btScalar maxAngle = 0;
 	btScalar bendingStiffness = 0;
@@ -142,9 +152,20 @@ private:
 	void clearManifoldContact(btAlignedObjectArray<BroadPhasePair*> objs);
 	void UpdateManifoldBroadphase(btAlignedObjectArray<BroadPhasePair*> broadphasePair);
 
+	btScalar getLinkRestLength(int index);
+
 public:
-	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m);
+	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count,int section_count, const btVector3* x, const btScalar* m);
 	
+	btScalar WantedDistance = 0;
+	btScalar WantedSpeed = 0;
+
+	void updateLength(btScalar dt);
+
+	void Grows(float dt);
+
+	void Shrinks(float dt);
+
 	void updateNodeData();
 
 	enum CableState
@@ -183,10 +204,20 @@ public:
 		float volume;
     };
 	static const std::size_t NodeDataSize = sizeof(NodeData);
-    
-    btCable::CableData* m_cableData;
+
+	btCable::CableData* m_cableData;
 	btCable::NodeData* m_nodeData;
-    btCable::NodePos* m_nodePos;
+	btCable::NodePos* m_nodePos;
+
+	struct SectionInfo
+	{
+		double RestLength;
+		int StartNodeIndex;
+		int EndNodeIndex;
+		int NumberOfNodes;
+	};
+
+	btCable::SectionInfo* m_section;
 
 private:
 
@@ -240,6 +271,17 @@ public:
 
 	void setCollisionMargin(float colMargin);
 	float getCollisionMargin();
+
+	void addSection(btScalar rl,int start,int end,int nbNodes);
+
+	void setDefaultRestLength(btScalar rl);
+	void setMinLength(btScalar value);
+
+	int getGrowingState();
+
+	void setWantedGrowSpeedAndDistance(btScalar speed, btScalar distance);
+	void setLinearMass(btScalar mass);
+
 #pragma endregion
 };
 #endif  //_BT_CABLE_H

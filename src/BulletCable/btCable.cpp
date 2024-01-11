@@ -45,7 +45,7 @@ void computeTransform(btVector3 nodeA, btVector3 nodeB, btTransform* tr)
 }
 
 
-btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
+btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count,int section_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
 {
 	m_world = world;
 	m_solverSubStep = worldInfo->numIteration;
@@ -55,7 +55,7 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 	m_cableData = new CableData();
 	m_nodePos = new NodePos[worldInfo->maxNodeNumber]();
 	m_nodeData = new NodeData[worldInfo->maxNodeNumber]();
-
+	
 	for (int i = 0; i < this->m_nodes.size(); i++)
 	{
 		m_nodes[i].m_battach = 0;
@@ -79,6 +79,17 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 
 	// Using getCollisionShape we set the cable radius
 	m_cableData->radius = getCollisionShape()->getMargin();
+
+
+	if (section_count > 0)
+	{
+		m_sectionCount = section_count;
+		m_section = new SectionInfo[section_count]();
+	}
+	else
+	{
+		m_defaultRestLength = m_links.at(0).m_rl;
+	}
 }
 
 #pragma region Constraints
@@ -420,6 +431,27 @@ void btCable::solveConstraints()
 	
 }
 
+void btCable::updateLength(btScalar dt)
+{
+	if (WantedSpeed > 0)
+	{
+		if (WantedDistance > 0)
+		{
+			if (WantedDistance > getRestLength())
+				Grows(dt);
+		}
+		else if (WantedDistance==0)
+			Grows(dt);
+	}
+	else if (WantedSpeed < 0)
+	{
+		if (WantedDistance < getRestLength())
+			Shrinks(dt);
+	}
+	else {
+		m_growingState = 0;
+	}
+}
 
 void btCable::updateNodeData() 
 {
@@ -1085,7 +1117,6 @@ void btCable::LRAConstraint()
 	{
 		Link& l = m_links[i];
 		Node* b = l.m_n[0];
-
 		distance += l.m_rl;
 		if (a.m_x.distance(b->m_x) > distance)
 			b->m_x = a.m_x + (b->m_x - a.m_x).normalized() * distance;
@@ -1285,7 +1316,7 @@ void btCable::bendingConstraintAngle()
 void btCable::distanceConstraint()
 {
 	BT_PROFILE("PSolve_Links");
-	for (int i = 0, ni = m_links.size(); i < ni; ++i)
+	for (int i= m_links.size()-1; i>=0; --i)
 	{
 		Link& l = m_links[i];
 		Node& a = *l.m_n[0];
@@ -1372,6 +1403,212 @@ void btCable::predictMotion(btScalar dt)
 	m_scontacts.resize(0);
 }
 
+
+void btCable::Grows(float dt)
+{
+	
+	double rl = m_links.at(m_links.size() - 1).m_rl;
+	double distance = dt * WantedSpeed + rl;
+	int nodeSize = m_nodes.size();
+
+	// If there is a target length we don t extend rl more than necessary
+	if (WantedDistance > 0)
+	{
+		btScalar value = WantedDistance - getRestLength();
+		if (value > FLT_EPSILON && value < dt * WantedSpeed)
+		{
+			distance = value + rl;
+			WantedSpeed = 0;
+		}
+	}
+	
+	// base restLength on the link
+	double linkRestLength = getLinkRestLength(m_links.size() - 1);
+
+	m_links.at(m_links.size() - 1).m_rl = distance;
+	m_links.at(m_links.size() - 1).m_c1 = distance*distance;
+
+	btScalar firstNodeMass = m_linearMass * 0.5f * (distance);
+
+	// Update mass
+	setMass(nodeSize - 1, firstNodeMass);
+	if (nodeSize > 2)
+	{
+		btScalar linkMass = firstNodeMass + m_linearMass * 0.5f * (m_links[m_links.size() - 2].m_rl);
+		setMass(nodeSize - 2, linkMass);
+	}
+	else
+	{
+		setMass(nodeSize - 2, firstNodeMass);
+	}
+
+	// Case when we need to add at least 1 node
+	while (distance > linkRestLength * 2)
+	{
+		Node* node0 = &m_nodes[nodeSize - 1];
+		Node* node1 = &m_nodes[nodeSize - 2];
+
+		btVector3 dir = node0->m_x - node1->m_x;
+		dir.normalize();
+		dir *= linkRestLength;
+
+
+		// Set the node at the right place
+		btVector3 positionLastNode = node0->m_x;
+		node0->m_x = node1->m_x + dir;
+		node0->m_battach = 0;
+
+		// Create the new node
+		this->appendNode(positionLastNode, 1 / node0->m_im);
+		nodeSize++;
+
+		// Set the velocity
+		Node* newNode = &m_nodes[nodeSize - 1];
+		newNode->m_v = m_nodes.at(nodeSize - 2).m_v;
+		m_nodes.at(nodeSize - 2).m_v = (m_nodes.at(nodeSize - 3).m_v + m_nodes.at(nodeSize - 2).m_v) * 0.5;
+		appendLink(m_nodes.size() - 2, m_nodes.size() - 1, m_materials[0]);
+
+		
+		// Split rest length onto the 2 last links
+		m_links[m_links.size() - 2].m_rl = linkRestLength;
+		m_links[m_links.size() - 2].m_c1 = linkRestLength*linkRestLength;
+
+		m_links[m_links.size() - 1].m_rl = distance - linkRestLength;
+		m_links[m_links.size() - 1].m_c1 = (distance - linkRestLength) * (distance - linkRestLength);
+
+		// Swap anchor if needed
+		for (int i = 0; i < m_anchors.size(); i++)
+		{
+			Anchor* a = &m_anchors.at(i);
+			if (a->m_node != nullptr)
+			{
+				// If its the anchor on the previous last node
+				if (a->m_node->index == m_nodes.size() - 2)
+				{
+					newNode->m_battach = -1;
+					a->m_node = &m_nodes.at(m_nodes.size() - 1);
+				}
+			}
+		}
+		distance -= linkRestLength;
+
+		// Update Mass
+		btScalar firstNodeMass = m_linearMass * 0.5f * (distance);
+		setMass(nodeSize - 1, firstNodeMass);
+		btScalar LinkMassWithRl = 0.5 * m_links[m_links.size() - 2].m_rl * m_linearMass ;
+		setMass(nodeSize - 2, LinkMassWithRl + firstNodeMass);
+		// If there is only 2 links
+		if (nodeSize == 3)
+		{
+			setMass(nodeSize - 3, LinkMassWithRl);
+		}
+		// Normal case
+		else
+		{
+			btScalar LinkMassBefore = 0.5 * m_links[m_links.size() - 3].m_rl * m_linearMass;
+			setMass(nodeSize - 3, LinkMassWithRl + LinkMassBefore);
+		}
+
+	}
+	m_growingState = 1;
+}
+
+void btCable::Shrinks(float dt)
+{
+	// To avoid shrink to much 
+	if (getRestLength() <= m_minLength)
+	{
+		m_growingState = 2;
+		return;
+	}
+
+	int linkSize = m_links.size();
+	int nodesSize = m_nodes.size();
+
+	double rl = m_links.at(linkSize - 1).m_rl;
+	double distance = dt * WantedSpeed + m_links.at(linkSize - 1).m_rl;
+
+	// We can t shrinks over an anchor
+	if (m_nodes.at(nodesSize - 2).m_battach != 0)
+	{
+		// Minimum shrink lenght
+		if (distance < m_minLength)
+		{
+			m_links.at(linkSize - 1).m_rl = m_minLength;
+			m_links.at(linkSize - 1).m_c1 = m_minLength * m_minLength;
+
+			m_growingState = 3;
+			return;
+		}
+	}
+
+	// set the Rest Length and set the mass
+	m_links.at(linkSize - 1).m_rl = distance;
+	m_links.at(linkSize - 1).m_c1 = distance*distance;
+	btScalar linkRestLength = getLinkRestLength(linkSize-1);
+	btScalar firstNodeMass = m_linearMass * 0.5f * (distance);
+	setMass(nodesSize - 1, firstNodeMass);
+	if (nodesSize > 2)
+	{
+		btScalar linkMass = firstNodeMass + m_linearMass * 0.5f * (m_links[m_links.size() - 2].m_rl);
+		setMass(nodesSize - 2, linkMass);
+	}
+	else
+	{
+		setMass(nodesSize - 2, firstNodeMass);
+	}
+
+	// if we had to delete a node
+	while (distance < 0)
+	{
+		btVector3 nodePos = m_nodes.at(nodesSize - 1).m_x;
+		btVector3 nodeVel = m_nodes.at(nodesSize - 1).m_v;
+
+		// Remove the last node and the last link
+		m_links.removeAtIndex(linkSize - 1);
+		m_nodes.removeAtIndex(nodesSize - 1);
+		nodesSize--;
+		linkSize--;
+		int indexNode = nodesSize - 1;
+		
+		for (int i = 0; i < m_anchors.size(); i++)
+		{
+			Anchor* a = &m_anchors.at(i);
+			// If the node deleted was an anchor
+			if (a->m_node->index == nodesSize)
+			{
+				a->m_node = &m_nodes.at(indexNode);
+				a->m_node->m_x = nodePos;
+				a->m_node->m_v = nodeVel;
+				a->m_node->m_battach = -1;
+			}
+		}
+		
+		btScalar dist = (nodePos - m_nodes.at(nodesSize - 2).m_x).length();
+
+		// Set the new restLength and mass
+		m_links.at(linkSize - 1).m_rl = dist;
+		m_links.at(linkSize - 1).m_c1 = dist * dist;
+
+
+		firstNodeMass = m_linearMass * 0.5f * (dist);
+		setMass(nodesSize - 1, firstNodeMass);
+
+		if (nodesSize > 2)
+		{
+			btScalar linkMass = firstNodeMass + m_linearMass * 0.5f * (m_links[linkSize - 2].m_rl);
+			setMass(nodesSize - 2, linkMass);
+		}
+		else
+		{
+			setMass(nodesSize - 2, firstNodeMass);
+		}
+
+		distance += linkRestLength;
+	}
+	m_growingState = 1;
+}
+
 void btCable::anchorConstraint()
 {
 	BT_PROFILE("PSolve_Anchors");
@@ -1386,6 +1623,7 @@ void btCable::anchorConstraint()
 		const btVector3 wa = t * a.m_local;
 		const btVector3 va = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt;
 		const btVector3 vb = n.m_x - n.m_q;
+		auto di = (wa - n.m_x);
 		const btVector3 vr = (va - vb) + (wa - n.m_x) * kAHR;
 		n.m_x = a.m_body->getCenterOfMassPosition() + a.m_c1;
 
@@ -1514,8 +1752,16 @@ void btCable::setHorizonDrop(float value)
 bool btCable::updateCableData(btCable::CableData &cableData)
 {
 	memcpy(m_cableData, &cableData, CableDataSize);
-
 	return true;
+}
+
+void btCable::addSection(btScalar rl,int start,int end,int nbNodes)
+{
+	m_section[m_sectionCurrent].RestLength = rl;
+	m_section[m_sectionCurrent].StartNodeIndex = start;
+	m_section[m_sectionCurrent].EndNodeIndex = end;
+	m_section[m_sectionCurrent].NumberOfNodes = nbNodes;
+	m_sectionCurrent++;
 }
 
 void* btCable::getCableNodesPos() 
@@ -1579,4 +1825,51 @@ float btCable::getCollisionMargin()
 {
 	return this->collisionMargin;
 }
+
+btScalar btCable::getLinkRestLength(int indexLink) {
+	// If no section set
+	if (m_sectionCount <1)
+	{
+		return m_defaultRestLength;
+	}
+
+	// Check if the node is in a current section
+	for (int i = 0; i < m_sectionCount; i++)
+	{
+		if (indexLink < m_section[i].EndNodeIndex)
+		{
+			return m_section[i].RestLength;
+		}
+	}
+	// If the node isn't in a section we use the last section restLength
+	return m_section[m_sectionCount-1].RestLength;
+}
+
+void btCable::setDefaultRestLength(btScalar rl)
+{
+	m_defaultRestLength = rl;
+}
+
+void btCable::setMinLength(btScalar value) {
+	m_minLength = value;
+}
+
+void btCable::setWantedGrowSpeedAndDistance(btScalar speed, btScalar distance)
+{
+	WantedDistance = distance;
+	WantedSpeed = speed;
+}
+
+void btCable::setLinearMass(btScalar mass)
+{
+	m_linearMass = mass;
+}
+
+int btCable::getGrowingState()
+{
+	return m_growingState;
+}
+
+
+
 #pragma endregion

@@ -69,12 +69,18 @@ void btDefaultSoftBodySolver::solveConstraints(btScalar solverdt)
 	for (int i = 0; i < m_softBodySet.size(); ++i)
 	{
 		btSoftBody *psb = static_cast<btSoftBody *>(m_softBodySet[i]);
+		btCable *cable = (btCable *)psb;
+
+		if (cable != nullptr)
+		{
+			cable->updateLength(solverdt);
+		}
+
 		if (psb->isActive())
 		{
 			psb->solveConstraints();
 		}
 		
-		btCable *cable = (btCable *)psb;
 		if (cable != nullptr)
 		{
 			cable->updateNodeData();

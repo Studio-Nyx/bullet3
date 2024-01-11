@@ -558,7 +558,7 @@ static void Init_Pendulum(SoftDemo* pdemo)
 			massNodes[i] = 1;
 		}
 
-		cableAvant = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
+		cableAvant = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, 0, positionNodes, massNodes);
 		cableAvant->appendAnchor(0, lest);
 		cableAvant->appendAnchor(cableAvant->m_nodes.size() - 1, inspector125);
 
@@ -632,7 +632,7 @@ static void Init_Collisions(SoftDemo* pdemo)
 				m[i] = 1;
 			}
 
-			cableAvant = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), r, x, m);
+			cableAvant = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), r, 0, x, m);
 			for (i = 1; i < r; ++i)
 			{
 				cableAvant->appendLink(i - 1, i);
@@ -704,13 +704,12 @@ static void Init_Cable2Bodies(SoftDemo* pdemo)
 			massNodes[i] = 1;
 		}
 
-		cableAvant = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, positionNodes, massNodes);
+		cableAvant = new btCable(&pdemo->m_softBodyWorldInfo, pdemo->getSoftDynamicsWorld(), resolution, 0, positionNodes, massNodes);
 		cableAvant->appendAnchor(0, lest);
 		cableAvant->appendAnchor(cableAvant->m_nodes.size() - 1, inspector125);
 
 		cableAvant->getCollisionShape()->setMargin(0.004);
-		// float massCable = distance * 0.243;
-		// cableAvant->setTotalMass(1);
+
 		cableAvant->m_cfg.piterations = iterations;
 		cableAvant->m_cfg.kAHR = 1;
 
