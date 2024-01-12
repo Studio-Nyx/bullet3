@@ -1515,18 +1515,22 @@ void btCable::Grows(float dt)
 
 void btCable::Shrinks(float dt)
 {
-	// To avoid shrink to much 
-	if (getRestLength() <= m_minLength)
-	{
-		m_growingState = 2;
-		return;
-	}
+
 
 	int linkSize = m_links.size();
 	int nodesSize = m_nodes.size();
 
 	double rl = m_links.at(linkSize - 1).m_rl;
 	double distance = dt * WantedSpeed + m_links.at(linkSize - 1).m_rl;
+
+
+	// To avoid shrink to much
+	btScalar totalRl = getRestLength();
+	if (totalRl + distance <= m_minLength)
+	{
+		m_growingState = 2;
+		return;
+	}
 
 	// We can t shrinks over an anchor
 	if (m_nodes.at(nodesSize - 2).m_battach != 0)
