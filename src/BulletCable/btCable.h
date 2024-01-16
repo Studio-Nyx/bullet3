@@ -127,7 +127,7 @@ private:
 	// Node forces members
 	bool useHydroAero = true;
 
-	float collisionMargin = 0.001;
+	float m_collisionMargin = 0;
 
 	void distanceConstraint();
 	void LRAConstraint();
