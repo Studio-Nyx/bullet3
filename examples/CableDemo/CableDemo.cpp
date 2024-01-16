@@ -957,7 +957,7 @@ static void Init_TestCollisionCornerCube(CableDemo* pdemo)
 	cable->setUseLRA(false);
 	cable->getCollisionShape()->setMargin(0.005);
 	cable->setCollisionParameters(1, 1, 0);
-
+	cable->setCollisionMargin(0.005);
 	pdemo->SetCameraPosition(btVector3(0, 10, 0));
 }
 
@@ -1081,7 +1081,7 @@ static void Init_TestSupportA18(CableDemo* pdemo)
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(true);
 	cable->setCollisionParameters(1,1,0);
-
+	cable->setCollisionMargin(margin);
 	//cout << "Link " << cable->m_links.at(1).m_rl << endl;
 
 	pdemo->SetCameraPosition(btVector3(0, 0, 5));
@@ -1150,6 +1150,7 @@ static void Init_TestCollisionCableRigid(CableDemo* pdemo)
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(true);
 	cable->setCollisionParameters(1,1,0);
+	cable->setCollisionMargin(margin);
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 5));
 }
 
@@ -1209,7 +1210,7 @@ static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 	cable->setUseLRA(false);
 
 	cable->setCollisionParameters(1,3,0);
-
+	cable->setCollisionMargin(margin);
 	pdemo->SetCameraPosition(btVector3(0, 3.5, 0));
 }
 
@@ -1269,6 +1270,7 @@ static void Init_TestDynamicsCollisionCable(CableDemo* pdemo)
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setCollisionMargin(margin);
 	cable->setUseLRA(false);
+	cable->setCollisionMargin(margin);
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 0));
 }
 
@@ -1336,7 +1338,7 @@ static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(false);
-
+	cable->setCollisionMargin(margin);
 	cable->setCollisionParameters(2,1,0);
 
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 0));
@@ -1378,6 +1380,7 @@ static void Init_TestTensionMultiAnchors(CableDemo* pdemo)
 	btCable* cable = pdemo->createCableWaypoint(resolution, iterations, 1, waypointPos, bodyLeftAnchor, bodyRightAnchor);
 	cable->setUseCollision(false);
 	cable->getCollisionShape()->setMargin(margin);
+	cable->setCollisionMargin(margin);
 	cout << cable->m_nodes.size() << endl;
 	cout << cable->m_links[0].m_rl << endl;
 	cable->setUseLRA(true);

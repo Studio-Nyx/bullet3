@@ -212,7 +212,7 @@ void btCable::solveConstraints()
 	
 	if (useCollision)
 	{
-		btScalar marginNode = collisionMargin;
+		btScalar marginNode = m_collisionMargin;
 		btScalar margin;
 		ni = m_nodes.size();
 
@@ -504,7 +504,7 @@ void btCable::SolveLinkCollision(btAlignedObjectArray<btCable::NodePairNarrowPha
 	btScalar linkIndex;
 	btTransform m_rayFromTrans;
 	btTransform m_rayToTrans;
-	btScalar marginNode = collisionMargin;
+	btScalar marginNode = m_collisionMargin;
 	btScalar marginBody,margin;
 	int nodePairContactSize = nodePairContact->size();
 
@@ -784,7 +784,7 @@ bool btCable::checkCollide(int indexNode)
 {
 	btCollisionObjectArray array = m_world->getCollisionObjectArray();
 	Node n = this->m_nodes[indexNode];
-	btScalar margin = collisionMargin;
+	btScalar margin = m_collisionMargin;
 	for (int i = 0; i < array.size(); i++)
 	{
 		btVector3 minLink = btVector3(0, 0, 0);
@@ -865,7 +865,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 
 	btTransform m_rayFromTrans;
 	btTransform m_rayToTrans;
-	btScalar marginNode = collisionMargin;
+	btScalar marginNode = m_collisionMargin;
 	btScalar marginBody;
 	
 	btScalar margin;
@@ -1818,11 +1818,11 @@ void btCable::setCollisionParameters(int substepDelayCollision, int subIteration
 
 
 void btCable::setCollisionMargin(float colMargin) {
-	this->collisionMargin = colMargin;
+	this->m_collisionMargin = colMargin;
 }
 float btCable::getCollisionMargin()
 {
-	return this->collisionMargin;
+	return this->m_collisionMargin;
 }
 
 btScalar btCable::getLinkRestLength(int indexLink) {
