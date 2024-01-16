@@ -892,6 +892,8 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 			// If the node only collide 1 body we don t have to update nbSubStep times
 			if (n->m_nbCollidingObject == 1 && j>0)
 				continue;
+			if (marginNode <= 0)
+				continue;
 
 			obj = nodePairContact->at(i).pair->body;
 			shape = nodePairContact->at(i).collisionShape;
