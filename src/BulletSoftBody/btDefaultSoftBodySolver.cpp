@@ -71,7 +71,8 @@ void btDefaultSoftBodySolver::solveConstraints(btScalar solverdt)
 		btSoftBody *psb = static_cast<btSoftBody *>(m_softBodySet[i]);
 		btCable *cable = (btCable *)psb;
 
-		if (cable != nullptr)
+		// grows/shrinks only in physic
+		if (cable != nullptr && psb->isActive())
 		{
 			cable->updateLength(solverdt);
 		}
