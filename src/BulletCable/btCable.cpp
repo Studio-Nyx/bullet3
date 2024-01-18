@@ -1627,24 +1627,22 @@ void btCable::anchorConstraint()
 		const btVector3 wa = t * a.m_local;
 		const btVector3 va = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt;
 		const btVector3 vb = n.m_x - n.m_q;
-		auto di = (wa - n.m_x);
-		const btVector3 vr = (va - vb) + (wa - n.m_x) * kAHR;
+
+		const btVector3 vectAnchorNode = (wa - n.m_x);
+		const btScalar distAnchorNode = vectAnchorNode.length();
+		const btVector3 vr = (va - vb) + vectAnchorNode * kAHR;
+
+		btScalar ratio = distAnchorNode / 0.01;
+		ratio = Clamp(ratio, 0.0, 1.0);
 		n.m_x = a.m_body->getCenterOfMassPosition() + a.m_c1;
 
+		const btVector3 impulseMassBalance = a.m_c0_massBalance * vr * a.m_influence;
 		const btVector3 impulse = a.m_c0 * vr * a.m_influence;
-		// Use of the tweaked impulse matrix to stabilized distance body / anchor
-		const btVector3 impulse_massBalance = a.m_c0_massBalance * vr * a.m_influence;
+		btVector3 finalImpulse = lerp(impulse, impulseMassBalance, ratio);
 
-		if (m_nodes[0].m_x.distance(m_nodes[m_nodes.size() - 1].m_x) > getRestLength())
-		{
-			a.m_body->applyImpulse(-impulse_massBalance, a.m_c1);
-			a.tension += impulse_massBalance / dt;
-		}
-		else
-		{
-			a.m_body->applyImpulse(-impulse, a.m_c1);
-			a.tension += impulse / dt;
-		}
+		a.m_body->applyImpulse(-finalImpulse, a.m_c1);
+		a.tension += finalImpulse / dt;
+
 	}
 }
 
@@ -1786,10 +1784,12 @@ void btCable::appendNode(const btVector3& x, btScalar m)
 		m_nodes.reserve(m_nodes.size() * 2 + 1);
 		indicesToPointers();
 	}
+
 	const btScalar margin = getCollisionShape()->getMargin();
 	m_nodes.push_back(Node());
 	Node& n = m_nodes[m_nodes.size() - 1];
 	ZeroInitialize(n);
+
 	n.m_x = x;
 	n.m_q = n.m_x;
 	n.m_im = m > 0 ? 1 / m : 0;
