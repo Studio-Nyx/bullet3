@@ -1114,12 +1114,8 @@ void btSoftBody::transform(const btTransform& trs)
 		Node& n = m_nodes[i];
 		n.m_x = trs * n.m_x;
 		n.m_q = trs * n.m_q;
-		n.m_n = trs.getBasis() * n.m_n;
-		vol = btDbvtVolume::FromCR(n.m_x, margin);
-
-		m_ndbvt.update(n.m_leaf, vol);
+		n.m_n = trs.getBasis() * n.m_n;		
 	}
-	updateNormals();
 	updateBounds();
 	// updateConstants();
 }
