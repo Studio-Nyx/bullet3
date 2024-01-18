@@ -525,6 +525,11 @@ void btSoftBody::appendAnchor(int node, btRigidBody* body, const btVector3& loca
 	a.m_node->m_battach = 1;
 	a.m_influence = influence;
 	m_anchors.push_back(a);
+	m_anchors.quickSort(
+		[](Anchor& s1, Anchor& s2) -> bool
+		{
+			return s1.m_node->index < s2.m_node->index;
+		});
 
 	// Keep track of the number of anchor attached to this body
 	body->m_anchorsCount += 1;
