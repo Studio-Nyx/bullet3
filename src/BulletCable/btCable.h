@@ -182,7 +182,6 @@ public:
 		float radius;
 		float tangentDragCoefficient;
 		float normalDragCoefficient;
-		float horizonDrop;
 		int startIndex;
 		int endIndex;
 	};
@@ -255,7 +254,6 @@ public:
 
     bool getUseHydroAero();
 	void setUseHydroAero(bool active);
-    void setHorizonDrop(float value);
 	
 	bool updateCableData(btCable::CableData &cableData);
 

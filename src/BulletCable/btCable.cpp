@@ -1745,11 +1745,6 @@ bool btCable::getUseHydroAero()
 {
 	return useHydroAero;
 }
-    
-void btCable::setHorizonDrop(float value)
-{
-	m_cableData->horizonDrop = value;
-}
 
 bool btCable::updateCableData(btCable::CableData &cableData)
 {
