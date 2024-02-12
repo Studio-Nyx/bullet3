@@ -173,7 +173,7 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 							 btIDebugDraw* idraw,
 							 int drawflags)
 {
-	const btScalar scl = (btScalar)0.01;
+	const btScalar scl = (btScalar)0.03;
 	const btScalar nscl = scl * 5;
 	const btVector3 lcolor = btVector3(0, 0, 0);
 	const btVector3 ncolor = btVector3(1, 1, 1);
@@ -289,6 +289,7 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 			}
 		}
 		/* Links	*/
+		
 		if (0 != (drawflags & fDrawFlags::Links))
 		{
 			for (i = 0; i < psb->m_links.size(); ++i)
@@ -311,6 +312,7 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 			}
 		}
 		/* Contacts	*/
+		/*
 		if (0 != (drawflags & fDrawFlags::Contacts))
 		{
 			static const btVector3 axis[] = {btVector3(1, 0, 0),
@@ -328,6 +330,7 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 				idraw->drawLine(o, o + c.m_cti.m_normal * nscl * 3, btVector3(1, 1, 0));
 			}
 		}
+		*/
 		/* Faces	*/
 		if (0 != (drawflags & fDrawFlags::Faces))
 		{
@@ -372,8 +375,8 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 		{
 			const btSoftBody::Anchor& a = psb->m_anchors[i];
 			const btVector3 q = a.m_body->getWorldTransform() * a.m_local;
-			drawVertex(idraw, a.m_node->m_x, 0.25, btVector3(1, 0, 0));
-			drawVertex(idraw, q, 0.25, btVector3(0, 1, 0));
+			drawVertex(idraw, a.m_node->m_x, 0.01, btVector3(1, 0, 0));
+			drawVertex(idraw, q, 0.01, btVector3(0, 1, 0));
 			idraw->drawLine(a.m_node->m_x, q, btVector3(1, 1, 1));
 		}
 		for (i = 0; i < psb->m_nodes.size(); ++i)
@@ -382,7 +385,7 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 			if (0 == (n.m_material->m_flags & btSoftBody::fMaterial::DebugDraw)) continue;
 			if (n.m_im <= 0)
 			{
-				drawVertex(idraw, n.m_x, 0.25, btVector3(1, 0, 0));
+				drawVertex(idraw, n.m_x, 0.01, btVector3(1, 0, 0));
 			}
 		}
 	}

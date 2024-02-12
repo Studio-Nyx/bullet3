@@ -96,9 +96,10 @@ class btCable : public btSoftBody
 	
 
 private:
+	
 	int m_growingState=0;
 	// Number of solverIteration for 1 deltaTime passed
-	int m_solverSubStep;
+	int m_solverSubStep = 1;
 	// Actual iteration
 	int m_cpt;
 	int m_sectionCount = 0;
@@ -109,6 +110,13 @@ private:
 	bool useGravity = true;
 	bool useCollision = true;
 	btScalar m_linearMass=1.0;
+
+	//btScalar m_Axial_resistance = 70000000000;  // Units: N/m
+	//btScalar m_Axial_resistance = 68947;  // Units: N/m
+	btScalar m_Axial_resistance = 220000; // Units: N/m
+	btScalar m_collisionImpulseCoef = 0.0;
+	bool m_collisionSmoothMovement = true;
+	btScalar m_maxImpulse;
 
 	btScalar m_defaultRestLength; 
 
@@ -129,19 +137,18 @@ private:
 
 	float m_collisionMargin = 0;
 
-	void distanceConstraint();
+	void distanceConstraint(bool last);
 	void LRAConstraint();
 	void LRAConstraintNode();
 	void FABRIKChain();
 
 	void SolveLinkCollision(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 
-
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
-	void anchorConstraint();
+	void anchorConstraint ();
 	bool checkCollide(int indexNode);
-	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
+	btVector3 solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 
 	btVector3 moveBodyCollisionLink(btRigidBody* obj, btScalar margin, btScalar im, btVector3 movement, btScalar penetration, btVector3 normale, btVector3 hitPosition);
 	btVector3 moveBodyCollision(btRigidBody* body, btScalar margin, Node* n, btVector3 normale, btVector3 hitPosition);
@@ -159,6 +166,7 @@ public:
 	
 	btScalar WantedDistance = 0;
 	btScalar WantedSpeed = 0;
+	btScalar forceResponseCoef;
 
 	void updateLength(btScalar dt);
 
@@ -281,6 +289,15 @@ public:
 
 	void setWantedGrowSpeedAndDistance(btScalar speed, btScalar distance);
 	void setLinearMass(btScalar mass);
+
+	void setTestParams(bool activeSmooth, btScalar coefValue) {
+		m_collisionImpulseCoef = coefValue;
+		m_collisionSmoothMovement = activeSmooth;
+		if (coefValue < 0.01)
+			m_maxImpulse = m_Axial_resistance * 0.01;
+		else
+			m_maxImpulse = m_Axial_resistance * 2 * coefValue;  // Max atteint pour 2 fois la taille du lien
+	}
 
 #pragma endregion
 };

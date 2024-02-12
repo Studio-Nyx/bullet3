@@ -297,6 +297,7 @@ static ExampleEntry gDefaultExamples[] =
 		ExampleEntry(1, "Test_CollisionCableWithMouvingObject", " Test the collision on a dynamic body ", CableDemoCreateFunc, 11),
 		ExampleEntry(1, "Test_CollisionCableWithConvexHullShape", " Test the collision on a sphere Mesh", CableDemoCreateFunc, 12),
 		ExampleEntry(1, "Test_Tension", "Test Tension value with multiAnchor", CableDemoCreateFunc, 13),
+		ExampleEntry(1, "Test CollisionResponse", "Test Collision Response on a box", CableDemoCreateFunc, 14),
 
 #endif  //INCLUDE_CLOTH_DEMOS
 

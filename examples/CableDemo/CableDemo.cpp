@@ -48,9 +48,11 @@ class btSoftSoftCollisionAlgorithm;
 class btSoftRididCollisionAlgorithm;
 class btSoftRigidDynamicsWorld;
 
+
 class CableDemo : public CommonRigidBodyBase
 {
 public:
+	int substepSolver = 4;
 	btAlignedObjectArray<btSoftSoftCollisionAlgorithm*> m_SoftSoftCollisionAlgorithms;
 
 	btAlignedObjectArray<btSoftRididCollisionAlgorithm*> m_SoftRigidCollisionAlgorithms;
@@ -195,7 +197,7 @@ public:
 		{
 			m_moveBody = true;
 			if (speed>=0)
-				speed += 0.02;
+				speed += 1;
 			else
 				speed = 0.0;
 		}
@@ -205,7 +207,7 @@ public:
 			if (speed > 0)
 				speed = 0;
 			else
-				speed -= 0.02;
+				speed -= 1;
 		}
 
 		if (key == 'f' && state)
@@ -228,19 +230,21 @@ public:
 	void mouseMotionFunc(int x, int y);
 
 
-	void Grow(float dt,bool test = true)
+	void Grows(float dt,bool test = true)
 	{
+		if (getSoftDynamicsWorld()->getSoftBodyArray().size() == 0) return;
 		btCable* _cable = (btCable*)getSoftDynamicsWorld()->getSoftBodyArray()[0];
 		if (test)
-			_cable->WantedSpeed = 0.5;
+			_cable->WantedSpeed = 0.25;
 		else
 			_cable->WantedSpeed = 0;
 	}
-	void Shrink(float dt)
+	void Shrinks(float dt)
 	{
+		if (getSoftDynamicsWorld()->getSoftBodyArray().size() == 0) return;
 		btCable* _cable = (btCable*)getSoftDynamicsWorld()->getSoftBodyArray()[0];
 
-		_cable->WantedSpeed = -0.5;
+		_cable->WantedSpeed = -0.25;
 	}
 
 	GUIHelperInterface* getGUIHelper()
@@ -269,18 +273,27 @@ public:
 		btSoftRigidDynamicsWorld* softWorld = getSoftDynamicsWorld();
 		
 		// A18
-		//btCollisionObject* objKey = softWorld->getCollisionObjectArray().at(2);
-		//btRigidBody* obj = (btRigidBody*)objKey;
-		//obj->applyCentralForce(btVector3(speed*10000, 0, 0));
-		
+		if (m_currentDemoIndex == 8)
+		{
+			btCollisionObject* objKey = softWorld->getCollisionObjectArray().at(2);
+			btRigidBody* obj = (btRigidBody*)objKey;
+			obj->applyCentralForce(btVector3(speed*500, 0, 0));
+		}
+		/*
+		btCollisionObject* objKey = softWorld->getCollisionObjectArray().at(0);
+		btRigidBody* obj = (btRigidBody*)objKey;
+		//obj->applyCentralForce(btVector3(speed*500, 0, 0));
+		obj->applyCentralForce(btVector3(0, 0, speed * -5000));
+		*/
 		//cout << obj->getLinearVelocity().length() * softWorld->getSolverInfo().m_timeStep << endl;
 		
 		// Test Corner
+		/*
 		btCollisionObject* objKey = softWorld->getCollisionObjectArray().at(3);
 		btTransform tr = objKey->getWorldTransform();
 		tr.setOrigin(tr.getOrigin() + btVector3(speed, 0, 0));
 		objKey->setWorldTransform(tr);
-
+		*/
 		//btQuaternion t = tr.getRotation();
 		//t.setY(t.getY() + speed);
 		//tr.setRotation(t);
@@ -318,8 +331,11 @@ public:
 		auto softWorld = getSoftDynamicsWorld()->getCollisionObjectArray();
 		btCable* cable = (btCable *)getSoftDynamicsWorld()->getSoftBodyArray().at(0);
 		for (int i = 0; i < cable->m_anchors.size(); i++)
-			cout << " Tension on Anchor " << i << " - Node " << cable->m_anchors.at(i).m_node->index 
-				 << " = " << cable->getTensionAt(i).length() << " - Mass " << cable->m_anchors.at(i).m_body->getInvMass() << endl;
+		{
+			if (cable->m_anchors.at(i).m_body->getInvMass() == 0) continue;
+			cout << " Tension on Anchor " << i << " - Node " << cable->m_anchors.at(i).m_node->index
+				 << " = " << cable->getTensionAt(i).length() << " - Mass " << 1.0 / cable->m_anchors.at(i).m_body->getInvMass() << endl;
+		}
 
 	}
 	void stepSimulation(float deltaTime) override
@@ -343,16 +359,16 @@ public:
 			if (m_printTens)
 				printTension();
 			if (m_grow)
-				Grow(deltaTime);
+				Grows(deltaTime);
 			else
-				Grow(deltaTime,false);
+				Grows(deltaTime,false);
 			if (m_shrink)
-				Shrink(deltaTime);
+				Shrinks(deltaTime);
 
 			current_ticks = clock();
 
 
-			int subStep = 4;
+			int subStep = substepSolver;
 			m_dynamicsWorld->stepSimulation(deltaTime, subStep, deltaTime / subStep);
 			//m_dynamicsWorld->stepSimulation(deltaTime);
 		
@@ -443,6 +459,7 @@ public:
 
 		// Cable's creation
 		btCable* cable = new btCable(&m_softBodyWorldInfo, getSoftDynamicsWorld(), resolution,0, positionNodes, massNodes);
+		
 		cable->setUseCollision(false);
 		if (bodyB != nullptr)
 			cable->appendAnchor(0, bodyB, posWorldAnchorBodyB - bodyB->getWorldTransform().getOrigin(),DisableCollisionOnB);
@@ -457,6 +474,8 @@ public:
 
 		// Add cable to the world
 		getSoftDynamicsWorld()->addSoftBody(cable);
+		cable->setCollisionParameters(1, 1, 0);
+		cable->setTestParams(true, 0);
 		return cable;
 	}
 
@@ -499,7 +518,6 @@ public:
 				massNodes[position] = 1;
 				if (i !=limite-1)
 					position++;
-				
 			}
 			
 		}
@@ -517,8 +535,10 @@ public:
 		cable->m_cfg.piterations = iteration;
 		cable->m_cfg.kAHR = 1;
 
+		cable->setCollisionParameters(1, 1, 0);
 		// Add cable to the world
 		getSoftDynamicsWorld()->addSoftBody(cable);
+		
 		return cable;
 	}
 };
@@ -582,7 +602,8 @@ static void Init_Nodes(CableDemo* pdemo)
 		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
 		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 
-		pdemo->createCable(resolution, iteration, resolution, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		btCable* cable = pdemo->createCable(resolution, iteration, resolution, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		cable->setCollisionParameters(1, 1, 0);
 	}
 }
 
@@ -633,7 +654,8 @@ static void Init_Weigths(CableDemo* pdemo)
 		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
 		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
 
-		pdemo->createCable(resolution, iteration,1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		btCable*  cable =pdemo->createCable(resolution, iteration,1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+		cable->setCollisionParameters(1, 1, 0);
 	}
 }
 
@@ -967,23 +989,23 @@ static void initLock(CableDemo* pdemo)
 
 	btTransform pos =  btTransform();
 	pos.setIdentity();
-	pos.setOrigin(btVector3(0, 0, 0.1));
-	btScalar mass = 1;
+	pos.setOrigin(btVector3(-0.2, 2, 0.3));
+	
 	// Create sphere ring
 	
 	
-	btTransform spherePositionA = btTransform();
-	spherePositionA.setIdentity();
-	spherePositionA.setOrigin(btVector3(0.2, 0,0));
-
 	btTransform spherePositionB = btTransform();
 	spherePositionB.setIdentity();
-	spherePositionB.setOrigin(btVector3(0.3, 0, 0));
-
+	spherePositionB.setOrigin(btVector3(0.35, 0,0));
 
 	btTransform spherePositionC = btTransform();
 	spherePositionC.setIdentity();
-	spherePositionC.setOrigin(btVector3(0.1, 0, -0.5));
+	spherePositionC.setOrigin(btVector3(0.5, 0, 0));
+
+
+	btTransform spherePositionD = btTransform();
+	spherePositionD.setIdentity();
+	spherePositionD.setOrigin(btVector3(0.3, 0, -1));
 
 
 	btCompoundShape* a18shape = new btCompoundShape();
@@ -992,10 +1014,13 @@ static void initLock(CableDemo* pdemo)
 	a18.setIdentity();
 	a18.setOrigin(btVector3(-6, 0, 0));
 
-	btBoxShape * a = new btBoxShape(btVector3(6, 2, 2));
-	btBoxShape* b = new btBoxShape(btVector3(0.2, 0.1, 0.05));
-	btBoxShape* c = new btBoxShape(btVector3(0.1, 0.1, 1));
-	btBoxShape* d = new btBoxShape(btVector3(0.3, 0.1, 0.1));
+	// Body
+	btBoxShape * a = new btBoxShape(btVector3(6, 1, 1));
+	// T center
+	btBoxShape* b = new btBoxShape(btVector3(0.4, 0.3, 0.2));
+	btCapsuleShape* c = new btCapsuleShapeZ(0.2, 1);
+	//btBoxShape* c = new btBoxShape(btVector3(0.2, 0.3, 1));
+	btBoxShape* d = new btBoxShape(btVector3(0.3, 0.3, 0.2));
 
 	a->setMargin(0);
 	b->setMargin(0);
@@ -1003,21 +1028,21 @@ static void initLock(CableDemo* pdemo)
 	d->setMargin(0);
 
 	a18shape->addChildShape(a18, a);
-	a18shape->addChildShape(spherePositionA, b);
-	a18shape->addChildShape(spherePositionB, c);
-	a18shape->addChildShape(spherePositionC, d);
-
+	a18shape->addChildShape(spherePositionB, b);
+	a18shape->addChildShape(spherePositionC, c);
+	a18shape->addChildShape(spherePositionD, d);
 
 	btRigidBody* box = pdemo->createRigidBody(700, pos, a18shape);
+	box->setDamping(0, .9);
 	box->setGravity(btVector3(0, 0, 0));
-	
+	box->setFriction(1);
 }
 
 static void Init_TestSupportA18(CableDemo* pdemo)
 {
 	// Resolution's cable
-	int resolution = 100;
-	int iterations = 100;
+	int resolution = 20;
+	int iterations = 50;
 	btScalar margin = 0.005;
 
 	// Shape
@@ -1051,42 +1076,38 @@ static void Init_TestSupportA18(CableDemo* pdemo)
 		sphereShape->initializePolyhedralFeatures();
 	}
 
-	btCollisionShape* cylander = new btBoxShape(btVector3(0.25, .5, 0.25));
+	btCollisionShape* cylander = new btBoxShape(btVector3(0.2, .3, 0.2));
+	btCollisionShape* cylanderB = new btBoxShape(btVector3(0.2, .2, 0.5));
 
 	btTransform AnchorUpPos = btTransform();
 	AnchorUpPos.setIdentity();
 	AnchorUpPos.setOrigin(btVector3(0, 5, 0));
-	btRigidBody* AnchorUp = pdemo->createRigidBody(0, AnchorUpPos, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
+	btRigidBody* AnchorUp = pdemo->createRigidBody(0, AnchorUpPos, new btBoxShape(btVector3(0.2, 0.2, 0.2)));
 
 	btTransform LestTransform = btTransform();
 	LestTransform.setIdentity();
-	LestTransform.setOrigin(btVector3(-0, -15, 0));
+	LestTransform.setOrigin(btVector3(-0, 0, 0));
 	btRigidBody* Lest = pdemo->createRigidBody(10, LestTransform, cylander);
-	Lest->setGravity(btVector3(0, -10, 0));
-
 	
 	initLock(pdemo);
 
 	btAlignedObjectArray<btVector3> waypointPos = btAlignedObjectArray<btVector3>();
 	waypointPos.push_back(LestTransform.getOrigin() + btVector3(0, 0.5, 0)); // point de départ
-	//waypointPos.push_back(btVector3(0.1, -1, 0));
-	//waypointPos.push_back(btVector3(0.1, 1, 0));
 	waypointPos.push_back(AnchorUpPos.getOrigin() + btVector3(0, -0.5, 0)); // Arrivée
 	
-
-	btCable* cable = pdemo->createCableWaypoint(resolution, iterations, 5, waypointPos, Lest, AnchorUp ,true,true);
+	btCable* cable = pdemo->createCableWaypoint(resolution, iterations, 2, waypointPos, Lest, AnchorUp ,true,true);
 	//btCable* cable = pdemo->createCable(resolution, iterations, 3, LestTransform.getOrigin() + btVector3(0, 0.5, 0), AnchorUpPos.getOrigin() + btVector3(0, -0.5, 0), AnchorUp, Lest, false, false);
-
+	cable->setFriction(1);
 	cable->setUseCollision(true);
-	cable->getCollisionShape()->setMargin(margin);
-	cable->setUseLRA(true);
-	cable->setCollisionParameters(1,1,0);
+ 	cable->getCollisionShape()->setMargin(margin);
+	cable->setUseLRA(false);
+	cable->setCollisionParameters(1,2,0);
 	cable->setCollisionMargin(margin);
-	//cout << "Link " << cable->m_links.at(1).m_rl << endl;
 
-	pdemo->SetCameraPosition(btVector3(0, 0, 5));
+	cable->setTestParams(true, 0);
+	
+	pdemo->SetCameraPosition(btVector3(0,2,-3));
 }
-
 
 static void Init_TestCollisionCableRigid(CableDemo* pdemo)
 {
@@ -1157,13 +1178,12 @@ static void Init_TestCollisionCableRigid(CableDemo* pdemo)
 static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 {
 	// Resolution's cable
-	int resolution = 100;
+	int resolution = 20;
 	int iterations = 100;
-	btScalar margin = 0.01;
+	btScalar margin = 0.005;
 
 	// Shape
 	btCollisionShape* shape = new btSphereShape(1);
-
 
 	btCompoundShape* compound = new btCompoundShape();
 	btTransform localA = btTransform();
@@ -1176,13 +1196,11 @@ static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 	localB.setOrigin(btVector3(0, 0, -0.80));
 	compound->addChildShape(localB, shape);
 
-
-
 	btTransform t = btTransform();
 	t.setIdentity();
-	t.setOrigin(btVector3(0, 0, 0));
-	btRigidBody* spheres = pdemo->createRigidBody(1000, t, compound);
-	spheres->setGravity(btVector3(0, 15, 0));
+	t.setOrigin(btVector3(0, 2.75, 0));
+	btRigidBody* spheres = pdemo->createRigidBody(100, t, compound);
+	//spheres->setGravity(btVector3(0, 10, 0));
 
 	btVector3 groundPos = btVector3(0, -15, 0);
 	btTransform transformGround = btTransform();
@@ -1191,87 +1209,141 @@ static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 	//btRigidBody* ground = pdemo->createRigidBody(0, transformGround, new btBoxShape(btVector3(50, 2, 50)));
 
 	// Masses
-	btScalar massRight(100);
-	btScalar massLeft(100);
-
 	btTransform transformRight = btTransform();
 	transformRight.setIdentity();
-	transformRight.setOrigin(btVector3(5, 2, 0));
+	transformRight.setOrigin(btVector3(3, 2, 0));
 	btRigidBody* bodyRightAnchor = pdemo->createRigidBody(0, transformRight, new btBoxShape(btVector3(1, 1, 1)));
+
 
 	btTransform transformLeft = btTransform();
 	transformLeft.setIdentity();
-	transformLeft.setOrigin(btVector3(-5, 2, 0));
-	btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(100, transformLeft, new btBoxShape(btVector3(1, 1, 1)));
+	transformLeft.setOrigin(btVector3(-3, 2, 0));
+	btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(0, transformLeft, new btBoxShape(btVector3(1, 1, 1)));
 	
-	btCable* cable = pdemo->createCable(resolution, iterations, 3, transformRight.getOrigin(), transformLeft.getOrigin(), bodyLeftAnchor, bodyRightAnchor,true,true);
+	btCable* cable = pdemo->createCable(resolution, iterations, 1, transformRight.getOrigin(), transformLeft.getOrigin(), bodyLeftAnchor, bodyRightAnchor,true,true);
+	
+	//cable->appendAnchor(10, spheres, true);
+	spheres->setFriction(1);
+	cable->setFriction(1);
+
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(false);
 
-	cable->setCollisionParameters(1,3,0);
+	cable->setCollisionParameters(1,5,0);
 	cable->setCollisionMargin(margin);
+	cable->setTestParams(false, 1);
 	pdemo->SetCameraPosition(btVector3(0, 3.5, 0));
 }
 
 static void Init_TestDynamicsCollisionCable(CableDemo* pdemo)
 {
 	// Shape
-	btCollisionShape* cubeShape = new btBoxShape(btVector3(0.2,0.2,3));
+	btCollisionShape* cubeShape = new btBoxShape(btVector3(0.25,0.25,0.25));
 	// Resolution's cable
-	int resolution = 40;
-	int iterations = 100;
-	btScalar margin = 0.01;
+	int resolution = 50;
+	int iterations = 200;
+	btScalar margin = 0.005;
+
+	// Blockeurs
+
+	btTransform blocCompound = btTransform(); 
+	blocCompound.setIdentity();
+	blocCompound.setOrigin(btVector3(0, 8, -6));
+	btCompoundShape *c = new btCompoundShape();
+
+	/*
+	btTransform t = btTransform();
+	t.setIdentity();
+	t.setOrigin(btVector3(-1, 0, 0));
+	c->addChildShape(t, cubeShape);
+
+	// Blockeurs
+	btTransform y = btTransform();
+	y.setIdentity();
+	y.setOrigin(btVector3(1, 0, 0));
+	c->addChildShape(y, cubeShape);
+
+	btTransform z = btTransform();
+	z.setIdentity();
+	z.setOrigin(btVector3(0, 0, 1));
+	c->addChildShape(z, cubeShape);
+
+	btTransform zz = btTransform();
+	zz.setIdentity();
+	zz.setOrigin(btVector3(0, 0, -1));
+	c->addChildShape(zz, cubeShape);
+	*/
 
 	btTransform t = btTransform();
 	t.setIdentity();
-	t.setOrigin(btVector3(0, 7, 0));
-	btRigidBody* cube = pdemo->createRigidBody(0, t, cubeShape);
+	t.setOrigin(btVector3(0, 0, 6));
+	c->addChildShape(t, new btBoxShape(btVector3(5, 0.5,0.5)));
 
+	btTransform y = btTransform();
+	y.setIdentity();
+	y.setOrigin(btVector3(0, 0, 0));
+	c->addChildShape(y, new btBoxShape(btVector3(5, 0.5, 5)));
+	//btRigidBody* cubeBis = pdemo->createRigidBody(100, y, cubeShape);
+
+	btRigidBody* obj = pdemo->createRigidBody(1000, blocCompound, c);
+	obj->updateInertiaTensor();
+	//btRigidBody* obj = pdemo->createRigidBody(10000, blocCompound,  new btBoxShape(btVector3(5, 0.5, 5)));
+	//obj->setGravity(btVector3(0,0,0));
+
+	
+
+	btTransform Lest = btTransform();
+	Lest.setIdentity();
+	//Lest.setOrigin(btVector3(0, 6, 0));
+	Lest.setOrigin(btVector3(0, 6.5, 2.8));
+	//btRigidBody* LestBody = pdemo->createRigidBody(100, Lest, new btBoxShape(btVector3(5, 0.5, 5)));
+	btRigidBody* LestBody = pdemo->createRigidBody(0, Lest, new btBoxShape(btVector3(0.5, 10, 0.5)));
+
+	btTransform trAnchorUp = btTransform();
+	trAnchorUp.setIdentity();
+	trAnchorUp.setOrigin(btVector3(0, 10, 0));
+	btRigidBody* anchorUp = pdemo->createRigidBody(0, trAnchorUp, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
+
+	
 	btVector3 groundPos = btVector3(0, -15, 0);
 	btTransform transformGround = btTransform();
 	transformGround.setIdentity();
 	transformGround.setOrigin(groundPos);
 	btRigidBody* ground = pdemo->createRigidBody(0, transformGround, new btBoxShape(btVector3(50, 2, 50)));
 
-	
-
-	btTransform transformRight = btTransform();
-	transformRight.setIdentity();
-	transformRight.setOrigin(btVector3(0.25, 6, 0));
-	btRigidBody* bodyRightAnchor = pdemo->createRigidBody(100, transformRight, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
-
-	btTransform transformLeft = btTransform();
-	transformLeft.setIdentity();
-	transformLeft.setOrigin(btVector3(-3, 10, 0));
-	btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(0, transformLeft, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
-
-
-	btTransform y = btTransform();
-	y.setIdentity();
-	y.setOrigin(btVector3(0.6, 7, 0));
-
-	btRigidBody* cubeBis = pdemo->createRigidBody(0, y, cubeShape);
-
-
 	btAlignedObjectArray<btVector3> waypointPos = btAlignedObjectArray<btVector3>();
-	waypointPos.push_back(transformRight.getOrigin() + btVector3(0, 0.2, 0));  // point de départ
-	//waypointPos.push_back(btVector3(0.1, -1, 0));
-	//waypointPos.push_back(btVector3(0.1, 1, 0));
-	waypointPos.push_back(transformRight.getOrigin() + btVector3(0, 2, 0));
-	waypointPos.push_back(transformLeft.getOrigin() + btVector3(0.4, 0, 0));  // Arrivée
+	waypointPos.push_back(Lest.getOrigin() + btVector3(0, 0, 0));
+	waypointPos.push_back(Lest.getOrigin() + btVector3(0, 0, -3.5));  // point de départ
+	waypointPos.push_back(Lest.getOrigin() + btVector3(0, 3, -3.5));  // Arrivée
+	waypointPos.push_back(trAnchorUp.getOrigin());  // Arrivée
 
-	btCable* cable = pdemo->createCableWaypoint(resolution, iterations, 5, waypointPos, bodyRightAnchor, bodyLeftAnchor, true, true);
+	// Masses
+	btTransform transformBlockA = btTransform();
+	transformBlockA.setIdentity();
+	transformBlockA.setOrigin(btVector3(6.01, -5, 0));
+	btRigidBody* BlockA = pdemo->createRigidBody(0, transformBlockA, new btBoxShape(btVector3(1, 10, 10)));
 
+	btTransform transformBlockB = btTransform();
+	transformBlockB.setIdentity();
+	transformBlockB.setOrigin(btVector3(-6.01, -5, 0));
+	btRigidBody* BlockB = pdemo->createRigidBody(0, transformBlockB, new btBoxShape(btVector3(1, 10, 10)));
+
+
+	btCable* cable = pdemo->createCableWaypoint(resolution, iterations, 3, waypointPos, LestBody, anchorUp, true, true);
+
+	obj->setFriction(1);
+	cable->setFriction(1);
 
 	//btCable* cable = pdemo->createCable(resolution, iterations, 1, transformRight.getOrigin() + btVector3(0, 0.2, 0), transformLeft.getOrigin() + btVector3(0.4, 0, 0), bodyLeftAnchor, bodyRightAnchor, true, false);
-	
+	cable->setUseBending(false);
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setCollisionMargin(margin);
 	cable->setUseLRA(false);
-	cable->setCollisionMargin(margin);
-	pdemo->SetCameraPosition(btVector3(0, 0.5, 0));
+	cable->setCollisionParameters(1, 1, 0);
+	pdemo->SetCameraPosition(btVector3(0, 5, 0));
+	cable->setTestParams(true, 0.0);
 }
 
 static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
@@ -1339,7 +1411,7 @@ static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(false);
 	cable->setCollisionMargin(margin);
-	cable->setCollisionParameters(2,1,0);
+	cable->setCollisionParameters(3,1,0);
 
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 0));
 }
@@ -1347,7 +1419,7 @@ static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 static void Init_TestTensionMultiAnchors(CableDemo* pdemo)
 {
 	// Resolution's cable
-	int resolution = 11;
+	int resolution = 10;
 	int iterations = 100;
 	btScalar margin = 0.01;
 
@@ -1369,7 +1441,7 @@ static void Init_TestTensionMultiAnchors(CableDemo* pdemo)
 	btTransform transformLeft = btTransform();
 	transformLeft.setIdentity();
 	transformLeft.setOrigin(btVector3(0, 0, 0));
-	btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(100, transformLeft, new btBoxShape(btVector3(1, 1, 1)));
+	btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(10, transformLeft, new btBoxShape(btVector3(1, 1, 1)));
 
 
 	btAlignedObjectArray<btVector3> waypointPos = btAlignedObjectArray<btVector3>();
@@ -1381,11 +1453,107 @@ static void Init_TestTensionMultiAnchors(CableDemo* pdemo)
 	cable->setUseCollision(false);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setCollisionMargin(margin);
-	cout << cable->m_nodes.size() << endl;
-	cout << cable->m_links[0].m_rl << endl;
 	cable->setUseLRA(true);
 	pdemo->SetCameraPosition(btVector3(0, 0.5, 0));
 }
+
+static void Init_TestCableCollisionResponse(CableDemo* pdemo)
+{
+	// Shape
+	btCollisionShape* cubeShape = new btBoxShape(btVector3(1, 1, 1));
+	// Resolution's cable
+	int resolution = 30;
+	int iterations = 300;
+	btScalar margin = 0.01;
+
+	/*
+	btTransform t = btTransform();
+	t.setIdentity();
+	t.setOrigin(btVector3(0, 1.5, 0));
+	btRigidBody* cube = pdemo->createRigidBody(10, t, cubeShape);
+	*/
+
+
+	btAlignedObjectArray<btRigidBody*> sphere = btAlignedObjectArray<btRigidBody*>();
+
+	btTransform pos = btTransform();
+	pos.setIdentity();
+	pos.setOrigin(btVector3(0, 0, 0));
+	btScalar mass = 1;
+	// Create sphere ring
+
+	btTransform a18 = btTransform();
+	a18.setIdentity();
+	a18.setOrigin(btVector3(-0.80, 0, 0));
+
+	btTransform spherePositionB = btTransform();
+	spherePositionB.setIdentity();
+	spherePositionB.setOrigin(btVector3(0, 0.80, 0));
+
+	btTransform spherePositionC = btTransform();
+	spherePositionC.setIdentity();
+	spherePositionC.setOrigin(btVector3(0.80, 0, 0));
+
+	btTransform spherePositionD = btTransform();
+	spherePositionD.setIdentity();
+	spherePositionD.setOrigin(btVector3(0, -0.80, 0));
+
+	btCompoundShape* a18shape = new btCompoundShape();
+
+	
+
+	btBoxShape* a = new btBoxShape(btVector3(0.5, 1, 1));
+	btBoxShape* b = new btBoxShape(btVector3(1, 0.5, 1));
+	btBoxShape* c = new btBoxShape(btVector3(0.5, 1, 1));
+	btBoxShape* d = new btBoxShape(btVector3(1, 0.5, 1));
+
+	a->setMargin(0);
+	b->setMargin(0);
+	c->setMargin(0);
+	d->setMargin(0);
+
+	a18shape->addChildShape(a18, a);
+	a18shape->addChildShape(spherePositionB, b);
+	a18shape->addChildShape(spherePositionC, c);
+	a18shape->addChildShape(spherePositionD, d);
+
+	btRigidBody* box = pdemo->createRigidBody(10000, pos, a18shape);
+
+	btVector3 groundPos = btVector3(0, -10, 0);
+	btTransform transformGround = btTransform();
+	transformGround.setIdentity();
+	transformGround.setOrigin(groundPos);
+	btRigidBody* ground = pdemo->createRigidBody(0, transformGround, new btBoxShape(btVector3(50, 2, 50)));
+
+	btTransform transformRight = btTransform();
+	transformRight.setIdentity();
+	transformRight.setOrigin(btVector3(0, 0, 5));
+	btRigidBody* bodyRightAnchor = pdemo->createRigidBody(0, transformRight, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
+
+	btTransform transformLeft = btTransform();
+	transformLeft.setIdentity();
+	transformLeft.setOrigin(btVector3(0, 0, -5));
+	btRigidBody* bodyLeftAnchor = pdemo->createRigidBody(0, transformLeft, new btBoxShape(btVector3(0.5, 0.5, 0.5)));
+
+	btAlignedObjectArray<btVector3> waypointPos = btAlignedObjectArray<btVector3>();
+	waypointPos.push_back(transformRight.getOrigin() + btVector3(0, 0, 0));  // point de départ
+	waypointPos.push_back(transformLeft.getOrigin() + btVector3(0, 0, 0));  // Arrivée
+
+	btCable* cable = pdemo->createCableWaypoint(resolution, iterations,1, waypointPos, bodyRightAnchor, bodyLeftAnchor, true, true);
+	//cable->appendAnchor(50, box,true);
+
+	box->setFriction(0);
+	cable->setFriction(0);
+
+	cable->setUseCollision(true);
+	cable->getCollisionShape()->setMargin(margin);
+	cable->setCollisionMargin(margin);
+	cable->setUseLRA(false);
+	cable->setCollisionParameters(1, 1, 0);
+	pdemo->SetCameraPosition(btVector3(0, -3, 0));
+}
+
+
 
 void (*demofncs[])(CableDemo*) =
 {
@@ -1402,7 +1570,8 @@ void (*demofncs[])(CableDemo*) =
 		Init_TestCollisionCableSphere,
 		Init_TestDynamicsCollisionCable,
 		Init_TestCollisionCableConvexHullOnMeshSphere,
-		Init_TestTensionMultiAnchors};
+		Init_TestTensionMultiAnchors,
+		Init_TestCableCollisionResponse};
 
 ////////////////////////////////////
 ///for mouse picking
@@ -1549,7 +1718,6 @@ void CableDemo::initPhysics()
 	///Register softbody versus softbody collision algorithm
 
 	///Register softbody versus rigidbody collision algorithm
-
 	////////////////////////////
 
 	btVector3 worldAabbMin(-1000, -1000, -1000);
@@ -1631,7 +1799,7 @@ void CableDemo::initPhysics()
 	m_softBodyWorldInfo.water_offset = 0;
 	m_softBodyWorldInfo.water_normal = btVector3(0, 0, 0);
 	m_softBodyWorldInfo.m_gravity.setValue(0, -9.81, 0);
-	m_softBodyWorldInfo.numIteration = 4;
+	m_softBodyWorldInfo.numIteration = substepSolver;
 
 	m_autocam = false;
 	m_raycast = false;
