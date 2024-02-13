@@ -159,6 +159,7 @@ public:
 	
 	btScalar WantedDistance = 0;
 	btScalar WantedSpeed = 0;
+	btVector3 m_gravity;
 
 	void updateLength(btScalar dt);
 

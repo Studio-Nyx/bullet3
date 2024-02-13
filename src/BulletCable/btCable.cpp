@@ -90,6 +90,8 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 	{
 		m_defaultRestLength = m_links.at(0).m_rl;
 	}
+
+	m_gravity = worldInfo->m_gravity;
 }
 
 #pragma region Constraints
@@ -1362,7 +1364,7 @@ void btCable::predictMotion(btScalar dt)
 	m_sst.updmrg = m_sst.radmrg * (btScalar)0.25;
 
 	// Forces
-	if (useGravity) addVelocity(m_worldInfo->m_gravity * m_sst.sdt);
+	if (useGravity) addVelocity(m_gravity * m_sst.sdt);
 
 	// SoftRigidBody
 	NodeForces* nodeForces = static_cast<btSoftRigidDynamicsWorld*>(m_world)->m_nodeForces;
@@ -1868,7 +1870,5 @@ int btCable::getGrowingState()
 {
 	return m_growingState;
 }
-
-
 
 #pragma endregion
