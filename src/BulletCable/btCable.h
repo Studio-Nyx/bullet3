@@ -209,6 +209,7 @@ public:
 	btScalar WantedDistance = 0;
 	btScalar WantedSpeed = 0;
 	btScalar forceResponseCoef;
+	btVector3 m_gravity;
 
 	void updateLength(btScalar dt);
 

@@ -63,7 +63,9 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 	{
 		m_defaultRestLength = m_links.at(0).m_rl;
 	}
-	
+
+	m_gravity = worldInfo->m_gravity;
+
 	// vector<btScalar> dataX = {0,0.001,1};
 	// vector<btScalar> dataY = {0,10, 1000};
 	// setControlPoint(dataX, dataY);
@@ -1696,7 +1698,7 @@ void btCable::predictMotion(btScalar dt)
 	m_sst.updmrg = m_sst.radmrg * (btScalar)0.25;
 
 	// Forces
-	if (useGravity) addVelocity(m_worldInfo->m_gravity * m_sst.sdt);
+	if (useGravity) addVelocity(m_gravity * m_sst.sdt);
 
 	// SoftRigidBody
 	NodeForces* nodeForces = static_cast<btSoftRigidDynamicsWorld*>(m_world)->m_nodeForces;
