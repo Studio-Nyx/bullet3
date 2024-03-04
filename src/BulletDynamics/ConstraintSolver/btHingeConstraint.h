@@ -236,6 +236,43 @@ public:
 		m_rbBFrame.getBasis() = m_rbB.getCenterOfMassTransform().getBasis().inverse() * m_rbBFrame.getBasis();
 	}
 
+	void setAxis(btVector3 & axisToRotate, btVector3 & axisToLook)
+	{
+		btVector3 otherAxis = axisToRotate.cross(axisToLook);
+		btVector3 pivotInA = m_rbAFrame.getOrigin();
+		m_rbAFrame.getBasis().setValue(axisToLook.getX(), otherAxis.getX(), axisToRotate.getX(),
+									   axisToLook.getY(), otherAxis.getY(), axisToRotate.getY(),
+									   axisToLook.getZ(), otherAxis.getZ(), axisToRotate.getZ());
+
+		btVector3 axisInB = m_rbA.getCenterOfMassTransform().getBasis() * axisToRotate;
+		btQuaternion rotationArc = shortestArcQuat(axisToRotate, axisInB);
+		btVector3 rbAxisB1 = quatRotate(rotationArc, axisToLook);
+		btVector3 rbAxisB2 = axisInB.cross(rbAxisB1);
+
+		m_rbBFrame.getOrigin() = m_rbB.getCenterOfMassTransform().inverse()(m_rbA.getCenterOfMassTransform()(pivotInA));
+
+		m_rbBFrame.getBasis().setValue(rbAxisB1.getX(), rbAxisB2.getX(), axisInB.getX(),
+									   rbAxisB1.getY(), rbAxisB2.getY(), axisInB.getY(),
+									   rbAxisB1.getZ(), rbAxisB2.getZ(), axisInB.getZ());
+		m_rbBFrame.getBasis() = m_rbB.getCenterOfMassTransform().getBasis().inverse() * m_rbBFrame.getBasis();
+	}
+
+	void setAxisInA(btVector3 & axisToRotate, btVector3 & axisToLook)
+	{
+		btVector3 otherAxis = axisToRotate.cross(axisToLook);
+		m_rbAFrame.getBasis().setValue(axisToLook.getX(), otherAxis.getX(), axisToRotate.getX(),
+									   axisToLook.getY(), otherAxis.getY(), axisToRotate.getY(),
+									   axisToLook.getZ(), otherAxis.getZ(), axisToRotate.getZ());
+	}
+
+	void setAxisInB(btVector3 & axisToRotate, btVector3 & axisToLook)
+	{
+		btVector3 otherAxis = axisToRotate.cross(axisToLook);
+		m_rbBFrame.getBasis().setValue(axisToLook.getX(), otherAxis.getX(), axisToRotate.getX(),
+									   axisToLook.getY(), otherAxis.getY(), axisToRotate.getY(),
+									   axisToLook.getZ(), otherAxis.getZ(), axisToRotate.getZ());
+	}
+
 	bool hasLimit() const
 	{
 #ifdef _BT_USE_CENTER_LIMIT_
