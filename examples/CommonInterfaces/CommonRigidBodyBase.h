@@ -336,10 +336,14 @@ struct CommonRigidBodyBase : public CommonExampleInterface
 					btPoint2PointConstraint* p2p = new btPoint2PointConstraint(*body, localPivot);
 					m_dynamicsWorld->addConstraint(p2p, true);
 					m_pickedConstraint = p2p;
-					btScalar mousePickClamping = 30.f;
-					p2p->m_setting.m_impulseClamp = mousePickClamping;
-					//very weak constraint for picking
-					p2p->m_setting.m_tau = 0.001f;
+
+					
+					// max impulse of the body
+					p2p->m_setting.m_impulseClamp = 15.f;
+					// very weak constraint ? 
+					p2p->m_setting.m_tau = 0.003f;
+					// 0.0f <= damping <= 1.0f
+					p2p->m_setting.m_damping = 0.1f;
 				}
 			}
 

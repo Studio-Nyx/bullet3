@@ -269,6 +269,22 @@ public:
 		buildJacobian();
 	}
 
+	void setAxisInA(btVector3 & axisToRotate, btVector3 & axisToLook)
+	{
+		btVector3 otherAxis = axisToRotate.cross(axisToLook);
+		m_frameInA.getBasis().setValue(axisToLook.getX(), otherAxis.getX(), axisToRotate.getX(),
+									   axisToLook.getY(), otherAxis.getY(), axisToRotate.getY(),
+									   axisToLook.getZ(), otherAxis.getZ(), axisToRotate.getZ());
+	}
+
+	void setAxisInB(btVector3 & axisToRotate, btVector3 & axisToLook)
+	{
+		btVector3 otherAxis = axisToRotate.cross(axisToLook);
+		m_frameInB.getBasis().setValue(axisToLook.getX(), otherAxis.getX(), axisToRotate.getX(),
+									   axisToLook.getY(), otherAxis.getY(), axisToRotate.getY(),
+									   axisToLook.getZ(), otherAxis.getZ(), axisToRotate.getZ());
+	}
+
 	///override the default global value of a parameter (such as ERP or CFM), optionally provide the axis (0..5).
 	///If no axis is provided, it uses the default axis for this constraint.
 	virtual void setParam(int num, btScalar value, int axis = -1);
