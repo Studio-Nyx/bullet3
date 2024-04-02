@@ -183,6 +183,14 @@ public:
 		return (m_hasAnisotropicFriction & frictionMode) != 0;
 	}
 
+	void resetInterpolationWorldTransform()
+	{
+		m_interpolationWorldTransform = m_worldTransform;
+		m_interpolationLinearVelocity = btVector3(0,0,0);
+		m_interpolationAngularVelocity = btVector3(0, 0, 0);
+	}
+
+
 	///the constraint solver can discard solving contacts, if the distance is above this threshold. 0 by default.
 	///Note that using contacts with positive distance can improve stability. It increases, however, the chance of colliding with degerate contacts, such as 'interior' triangle edges
 	void setContactProcessingThreshold(btScalar contactProcessingThreshold)
