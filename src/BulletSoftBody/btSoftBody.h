@@ -315,6 +315,8 @@ public:
 		btMatrix3x3 m_effectiveMass;      // effective mass in contact
 		btMatrix3x3 m_effectiveMass_inv;  // inverse of effective mass
 		btVector3 posBeforeCollision;
+		btVector3 positionCollision;
+		bool collide;
 	};
 
 	/* SumForces of a node*/

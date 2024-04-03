@@ -41,14 +41,15 @@ class btCable : public btSoftBody
 		btCollisionObject* body;
 		bool haveManifoldsRegister;
 		btPersistentManifold* manifold;
+		btVector3 totalImpulse;
+		btVector3 applicationPoint;
+		int count;
 	};
 
 	struct NodePairNarrowPhase
 	{
 		Node* node;
 		btVector3 m_Xout;
-		Node* node1;
-		btVector3 m_Xout1;
 		btCollisionShape* collisionShape;
 		BroadPhasePair* pair;
 		btTransform worldToLocal;
@@ -94,7 +95,6 @@ class btCable : public btSoftBody
 
 	btAlignedObjectArray<CableManifolds> manifolds;
 	
-
 private:
 	
 	int m_growingState=0;
@@ -110,13 +110,6 @@ private:
 	bool useGravity = true;
 	bool useCollision = true;
 	btScalar m_linearMass=1.0;
-
-	//btScalar m_Axial_resistance = 70000000000;  // Units: N/m
-	//btScalar m_Axial_resistance = 68947;  // Units: N/m
-	btScalar m_Axial_resistance = 220000; // Units: N/m
-	btScalar m_collisionImpulseCoef = 0.0;
-	bool m_collisionSmoothMovement = true;
-	btScalar m_maxImpulse;
 
 	btScalar m_defaultRestLength; 
 
@@ -137,23 +130,27 @@ private:
 
 	float m_collisionMargin = 0;
 
-	void distanceConstraint(bool last);
+	void distanceConstraint();
 	void LRAConstraint();
+	void LRAHierachique();
+	void DistanceHierachy(int indexStart, int indexEnd);
 	void LRAConstraintNode();
 	void FABRIKChain();
 
-	void SolveLinkCollision(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
 	void anchorConstraint ();
 	bool checkCollide(int indexNode);
+	
 	btVector3 solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
+	//int solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 
-	btVector3 moveBodyCollisionLink(btRigidBody* obj, btScalar margin, btScalar im, btVector3 movement, btScalar penetration, btVector3 normale, btVector3 hitPosition);
+
 	btVector3 moveBodyCollision(btRigidBody* body, btScalar margin, Node* n, btVector3 normale, btVector3 hitPosition);
 	btVector3 PositionStartRayCalculation(Node* n, btCollisionObject* obj);
-	void recursiveBroadPhase(BroadPhasePair* obj, Node* n, Node* n1, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
+	void recursiveBroadPhase(BroadPhasePair* obj, Node* n, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
+	//void recursiveBroadPhase(BroadPhasePair* obj, Node* n, Node* n1, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
 
 	void resetManifoldLifeTime();
 	void clearManifoldContact(btAlignedObjectArray<BroadPhasePair*> objs);
@@ -278,6 +275,7 @@ public:
 	bool checkCollisionAnchor(Node* n, btCollisionObject* obj);
 
 	void setCollisionMargin(float colMargin);
+
 	float getCollisionMargin();
 
 	void addSection(btScalar rl,int start,int end,int nbNodes);
@@ -289,15 +287,6 @@ public:
 
 	void setWantedGrowSpeedAndDistance(btScalar speed, btScalar distance);
 	void setLinearMass(btScalar mass);
-
-	void setTestParams(bool activeSmooth, btScalar coefValue) {
-		m_collisionImpulseCoef = coefValue;
-		m_collisionSmoothMovement = activeSmooth;
-		if (coefValue < 0.01)
-			m_maxImpulse = m_Axial_resistance * 0.01;
-		else
-			m_maxImpulse = m_Axial_resistance * 2 * coefValue;  // Max atteint pour 2 fois la taille du lien
-	}
 
 #pragma endregion
 };
