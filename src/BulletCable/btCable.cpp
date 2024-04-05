@@ -657,7 +657,7 @@ btVector3 btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodeP
 	for (int i = 0; i < m_nodes.size(); i++)
 	{
 		m_nodes.at(i).collide = false;
-		m_nodes.at(i).positionCollision = btVector3(0,0,0);
+		m_nodes.at(i).posBeforeCollision = m_nodes.at(i).m_x;
 	}
 
 	bool finish = false;
@@ -668,7 +668,6 @@ btVector3 btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodeP
 		// Setup structures
 		for (int i = 0; i < m_nodes.size(); i++)
 		{
-			m_nodes.at(i).posBeforeCollision = m_nodes.at(i).m_x;
 			m_nodes.at(i).m_nbCollidingObjectInFrame = 0;
 		}
 
@@ -677,14 +676,17 @@ btVector3 btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodeP
 		{
 			n = nodePairContact->at(i).node;
 
+			
 			// If the node only collide 1 body we don t have to update nbSubStep times
 			if (j > 0)
 			{
 				if (n->m_nbCollidingObjectPotential == 1) continue;
 				if (n->collide == false) continue;
 			}
-			if (marginNode <= 0)
-				continue;
+			if (marginNode <= 0) 
+			{
+				continue;	
+			}
 
 			obj = nodePairContact->at(i).pair->body;
 			shape = nodePairContact->at(i).collisionShape;
@@ -753,7 +755,7 @@ btVector3 btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodeP
 				btVector3 contactPoint = m_resultCallback.m_hitPointWorld;
 				btVector3 normale = m_resultCallback.m_hitNormalWorld;
 				
-				distanceOut = 0.003;
+				distanceOut = 0.001;
 				btVector3 outMouvementPos = normale * distanceOut;
 				btVector3 newPosOut = contactPoint + outMouvementPos;
 				btVector3 impulse = btVector3(0,0,0);
@@ -769,7 +771,6 @@ btVector3 btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodeP
 						impulse = moveBodyCollision(rb, marginNode, n, normale, contactPoint);
 					}
 				}
-
 				n->positionCollision += newPosOut;
 
 				// Replace node
@@ -777,11 +778,13 @@ btVector3 btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodeP
 				btVector3 correctionAfter = btVector3(0, 0, 0);
 
 				n->m_nbCollidingObjectInFrame ++;
-				nodePairContact->at(i).impulse = impulse;
-				nodePairContact->at(i).lastPosition = contactPoint;
-				nodePairContact->at(i).hit = true;
-				nodePairContact->at(i).normal = normale;
-				nodePairContact->at(i).distance = distPenetration;
+
+				NodePairNarrowPhase* temp = &nodePairContact->at(i);
+				temp->impulse = impulse;
+				temp->lastPosition = contactPoint;
+				temp->hit = true;
+				temp->normal = normale;
+				temp->distance = distPenetration;
 			}
 		}	
 		bool has1contact = false;
@@ -794,8 +797,10 @@ btVector3 btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodeP
 			{
 				has1contact = true;
 				Node* node = &m_nodes.at(i);
-				btVector3 newPos = m_nodes.at(i).positionCollision / nbCorrection;
+				btVector3 newPos = node->positionCollision / nbCorrection;
+				btVector3 delta = newPos - node->m_x;
 				node->m_x = newPos;
+				node->m_xOut = newPos;
 				node->positionCollision = btVector3(0, 0, 0);
 			}
 		}
@@ -803,16 +808,16 @@ btVector3 btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodeP
 		// Force Apply
 		for (int i = 0; i < size; i++)
 		{
-			if (nodePairContact->at(i).node->m_nbCollidingObjectInFrame>0)
+			NodePairNarrowPhase* temp = &nodePairContact->at(i);
+			if (temp->node->m_nbCollidingObjectInFrame > 0)
 			{
-				has1contact = true;
-				nodePairContact->at(i).node->collide = true;
-				obj = nodePairContact->at(i).pair->body;
+				temp->node->collide = true;
+				obj = temp->pair->body;
 				btTransform wtr = obj->getWorldTransform();
-				btVector3 ra = nodePairContact->at(i).node->m_x - wtr.getOrigin();
-				btVector3 impulse = nodePairContact->at(i).impulse;
-				nodePairContact->at(i).impulse = btVector3(0, 0, 0);
+				btVector3 ra = temp->node->m_x - wtr.getOrigin();
+				btVector3 impulse = temp->impulse;
 
+				temp->impulse = btVector3(0, 0, 0);
 				if (obj->getInternalType() == CO_RIGID_BODY)
 				{
 					btRigidBody* rb = btRigidBody::upcast(obj);
@@ -821,21 +826,24 @@ btVector3 btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodeP
 						rb->applyImpulse(impulse,ra);
 					}
 				}
-
 				//if (impulse.length() > SIMD_EPSILON)
 				//{
 					//m_world->getDebugDrawer()->drawLine(nodePairContact->at(i).node->m_x, nodePairContact->at(i).node->m_x+impulse.normalized(), btVector3(1, 0, 0));
 				//}
 				totalImpulse += impulse;
- 				
 			}
 		}
 
 		if (!has1contact)
  			break;
-	
 	}
 
+	for (int i = 0; i < size; i++)
+	{
+		NodePairNarrowPhase* temp = &nodePairContact->at(i);
+		if (nodePairContact->at(i).node->collide)
+			temp->m_Xout = temp->node->m_xOut;
+	}
 	return totalImpulse;
 	
 }
@@ -844,7 +852,7 @@ btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n,
 {	
 	// a = node
 	// b = body
-	btScalar viscosityCoef = 100;
+	btScalar viscosityCoef = 10;
 	btScalar k = 1000;
 
 	btScalar ima = n->m_im;
