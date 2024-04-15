@@ -316,6 +316,12 @@ public:
 		btMatrix3x3 m_effectiveMass_inv;  // inverse of effective mass
 		btVector3 posBeforeCollision;
 		btVector3 positionCollision;
+
+		btVector3* normals;
+		btVector3* hitPosition;
+		int* narrowPhaseIndex;
+		btScalar topMargin;
+
 		bool collide;
 	};
 

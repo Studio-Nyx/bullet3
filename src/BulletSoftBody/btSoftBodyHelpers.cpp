@@ -275,15 +275,22 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 				if (0 == (n.m_material->m_flags & btSoftBody::fMaterial::DebugDraw)) continue;
 				if (n.m_splitv == btVector3(0, 0, 0))
 				{
-					idraw->drawLine(n.m_x - btVector3(scl, 0, 0), n.m_x + btVector3(scl, 0, 0), btVector3(1, 0, 0));
-					idraw->drawLine(n.m_x - btVector3(0, scl, 0), n.m_x + btVector3(0, scl, 0), btVector3(0, 1, 0));
-					idraw->drawLine(n.m_x - btVector3(0, 0, scl), n.m_x + btVector3(0, 0, scl), btVector3(0, 0, 1));
+					//idraw->drawLine(n.m_x - btVector3(scl, 0, 0), n.m_x + btVector3(scl, 0, 0), btVector3(1, 0, 0));
+					//idraw->drawLine(n.m_x - btVector3(0, scl, 0), n.m_x + btVector3(0, scl, 0), btVector3(0, 1, 0));
+					//idraw->drawLine(n.m_x - btVector3(0, 0, scl), n.m_x + btVector3(0, 0, scl), btVector3(0, 0, 1));
+					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(0, 0, 0));
+				}
+				else if (n.m_splitv == btVector3(2, 0, 0))
+				{
+					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(1, 0, 0));
 				}
 				else
 				{
-					idraw->drawLine(n.m_x - btVector3(scl, 0, 0), n.m_x + btVector3(scl, 0, 0), btVector3(1, 1, 1));
-					idraw->drawLine(n.m_x - btVector3(0, scl, 0), n.m_x + btVector3(0, scl, 0), btVector3(1, 1, 1));
-					idraw->drawLine(n.m_x - btVector3(0, 0, scl), n.m_x + btVector3(0, 0, scl), btVector3(1, 1, 1));
+					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(1, 1, 1));
+
+					//idraw->drawLine(n.m_x - btVector3(scl, 0, 0), n.m_x + btVector3(scl, 0, 0), btVector3(1, 1, 1));
+					//idraw->drawLine(n.m_x - btVector3(0, scl, 0), n.m_x + btVector3(0, scl, 0), btVector3(1, 1, 1));
+					//idraw->drawLine(n.m_x - btVector3(0, 0, scl), n.m_x + btVector3(0, 0, scl), btVector3(1, 1, 1));
 				}
 
 			}
