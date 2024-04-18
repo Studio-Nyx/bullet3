@@ -298,7 +298,8 @@ public:
 		int distToAnchor;
 		btVector3 m_x;       // Position
 		btVector3 m_xOut;  // Previous step position/Test position
-		int m_nbCollidingObject;  // Number of element in potential collision
+		int m_nbCollidingObjectPotential;  // Number of element in potential collision
+		int m_nbCollidingObjectInFrame;  // Number of element in collision
 		btVector3 m_q;       // Previous step position/Test position
 		btVector3 m_v;       // Velocity
 		btVector3 m_vn;      // Previous step velocity
@@ -313,6 +314,15 @@ public:
 		btVector3 m_splitv;               // velocity associated with split impulse
 		btMatrix3x3 m_effectiveMass;      // effective mass in contact
 		btMatrix3x3 m_effectiveMass_inv;  // inverse of effective mass
+		btVector3 posBeforeCollision;
+		btVector3 positionCollision;
+
+		btVector3* normals;
+		btVector3* hitPosition;
+		int* narrowPhaseIndex;
+		btScalar topMargin;
+
+		bool collide;
 	};
 
 	/* SumForces of a node*/

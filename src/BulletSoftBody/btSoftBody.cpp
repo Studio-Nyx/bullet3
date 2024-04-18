@@ -3973,6 +3973,12 @@ void btSoftBody::PSolve_RContacts(btSoftBody* psb, btScalar kst, btScalar ti)
 				const btVector3 fv = vr - (cti.m_normal * dn);
 				// c0 is the impulse matrix, c3 is 1 - the friction coefficient or 0, c4 is the contact hardness coefficient
 				const btVector3 impulse = c.m_c0 * ((vr - (fv * c.m_c3) + (cti.m_normal * (dp * c.m_c4))) * kst);
+
+				/*
+				btScalar distPene = (cti.m_normal * (offset * coef));
+				const btVector3 impulse = c.m_c0 * (vr - fv + distPene);
+				*/
+
 				c.m_node->m_x -= impulse * c.m_c2;
 				/*
 				if (cti.m_colObj->getInternalType() == btCollisionObject::CO_RIGID_BODY)

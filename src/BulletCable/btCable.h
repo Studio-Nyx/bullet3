@@ -41,14 +41,15 @@ class btCable : public btSoftBody
 		btCollisionObject* body;
 		bool haveManifoldsRegister;
 		btPersistentManifold* manifold;
+		btVector3 totalImpulse;
+		btVector3 applicationPoint;
+		int count;
 	};
 
 	struct NodePairNarrowPhase
 	{
 		Node* node;
 		btVector3 m_Xout;
-		Node* node1;
-		btVector3 m_Xout1;
 		btCollisionShape* collisionShape;
 		BroadPhasePair* pair;
 		btTransform worldToLocal;
@@ -58,6 +59,7 @@ class btCable : public btSoftBody
 		btVector3 normal;
 		btScalar distance;
 		bool hit = false;
+		bool hitInIteration = false;
 	};
 	
 	//
@@ -94,21 +96,32 @@ class btCable : public btSoftBody
 
 	btAlignedObjectArray<CableManifolds> manifolds;
 	
-
 private:
+	
 	int m_growingState=0;
 	// Number of solverIteration for 1 deltaTime passed
-	int m_solverSubStep;
+	int m_solverSubStep = 1;
 	// Actual iteration
 	int m_cpt;
 	int m_sectionCount = 0;
-	int m_sectionCurrent = 0;
+	int m_sectionCurrent = 0; 
 	btScalar m_minLength;
 	bool useLRA = true;
 	bool useBending = true;
 	bool useGravity = true;
 	bool useCollision = true;
 	btScalar m_linearMass=1.0;
+
+	// Node forces members
+	bool impulseCompute = true;
+
+	btScalar penetrationMin = 0;
+	btScalar penetrationMax  = 0.1;
+	btScalar collisionStiffnessMin = 100;
+	btScalar collisionStiffnessMax = 10000;
+
+	btScalar collisionViscosity = 10;
+
 
 	btScalar m_defaultRestLength; 
 
@@ -131,22 +144,38 @@ private:
 
 	void distanceConstraint();
 	void LRAConstraint();
+	void LRAHierachique();
+	void DistanceHierachy(int indexStart, int indexEnd);
 	void LRAConstraintNode();
 	void FABRIKChain();
 
-	void SolveLinkCollision(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
+	btVector3 fastTrigoPositionCompute(Node* n);
+
 
 
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
-	void anchorConstraint();
+	void anchorConstraint ();
 	bool checkCollide(int indexNode);
+	
 	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
+	//int solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 
-	btVector3 moveBodyCollisionLink(btRigidBody* obj, btScalar margin, btScalar im, btVector3 movement, btScalar penetration, btVector3 normale, btVector3 hitPosition);
-	btVector3 moveBodyCollision(btRigidBody* body, btScalar margin, Node* n, btVector3 normale, btVector3 hitPosition);
+
+	btVector3 moveBodyCollision(btRigidBody* body, btScalar margin, Node* n, btVector3 normal, btVector3 hitPosition);
 	btVector3 PositionStartRayCalculation(Node* n, btCollisionObject* obj);
-	void recursiveBroadPhase(BroadPhasePair* obj, Node* n, Node* n1, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
+
+	// Methods for collision
+	void setupNodeForCollision();
+	void resetNormalAndHitPosition();
+	void updateContactPos(Node* n, int position, int step);
+	bool checkCondition(Node* n, int step);
+	btScalar computeCollisionMargin(btCollisionShape* shape);
+	btCollisionWorld::ClosestRayResultCallback castRay(btVector3 positionStart, btVector3 positionEnd, NodePairNarrowPhase* contact, btScalar margin);
+
+
+	void recursiveBroadPhase(BroadPhasePair* obj, Node* n, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
+	//void recursiveBroadPhase(BroadPhasePair* obj, Node* n, Node* n1, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
 
 	void resetManifoldLifeTime();
 	void clearManifoldContact(btAlignedObjectArray<BroadPhasePair*> objs);
@@ -159,6 +188,7 @@ public:
 	
 	btScalar WantedDistance = 0;
 	btScalar WantedSpeed = 0;
+	btScalar forceResponseCoef;
 
 	void updateLength(btScalar dt);
 
@@ -268,6 +298,7 @@ public:
 	bool checkCollisionAnchor(Node* n, btCollisionObject* obj);
 
 	void setCollisionMargin(float colMargin);
+
 	float getCollisionMargin();
 
 	void addSection(btScalar rl,int start,int end,int nbNodes);
@@ -279,6 +310,10 @@ public:
 
 	void setWantedGrowSpeedAndDistance(btScalar speed, btScalar distance);
 	void setLinearMass(btScalar mass);
+
+	void setCollisionStiffness(btScalar stiffnessMin, btScalar stiffnessMax, btScalar distMin, btScalar distMax);
+	void setCollisionViscosity(btScalar viscosity);
+	void setCollisionResponseActive(bool active);
 
 #pragma endregion
 };
