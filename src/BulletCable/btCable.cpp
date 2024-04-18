@@ -82,7 +82,7 @@ void btCable::resetManifoldLifeTime()
 }
 
 bool btCable::checkCollisionAnchor(Node* n, btCollisionObject* obj) {
-	int anchorSize = this->m_anchors.size();
+	int anchorSize = this->m_anchors.size(); 
 	for (int x = 0; x < anchorSize; x++)
 	{
 		if (n == m_anchors.at(x).m_node)
@@ -1088,7 +1088,7 @@ btVector3 btCable::fastTrigoPositionCompute(Node* n)
 	angle = PI - acos(dotProduct);
 	moyDirection = ((n0 + n1) * 0.5).normalized();
 	btScalar sinA = sin(angle);
-	btScalar a = n->topMargin + 0.01 ;
+	btScalar a = n->topMargin + 0.005 ;
 	btScalar B = 0.5*PI - (angle * 0.5);
 
 	btScalar b = (a * 0.5) /( sinA* 0.5) * sin(B);
@@ -1174,13 +1174,17 @@ void btCable::bendingConstraintDistance()
 void btCable::distanceConstraint()
 {
 	BT_PROFILE("PSolve_Links");
+
+	Link* l ;
+	Node* a;
+	Node* b;
 	for (int i = 0; i < m_links.size(); ++i)
 	{
 
-		Link& l = m_links[i];
-		Node& a = *l.m_n[0];
-		Node& b = *l.m_n[1];
-		btVector3 AB = b.m_x - a.m_x;
+		l = &m_links[i];
+		a = l->m_n[0];
+		b = l->m_n[1];
+		btVector3 AB = b->m_x - a->m_x;
 		btVector3 ABNormalized = AB.normalized();
 		if (ABNormalized.fuzzyZero())
 		{
@@ -1188,11 +1192,12 @@ void btCable::distanceConstraint()
 		}
 		btScalar normAB = AB.length();
 		btScalar k = m_materials[0]->m_kLST;
-		btScalar sumInvMass = a.m_im + b.m_im;
+		btScalar sumInvMass = a->m_im + b->m_im;
 		if (sumInvMass >= SIMD_EPSILON)
 		{
-			a.m_x += (a.m_im / sumInvMass * (normAB - l.m_rl) * ABNormalized) * k;
-			b.m_x -= (b.m_im / sumInvMass * (normAB - l.m_rl) * ABNormalized) * k;
+			btVector3 denom = 1 / sumInvMass * (normAB - l->m_rl) * ABNormalized;
+			a->m_x += (a->m_im * denom) * k;
+			b->m_x -= (b->m_im * denom) * k;
 		}
 	}
 }
@@ -1471,6 +1476,7 @@ void btCable::anchorConstraint()
 	const btScalar kAHR = m_cfg.kAHR;
 	const btScalar dt = m_sst.sdt;
 
+
 	for (int i = 0, ni = this->m_anchors.size(); i < ni; ++i)
 	{
 		Anchor& a = this->m_anchors[i];
@@ -1498,9 +1504,6 @@ void btCable::anchorConstraint()
 		a.m_body->applyImpulse(-finalImpulse, a.m_c1);
 		a.tension += finalImpulse / dt;
 
-		//m_world->getDebugDrawer()->drawLine(a.m_node->m_x, a.m_node->m_x - finalImpulse.normalized(), btVector3(0, 0, 0));
-		//m_world->getDebugDrawer()->drawLine(n.m_x, n.m_x - (finalImpulse * 5), btVector3(0, 0, 0));
-		//m_world->getDebugDrawer()->drawLine(n.m_x, n.m_x - (newVr*10) , btVector3(1, 1, 1));
 	}
 }
 
