@@ -17,7 +17,7 @@
 #include <BulletCollision/NarrowPhaseCollision/btConvexCast.h>
 #include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
-#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.cpp>
+//#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.cpp>
 
 using namespace std::chrono;
 
@@ -769,7 +769,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 	btTransform t;
 	int indexNode;
 
-	setupNodeForCollision();
+	setupNodeForCollision(); 
 
 	bool finish = false;
 
@@ -828,7 +828,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 				btScalar offset = (n->m_x - contactPoint).length();
 				btScalar distPenetration = (m_resultCallback.m_hitNormalWorld * offset).length();
 
-				if (obj->getInternalType() == CO_RIGID_BODY)
+				if (obj->getInternalType() == CO_RIGID_BODY && impulseCompute)
 				{
 					btRigidBody* rb = btRigidBody::upcast(obj);
 					if (!obj->isStaticOrKinematicObject())
@@ -1000,7 +1000,6 @@ btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n,
 	// a = node
 	// b = body
 	btScalar viscosityCoef = this->collisionViscosity;
-	btScalar k = this->collisionStiffness;
 
 	btScalar ima = n->m_im;
 	btScalar imb = obj->getInvMass();
@@ -1039,7 +1038,19 @@ btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n,
 	btVector3 deltaPosNode = hitPosition - n->m_x;
 	penetrationDistance = deltaPosNode.dot(normal);
 
-	btScalar responseVector = -k * penetrationDistance + viscosityCoef * vRelativeOnNormal;
+
+
+	btScalar k = 0;
+
+	if (penetrationDistance < penetrationMin) return btVector3(0, 0, 0);
+	if (penetrationDistance > penetrationMax) k = this->collisionStiffnessMax;
+	else
+	{
+		btScalar distanceTot = penetrationMax - penetrationMin;
+		btScalar ratio = (penetrationDistance - penetrationMin) / distanceTot;
+		k = Lerp(this->collisionStiffnessMin, this->collisionStiffnessMax, ratio);
+	}
+ 	btScalar responseVector = -k * penetrationDistance + viscosityCoef * vRelativeOnNormal;
 
 	const btVector3 impulse = ((responseVector * normal) - (tangentDir * jt * m_sst.isdt)) * dt;
 	return impulse;
@@ -1892,20 +1903,22 @@ void btCable::setLinearMass(btScalar mass)
 	m_linearMass = mass;
 }
 
-void btCable::setCollisionStiffness(int stiffness)
+void btCable::setCollisionStiffness(btScalar stiffnessMin, btScalar stiffnessMax, btScalar distMin, btScalar distMax)
 {
-	if (stiffness > 0)
-	{
-		this->collisionStiffness = stiffness;
-	}
+	this->collisionStiffnessMin = stiffnessMin;
+	this->collisionStiffnessMax = stiffnessMax;
+	this->penetrationMin = distMin;
+	this->penetrationMax = distMax;
 }
 
-void btCable::setCollisionViscosity(int viscosity)
+void btCable::setCollisionViscosity(btScalar viscosity)
 {
-	if (viscosity > 0)
-	{
-		this->collisionViscosity = viscosity;
-	}
+	this->collisionViscosity = viscosity;
+}
+
+void btCable::setCollisionResponseActive(bool active)
+{
+	this->impulseCompute = active;
 }
 
 int btCable::getGrowingState()

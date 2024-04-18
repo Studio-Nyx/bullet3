@@ -104,7 +104,7 @@ private:
 	// Actual iteration
 	int m_cpt;
 	int m_sectionCount = 0;
-	int m_sectionCurrent = 0;
+	int m_sectionCurrent = 0; 
 	btScalar m_minLength;
 	bool useLRA = true;
 	bool useBending = true;
@@ -114,8 +114,13 @@ private:
 
 	// Node forces members
 	bool impulseCompute = true;
-	int collisionStiffness = 1000;
-	int collisionViscosity = 10;
+
+	btScalar penetrationMin = 0;
+	btScalar penetrationMax  = 0.1;
+	btScalar collisionStiffnessMin = 100;
+	btScalar collisionStiffnessMax = 10000;
+
+	btScalar collisionViscosity = 10;
 
 
 	btScalar m_defaultRestLength; 
@@ -308,8 +313,9 @@ public:
 	void setWantedGrowSpeedAndDistance(btScalar speed, btScalar distance);
 	void setLinearMass(btScalar mass);
 
-	void setCollisionStiffness(int stiffness);
-	void setCollisionViscosity(int viscosity);
+	void setCollisionStiffness(btScalar stiffnessMin, btScalar stiffnessMax, btScalar distMin, btScalar distMax);
+	void setCollisionViscosity(btScalar viscosity);
+	void setCollisionResponseActive(bool active);
 
 #pragma endregion
 };
