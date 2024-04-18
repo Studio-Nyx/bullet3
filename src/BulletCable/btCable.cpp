@@ -783,13 +783,14 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 		bool has1contact = false;
 
 		// Update position
+		Node* node;
 		for (int i = 0; i < m_nodes.size(); i++)
 		{
 			float nbCorrection = m_nodes.at(i).m_nbCollidingObjectInFrame;
 			if (nbCorrection > 0)
 			{
 				has1contact = true;
-				Node* node = &m_nodes.at(i);
+				node = &m_nodes.at(i);
 				btVector3 newPos = node->positionCollision / nbCorrection;
 				 
 				if (nbCorrection == 1) { 
@@ -823,10 +824,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 						
 							node->normals[1] = normal;
 							node->hitPosition[1] = contactPoint;
-						
-							btVector3 help = node->hitPosition[0] - node->hitPosition[1];
-							btScalar dist = help.length();
-							
+												
 							btVector3 temp = fastTrigoPositionCompute(node);
 							NodePairNarrowPhase* tempo;
 							newPos = temp;
@@ -1096,7 +1094,6 @@ btVector3 btCable::fastTrigoPositionCompute(Node* n)
   	btVector3 correction = b * moyDirection;
 	btVector3 newPos = ((n->hitPosition[0] + n->hitPosition[1])*0.5)+ correction; 
 	
-	//m_world->getDebugDrawer()->drawLine((n->hitPosition[0] + n->hitPosition[1]) * 0.5, ((n->hitPosition[0] + n->hitPosition[1]) * 0.5) + moyDirection, btVector3(1, 1, 0));
  	return newPos;
 }
 
