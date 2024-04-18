@@ -1009,9 +1009,6 @@ btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n,
 	btScalar totalMass = ima + imb;
 	btTransform wtr = obj->getWorldTransform();
 
-	// Contact hardness
-	btScalar contactHardness = obj->isStaticOrKinematicObject() ? this->m_cfg.kKHR : this->m_cfg.kCHR;
-
 	// bodyToNodeVector
 	btVector3 ra = hitPosition - wtr.getOrigin();
 	btVector3 vBody = obj->getVelocityInLocalPoint(ra);
