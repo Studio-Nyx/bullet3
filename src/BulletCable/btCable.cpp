@@ -21,29 +21,6 @@
 
 using namespace std::chrono;
 
-void computeTransform(btVector3 nodeA, btVector3 nodeB, btTransform* tr)
-{
-	btQuaternion q;
-	btVector3 v1 = btVector3(0, 1, 0);
-	btVector3 v2 = nodeB - nodeA;
-	btVector3 k = (v1.cross(v2));
-	
-	if (btFuzzyZero(k.length()))
-	{
-		q.setRotation(v1, 0);
-	}
-	else
-	{
-		q.setX(k.x());
-		q.setY(k.y());
-		q.setZ(k.z());
-		q.setW(sqrt(v1.length2() * v2.length2()) + v1.dot(v2));
-	}
-	//tr->setRotation(q);
-	tr->setIdentity();
-	tr->setRotation(q);
-	tr->setOrigin((nodeA + nodeB) * 0.5);
-}
 
 
 btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count,int section_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
@@ -552,53 +529,6 @@ void btCable::recursiveBroadPhase(BroadPhasePair* obj, Node* n, btCompoundShape*
 	}
 }
 
-bool btCable::checkCollide(int indexNode)
-{
-	btCollisionObjectArray array = m_world->getCollisionObjectArray();
-	Node n = this->m_nodes[indexNode];
-	btScalar margin = m_collisionMargin;
-	for (int i = 0; i < array.size(); i++)
-	{
-		btVector3 minLink = btVector3(0, 0, 0);
-		btVector3 maxLink = btVector3(0, 0, 0);
-
-		minLink.setX(n.m_x.x() - margin);
-		minLink.setY(n.m_x.y() - margin);
-		minLink.setZ(n.m_x.z() - margin);
-		
-		maxLink.setX(n.m_x.x() + margin);
-		maxLink.setY(n.m_x.y() + margin);
-		maxLink.setZ(n.m_x.z() + margin);
-
-		btCollisionObject* colObj = array[i];
-		int type = colObj->getInternalType();
-
-		// Check if the object is not a softbody
-		if (type == 8)
-			continue;
-
-		// Check if the object is a rigidbody which havs contacts
-		if ((!colObj->hasContactResponse()))
-			continue;
-
-		// Cancel detection with ignored body
-		if (m_collisionDisabledObjects.findLinearSearch(colObj) != m_collisionDisabledObjects.size())
-			continue;
-
-		btVector3 mins, maxs;
-		colObj->getCollisionShape()->getAabb(colObj->getWorldTransform(), mins, maxs);
-
-		// Intersect box
-		if (minLink.x() <= maxs.x() && maxLink.x() >= mins.x() &&
-			minLink.y() <= maxs.y() && maxLink.y() >= mins.y() &&
-			minLink.z() <= maxs.z() && maxLink.z() >= mins.z())
-		{
-			return true;
-		}
-		
-	}
-	return false;
-}
 
 // todo compute Velocity to move mq out of the box
 btVector3 btCable::PositionStartRayCalculation(Node *n, btCollisionObject * obj)
@@ -656,7 +586,6 @@ void btCable::resetNormalAndHitPosition()
 		}
 	}
 }
-
 void btCable::updateContactPos(Node* n, int position, int step)
 {
 	if (step != 0) return;
@@ -669,7 +598,6 @@ void btCable::updateContactPos(Node* n, int position, int step)
 		}
 	}
 }
-
 bool btCable::checkCondition(Node *n, int step)
 {
 	if (m_collisionMargin <= 0)
@@ -687,7 +615,6 @@ bool btCable::checkCondition(Node *n, int step)
 	return true;
 	
 }
-
 btScalar btCable::computeCollisionMargin(btCollisionShape* shape)
 {
 	bool isSphereShape = shape->getShapeType() == SPHERE_SHAPE_PROXYTYPE;
@@ -1147,37 +1074,6 @@ void btCable::LRAConstraintNode()
 	}
 }
 
-btVector3 ConstrainDistance(btVector3 point, btVector3 anchor, float distance)
-{
-	return ((point - anchor).normalize() * distance) + anchor;
-}
-
-void btCable::FABRIKChain()
-{
-	for (int i = 0; i < m_anchors.size(); ++i)
-	{
-		Anchor& a = m_anchors[i];
-		const btVector3 ra = a.m_body->getWorldTransform().getBasis() * a.m_local;
-
-		a.m_node->m_x = m_anchors[i].m_body->getCenterOfMassPosition() + a.m_c1;
-		int idx = a.m_node->index;
-
-		for (int i = idx; i > 0; --i)
-		{
-			//Pull the current segment to the previous one
-			if (m_nodes[i - 1].m_x.distance(m_nodes[i].m_x) > m_links[i - 1].m_rl)
-				m_nodes[i - 1].m_x = ConstrainDistance(m_nodes[i - 1].m_x, m_nodes[i].m_x, m_links[i - 1].m_rl);
-		}
-
-		for (int i = idx + 1; i < m_nodes.size(); i++)
-		{
-			//Pull the current segment to the previous one
-			if (m_nodes[i].m_x.distance(m_nodes[i - 1].m_x) > m_links[i - 1].m_rl)
-				m_nodes[i].m_x = ConstrainDistance(m_nodes[i].m_x, m_nodes[i - 1].m_x, m_links[i - 1].m_rl);
-		}
-	}
-}
-
 btVector3 btCable::fastTrigoPositionCompute(Node* n)
 {
 	btScalar PI = SIMD_PI;
@@ -1272,76 +1168,6 @@ void btCable::bendingConstraintDistance()
 			current->m_x += (current->m_im * impulse) * J2;
 			after->m_x += (after->m_im * impulse) * J3;
 		}
-	}
-}
-
-void btCable::bendingConstraintAngle()
-{
-	int size = m_nodes.size();
-
-	for (int i = 1; i < this->m_links.size(); ++i)
-	{
-		Node* before = m_links[i - 1].m_n[0];  // Node before;
-		Node* current = m_links[i].m_n[0];     // Current Node
-		Node* after = m_links[i].m_n[1];       // Node After
-
-		btVector3 p0 = before->m_x;
-		btVector3 p1 = after->m_x;
-		btVector3 p2 = current->m_x;
-
-		btScalar phiZero = 0;
-
-		float stiffness = 1;
-
-		btVector3 axeTan = (p0 - p2).cross(p1 - p2);
-		if (axeTan.length() < DBL_EPSILON)
-			continue;
-		axeTan = axeTan.normalized();
-
-		btVector3 p3 = p2 + axeTan * min(m_links[i - 1].m_rl, m_links[i].m_rl) * 0.5;
-
-		btVector3 e = p3 - p2;
-		btScalar elen = e.length();
-		btScalar invElen = 1.0 / elen;
-
-		btVector3 n1 = (p2 - p0).cross(p3 - p0);
-		btVector3 n2 = (p3 - p1).cross(p2 - p1);
-
-		n1 /= n1.length2();
-		n2 /= n2.length2();
-
-		btVector3 d0 = elen * n1;
-		btVector3 d1 = elen * n2;
-		btVector3 d2 = (p0 - p3).dot(e) * invElen * n1 + (p1 - p3).dot(e) * invElen * n2;
-		btVector3 d3 = (p2 - p0).dot(e) * invElen * n1 + (p2 - p1).dot(e) * invElen * n2;
-
-		n1 = n1.normalized();
-		n2 = n2.normalized();
-
-		btScalar dot = n1.dot(n2);
-
-		if (dot < -1.0f) dot = -1.0f;
-		if (dot > 1.0f) dot = 1.0f;
-		btScalar phi = acos(dot);
-
-		btScalar invMass = current->m_im;
-
-		btScalar lambda = invMass * d0.length2() +
-						  invMass * d1.length2() +
-						  invMass * d2.length2() +
-						  invMass * d3.length2();
-
-		lambda = (phi - phiZero) / lambda * stiffness;
-
-		if (abs(lambda) <= FLT_EPSILON)
-			continue;
-
-		if (n1.cross(n2).dot(e) > 0.0f)
-			lambda = -lambda;
-
-		before->m_x += -invMass * lambda * d0;
-		after->m_x += -invMass * lambda * d1;
-		current->m_x += -invMass * lambda * d2;
 	}
 }
 

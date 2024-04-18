@@ -156,7 +156,6 @@ private:
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
 	void anchorConstraint ();
-	bool checkCollide(int indexNode);
 	
 	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 	//int solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
@@ -260,7 +259,6 @@ public:
 	btVector3 getTensionAt(int index);
 
 	void bendingConstraintDistance();
-	void bendingConstraintAngle();
 
 	void setUseBending(bool active);
 	bool getUseBending();
