@@ -54,7 +54,7 @@ protected:
 	btCable::NodeData m_defaultNodeData;
 	btCable::NodePos m_defaultNodePos;
 	btSoftBody::NodeForces m_defaultNodeForces;
-
+	btCable::CableData m_defaultCableData;
 
 public:
 	btSoftRigidDynamicsWorld(btSoftBodyWorldInfo* worldInfo, btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration, btSoftBodySolver* softBodySolver = 0);

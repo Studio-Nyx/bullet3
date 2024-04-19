@@ -55,9 +55,10 @@ btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
 	m_nodesData = new btCable::NodeData[m_sbi.maxNodeNumber]();
 	m_cableIndexesArray = new int[m_sbi.maxNodeNumber]();
 
-	// Pool of max nbr of cable
+	// Pool of max nbr of cable TODO: check if m_sbi value can change after initialization
 	m_cablesData = new btCable::CableData[m_sbi.maxCableNumber]();
 
+	m_defaultCableData = btCable::CableData();
 	m_defaultNodeData = btCable::NodeData();
 	m_defaultNodePos = btCable::NodePos();
 	m_defaultNodeForces = btSoftBody::NodeForces();
@@ -91,6 +92,11 @@ btSoftRigidDynamicsWorld::~btSoftRigidDynamicsWorld()
 	{
 		delete[] m_cablesData;
 	}
+
+	if (m_cableIndexesArray != nullptr)
+	{
+		delete[] m_cableIndexesArray;
+	}
 }
 
 void btSoftRigidDynamicsWorld::predictUnconstraintMotion(btScalar timeStep)
@@ -117,13 +123,11 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 	///solve soft bodies constraints
 	solveSoftBodiesConstraints(timeStep);
 
-	// Pool of max nbr of cable
-	m_cablesData = new btCable::CableData[m_sbi.maxCableNumber]();
-
 	// Reset arrays in order to avoid garbage values causing wrong calculations
 	std::fill_n(m_nodesData, m_sbi.maxNodeNumber, m_defaultNodeData);
 	std::fill_n(m_nodesPos, m_sbi.maxNodeNumber, m_defaultNodePos);
 	std::fill_n(m_nodeForces, m_sbi.maxNodeNumber, m_defaultNodeForces);
+	std::fill_n(m_cablesData, m_sbi.maxCableNumber, m_defaultCableData);
 	
 	//Set Arrays
 	int NodesIndex = 0;
