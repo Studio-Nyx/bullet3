@@ -335,7 +335,6 @@ void btCable::solveConstraints()
 	anchorConstraint();
 
 	
-	
 	// Remove unused manifold 
 	UpdateManifoldBroadphase(BroadPhaseOutput);
 
@@ -816,7 +815,6 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 						if (m_resultCallback.hasHit())
 						{
 							// That means we replace the node in an other body
-							// update Normal and hitpoint 
  							btVector3 contactPoint = m_resultCallback.m_hitPointWorld;
 							btVector3 normal = m_resultCallback.m_hitNormalWorld;
 						
@@ -839,6 +837,16 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 						node->m_splitv = btVector3(2, 0, 0);  
 						newPos = temp;
 					}
+				}
+
+				btVector3 deltaPos = newPos - node->m_x;
+				if (deltaPos.length() > 0.01)
+				{
+					newPos += deltaPos.normalized() * 0.001;
+				}
+				else
+				{
+					newPos += deltaPos * 0.1;
 				}
 				node->m_x = newPos;
 				node->positionCollision = btVector3(0, 0, 0);
@@ -875,6 +883,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
  			break;
 	}
 
+	// Update the new ray starting position for the next solver step
 	NodePairNarrowPhase* temp; 
 	for (int i = 0; i < nbContactPairPotential; i++)
 	{
