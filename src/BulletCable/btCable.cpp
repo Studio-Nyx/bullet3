@@ -839,15 +839,6 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 					}
 				}
 
-				btVector3 deltaPos = newPos - node->m_x;
-				if (deltaPos.length() > 0.01)
-				{
-					newPos += deltaPos.normalized() * 0.001;
-				}
-				else
-				{
-					newPos += deltaPos * 0.1;
-				}
 				node->m_x = newPos;
 				node->positionCollision = btVector3(0, 0, 0);
 				node->collide = true;
