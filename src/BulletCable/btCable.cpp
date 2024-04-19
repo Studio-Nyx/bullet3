@@ -17,7 +17,6 @@
 #include <BulletCollision/NarrowPhaseCollision/btConvexCast.h>
 #include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
-//#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.cpp>
 
 using namespace std::chrono;
 
@@ -542,7 +541,7 @@ btVector3 btCable::PositionStartRayCalculation(Node *n, btCollisionObject * obj)
 	}
 	else
 	{
-		velocity = obj->getInterpolationLinearVelocity();
+		velocity = obj->getInterpolationLinearVelocity() * dt;
 	}
 
 	if (btFuzzyZero(velocity.length())) {
@@ -813,7 +812,6 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 						margin = computeCollisionMargin(shape);
 						btCollisionWorld::ClosestRayResultCallback m_resultCallback = castRay(node->hitPosition[0], newPos, contact, margin);
 						
-
 						// Cast ray from m_x to newPos;
 						if (m_resultCallback.hasHit())
 						{
@@ -826,17 +824,10 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 							node->hitPosition[1] = contactPoint;
 												
 							btVector3 temp = fastTrigoPositionCompute(node);
-							NodePairNarrowPhase* tempo;
 							newPos = temp;
 
-							for (int x = 0; x < nbCorrection; x++)
-							{
-								tempo = &nodePairContact->at(node->narrowPhaseIndex[x]);
-								tempo->m_Xout = newPos;
-							}
 						}
 					}
-					node->m_xOut = newPos;	
 				}
 				else
 				{
@@ -846,19 +837,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 						
  						btVector3 temp = fastTrigoPositionCompute(node);
 						node->m_splitv = btVector3(2, 0, 0);  
-						node->m_xOut = temp;
-						NodePairNarrowPhase* tempo;
 						newPos = temp;
-
-						for (int x = 0; x < nbCorrection; x++)
-						{
-							tempo = &nodePairContact->at(node->narrowPhaseIndex[x]);
-							tempo->m_Xout = node->m_xOut;
-						}
-					}
-					else
-					{
-						node->m_xOut = newPos;
 					}
 				}
 				node->m_x = newPos;
@@ -875,7 +854,6 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 				NodePairNarrowPhase* temp = &nodePairContact->at(i);
 				if (temp->node->m_nbCollidingObjectInFrame > 0)
 				{
-					//temp->node->collide = true;
 					obj = temp->pair->body;
 					btTransform wtr = obj->getWorldTransform();
 					btVector3 ra = temp->node->m_x - wtr.getOrigin();
@@ -903,7 +881,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 		temp = &nodePairContact->at(i);
 		if (nodePairContact->at(i).node->collide)
 		{
-			temp->m_Xout = temp->node->m_xOut;
+			temp->m_Xout = temp->node->m_x;
 		}
 	}
 

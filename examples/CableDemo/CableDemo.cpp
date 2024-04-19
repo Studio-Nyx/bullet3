@@ -225,10 +225,6 @@ public:
 			m_printTens = !m_printTens;
 		}
 
-		//if (key == 'b' && state)
-		//{
-		//	m_close = true;
-		//}
 		return false;
 	}
 
@@ -236,21 +232,7 @@ public:
 	void mouseMotionFunc(int x, int y);
 
 
-	//void closeClaw()
-	//{
-	//	for (int i = 0; i < getSoftDynamicsWorld()->getCollisionObjectArray().size(); i++)
-	//	{
-	//		if (getSoftDynamicsWorld()->getCollisionObjectArray().at(i)->getCollisionShape()->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
-	//		{
-	//			btCompoundShape* obj = (btCompoundShape*)getSoftDynamicsWorld()->getCollisionObjectArray().at(i)->getCollisionShape();
-	//			btQuaternion rotation = btQuaternion(btVector3(0, 1, 0), SIMD_PI * 0.425);
-	//			btTransform tr = obj->getChildTransform(1);
-	//			tr.setRotation(rotation);
-	//			obj->updateChildTransform(1,tr);
-	//		}
-	//	}
-	//		
-	//}
+
 
 	void Grows(float dt,bool test = true)
 	{
@@ -398,8 +380,8 @@ public:
 			if (m_shrink)
 				Shrinks(deltaTime);
 
-			//if (m_close && m_currentDemoIndex == 16)
-			//	closeClaw();
+			//if ( m_currentDemoIndex == 16)
+				
 
 			current_ticks = clock();
 
@@ -1755,7 +1737,7 @@ static void Init_TestClaw(CableDemo* pdemo)
 	y.setOrigin(btVector3(-1.5, 0, 4));
 	
 	// Claw
-	auto b = new btBoxShape(btVector3(5, 0.25, 0.25));
+	auto b = new btBoxShape(btVector3(3, 0.25, 0.25));
 	b->setMargin(0.01);
 	btQuaternion rotation = btQuaternion(btVector3(0, 1, 0), SIMD_PI * 0.45);
 	y.setRotation(rotation);
@@ -1788,6 +1770,8 @@ static void Init_TestClaw(CableDemo* pdemo)
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setCollisionMargin(margin);
 	cable->setCollisionParameters(1, 1, 0);
+
+	
 }
 
 void (*demofncs[])(CableDemo*) =
