@@ -430,14 +430,16 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 		//clamp the number of substeps, to prevent simulation grinding spiralling down to a halt
 		int clampedSimulationSteps = (numSimulationSubSteps > maxSubSteps) ? maxSubSteps : numSimulationSubSteps;
 
-		//saveKinematicState(fixedTimeStep * clampedSimulationSteps);
+		// Update the kinematic objects first (may have been moved by animation)
+		saveKinematicState(fixedTimeStep * clampedSimulationSteps);
 
 		applyGravity();
-
+		
 		for (int i = 0; i < clampedSimulationSteps; i++)
 		{
-			saveKinematicState(fixedTimeStep);
 			internalSingleStepSimulation(fixedTimeStep);
+			// Once the rigid bodies have been updated (including their kinematic children), we can update their velocities
+			saveKinematicState(fixedTimeStep);
 			synchronizeMotionStates();
 		}
 	}
