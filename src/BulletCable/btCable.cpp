@@ -151,6 +151,10 @@ void btCable::solveConstraints()
 
 		m_nodes[i].m_splitv = btVector3(0, 0, 0);
 		m_nodes[i].m_xOut = btVector3(0, 0, 0);
+
+		m_nodes[i].posPreviousIteration = m_nodes[i].m_x;
+		m_nodes[i].computeNodeConstraint = true;
+		m_nodes[i].cptIteration = 0;
 	}
 
 	// Prepare links
@@ -313,6 +317,8 @@ void btCable::solveConstraints()
 	
 	for (int i = 0; i < m_cfg.piterations; ++i)
 	{
+		updateNodeDeltaPos(i);
+
 		anchorConstraint();
 		distanceConstraint();
 		
@@ -331,8 +337,8 @@ void btCable::solveConstraints()
 		}
 	}
 
-	btScalar dt = this->m_sst.sdt;
 	anchorConstraint();
+
 
 	
 	// Remove unused manifold 
@@ -464,6 +470,27 @@ void btCable::UpdateManifoldBroadphase(btAlignedObjectArray<BroadPhasePair*> bro
 				broadphasePair.at(j)->manifold = manifolds.at(i).manifold;
 				break;
 			}
+		}
+	}
+}
+
+void btCable::updateNodeDeltaPos(int iteration)
+{
+	Node* node;
+	btScalar deltaPos;
+	for (int i = 0; i < m_nodes.size(); i++)
+	{
+		node = &m_nodes.at(i);
+		deltaPos = (node->m_x - node->posPreviousIteration).length();
+		if (deltaPos > getCollisionShape()->getMargin()*0.001 || iteration==0)
+		{
+			node->cptIteration++;
+			node->computeNodeConstraint = true;
+			node->posPreviousIteration = node->m_x;
+		}
+		else
+		{
+			node->computeNodeConstraint = false;
 		}
 	}
 }
@@ -608,7 +635,7 @@ bool btCable::checkCondition(Node *n, int step)
 	if (step != 0) 
 	{
 		if (n->m_nbCollidingObjectPotential == 1) return false;
-		if (n->collide == false) return false;
+		return n->collide;
 	}
 	return true;
 	
@@ -710,9 +737,13 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 			NodePairNarrowPhase* temp = &nodePairContact->at(i);
 			temp->hitInIteration = false;
 			n = temp->node;
-
+			
+			
 			// Update contact index for in the node structure
 			updateContactPos(n, i, j);
+
+			if (!n->computeNodeConstraint)
+				continue;
 
 			// Check if collision is possible
 			if (!checkCondition(n, j)) 
@@ -963,6 +994,7 @@ void btCable::LRAConstraint()
 	btScalar distance = 0;
 
 	Node& a = m_nodes[m_nodes.size() - 1];
+	bool aMove = a.computeNodeConstraint;
 	for (int i = 0; i < m_anchors.size(); ++i)
 		if (a.index == m_anchors[i].m_node->index)
 			a.m_x = m_anchors[i].m_c1 + m_anchors[i].m_body->getCenterOfMassPosition(); 
@@ -971,6 +1003,12 @@ void btCable::LRAConstraint()
 	{
 		Link& l = m_links[i];
 		Node* b = l.m_n[0];
+		if (!aMove && !b->computeNodeConstraint) continue;
+		if (!b->computeNodeConstraint)
+		{
+			b->computeNodeConstraint = true;
+			b->cptIteration++;	
+		}
 		distance += l.m_rl;
 		if (a.m_x.distance(b->m_x) > distance)
 			b->m_x = a.m_x + (b->m_x - a.m_x).normalized() * distance;
@@ -1004,6 +1042,21 @@ void btCable::DistanceHierachy(int indexMain, int indexCheck)
 {
 	Node* main = &m_nodes.at(indexMain);
 	Node* altNode = &m_nodes.at(indexCheck);
+
+	if (!main->computeNodeConstraint && !altNode->computeNodeConstraint)
+		return;
+
+	if (!main->computeNodeConstraint)
+	{
+		main->computeNodeConstraint = true;
+		main->cptIteration++;
+	}
+	if (!altNode->computeNodeConstraint)
+	{
+		altNode->computeNodeConstraint = true;
+		altNode->cptIteration++;
+	}
+
 	btVector3 deltaPos = altNode->m_x - main->m_x;
 	int iterator = 1;
 	int LinkIndexDelta = 0;
@@ -1089,6 +1142,13 @@ void btCable::bendingConstraintDistance()
 		Node* current = m_links[i].m_n[0];     // Current Node
 		Node* after = m_links[i].m_n[1];       // Node After
 		
+		if (!before->computeNodeConstraint && !current->computeNodeConstraint && !after->computeNodeConstraint)
+			continue;
+
+		before->computeNodeConstraint = true;
+		current->computeNodeConstraint = true;
+		after->computeNodeConstraint = true;
+
 		btVector3 delta1 = current->m_x - before->m_x;
 		btVector3 delta2 = after->m_x - current->m_x;
 
@@ -1159,6 +1219,12 @@ void btCable::distanceConstraint()
 		l = &m_links[i];
 		a = l->m_n[0];
 		b = l->m_n[1];
+		if (!a->computeNodeConstraint && !b->computeNodeConstraint) 
+			continue;
+
+		a->computeNodeConstraint = true;
+		b->computeNodeConstraint = true;
+
 		btVector3 AB = b->m_x - a->m_x;
 		btVector3 ABNormalized = AB.normalized();
 		if (ABNormalized.fuzzyZero())

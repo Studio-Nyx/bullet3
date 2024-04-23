@@ -27,6 +27,7 @@ subject to the following restrictions:
 #include "LinearMath/btConvexHullComputer.h"
 #include <map>
 #include <vector>
+#include <BulletCable/btCable.h>
 
 static void drawVertex(btIDebugDraw* idraw,
 					   const btVector3& x, btScalar s, const btVector3& c)
@@ -270,29 +271,10 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 		{
 			for (i = 0; i < psb->m_nodes.size(); ++i)
 			{
-				
 				const btSoftBody::Node& n = psb->m_nodes[i];
 				if (0 == (n.m_material->m_flags & btSoftBody::fMaterial::DebugDraw)) continue;
-				if (n.m_splitv == btVector3(0, 0, 0))
-				{
-					//idraw->drawLine(n.m_x - btVector3(scl, 0, 0), n.m_x + btVector3(scl, 0, 0), btVector3(1, 0, 0));
-					//idraw->drawLine(n.m_x - btVector3(0, scl, 0), n.m_x + btVector3(0, scl, 0), btVector3(0, 1, 0));
-					//idraw->drawLine(n.m_x - btVector3(0, 0, scl), n.m_x + btVector3(0, 0, scl), btVector3(0, 0, 1));
-					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(0, 0, 0));
-				}
-				else if (n.m_splitv == btVector3(2, 0, 0))
-				{
-					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(1, 0, 0));
-				}
-				else
-				{
-					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(1, 1, 1));
 
-					//idraw->drawLine(n.m_x - btVector3(scl, 0, 0), n.m_x + btVector3(scl, 0, 0), btVector3(1, 1, 1));
-					//idraw->drawLine(n.m_x - btVector3(0, scl, 0), n.m_x + btVector3(0, scl, 0), btVector3(1, 1, 1));
-					//idraw->drawLine(n.m_x - btVector3(0, 0, scl), n.m_x + btVector3(0, 0, scl), btVector3(1, 1, 1));
-				}
-
+				idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(0, 0, 0));
 			}
 		}
 		/* Links	*/
@@ -303,7 +285,21 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 			{
 				const btSoftBody::Link& l = psb->m_links[i];
 				if (0 == (l.m_material->m_flags & btSoftBody::fMaterial::DebugDraw)) continue;
-				idraw->drawLine(l.m_n[0]->m_x, l.m_n[1]->m_x, lcolor);
+				
+				btVector3 lowcolor = btVector3(0, 255, 0);
+				btVector3 highcolor = btVector3(125, 0, 0);
+				const btCable* cable = (btCable*)psb;
+				if (cable)
+				{
+					btScalar ratio =(l.m_n[0]->cptIteration + l.m_n[1]->cptIteration ) / (cable->m_cfg.piterations*2.0);
+					btVector3 color = Lerp(lowcolor, highcolor, ratio);
+					idraw->drawLine(l.m_n[0]->m_x, l.m_n[1]->m_x, color);
+				}
+				else
+				{
+					idraw->drawLine(l.m_n[0]->m_x, l.m_n[1]->m_x, lcolor);
+				}
+				
 			}
 		}
 		/* Normals	*/

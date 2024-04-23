@@ -498,6 +498,8 @@ public:
 		cable->m_cfg.piterations = iteration;
 		cable->m_cfg.kAHR = 1;
 		cable->setUseLRA(true);
+		cable->setCollisionMargin(0.01);
+		cable->getCollisionShape()->setMargin(0.01);
 
 		// Add cable to the world
 		getSoftDynamicsWorld()->addSoftBody(cable);
@@ -703,7 +705,7 @@ static void Init_Iterations(CableDemo* pdemo)
 	transformPhysic.setRotation(rotation);
 
 	// Resolution's cable
-	int resolution = 20;
+	int resolution = 10;
 	int iteration = 1;
 
 	// Create 12 cube and 6 cables
@@ -1635,7 +1637,7 @@ static void Init_TestCollisionRingSphere(CableDemo* pdemo)
 	pdemo->SetCameraPosition(btVector3(0, -3, 0));
 }
 
-static void Init_TestCollisionResponse (CableDemo* pdemo)
+static void Init_TestCollisionOn1Node (CableDemo* pdemo)
 {
 	// Shape
 	btCollisionShape* cubeShape = new btBoxShape(btVector3(1, 1, 1));
@@ -1791,7 +1793,7 @@ void (*demofncs[])(CableDemo*) =
 		Init_TestCollisionCableConvexHullOnMeshSphere,
 		Init_TestCollisionRingBox,
 		Init_TestCollisionRingSphere,
-		Init_TestCollisionResponse, 
+		Init_TestCollisionOn1Node, 
 		Init_TestClaw};
 
 ////////////////////////////////////

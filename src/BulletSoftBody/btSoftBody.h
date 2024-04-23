@@ -323,6 +323,10 @@ public:
 		btScalar topMargin;
 
 		bool collide;
+
+		btVector3 posPreviousIteration;
+		bool computeNodeConstraint;
+		int cptIteration;
 	};
 
 	/* SumForces of a node*/

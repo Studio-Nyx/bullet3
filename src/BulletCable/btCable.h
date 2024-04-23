@@ -180,10 +180,13 @@ private:
 	void clearManifoldContact();
 	void UpdateManifoldBroadphase(btAlignedObjectArray<BroadPhasePair*> broadphasePair);
 
+	void updateNodeDeltaPos(int iteration);
+
 	btScalar getLinkRestLength(int index);
 
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count,int section_count, const btVector3* x, const btScalar* m);
+
 	
 	btScalar WantedDistance = 0;
 	btScalar WantedSpeed = 0;
