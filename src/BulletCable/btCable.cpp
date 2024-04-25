@@ -120,7 +120,7 @@ void btCable::solveConstraints()
 	{
 		resetManifoldLifeTime();	
 	}
-	m_cpt++;	
+	m_cpt++;
 	
 	
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
@@ -373,7 +373,7 @@ void btCable::solveConstraints()
 	}
 	
 	// Clear manifolds without contact point
- 	clearManifoldContact(BroadPhaseOutput);
+ 	clearManifoldContact();
 	
 	nodePairContact.clear();
 	for (int i = 0; i < BroadPhaseOutput.size(); i++)
@@ -468,7 +468,7 @@ void btCable::UpdateManifoldBroadphase(btAlignedObjectArray<BroadPhasePair*> bro
 	}
 }
 
-void btCable::clearManifoldContact(btAlignedObjectArray<BroadPhasePair *> broadphasePair)
+void btCable::clearManifoldContact()
 {
 	int count = manifolds.size();
 	// Remove the body that have no contact point and lifeTime = 0

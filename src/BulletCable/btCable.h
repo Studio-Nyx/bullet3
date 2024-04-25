@@ -177,7 +177,7 @@ private:
 	//void recursiveBroadPhase(BroadPhasePair* obj, Node* n, Node* n1, btCompoundShape* shape, btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btVector3 minLink, btVector3 maxLink, btTransform transform);
 
 	void resetManifoldLifeTime();
-	void clearManifoldContact(btAlignedObjectArray<BroadPhasePair*> objs);
+	void clearManifoldContact();
 	void UpdateManifoldBroadphase(btAlignedObjectArray<BroadPhasePair*> broadphasePair);
 
 	btScalar getLinkRestLength(int index);
