@@ -274,7 +274,11 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 				const btSoftBody::Node& n = psb->m_nodes[i];
 				if (0 == (n.m_material->m_flags & btSoftBody::fMaterial::DebugDraw)) continue;
 
-				idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(0, 0, 0));
+				if (n.m_splitv == btVector3(1,0,0))
+					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(255, 255, 255));
+				else
+					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(0, 0, 0));
+
 			}
 		}
 		/* Links	*/

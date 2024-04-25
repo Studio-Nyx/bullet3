@@ -143,21 +143,22 @@ private:
 	float m_collisionMargin = 0;
 
 	void distanceConstraint();
+	void distanceConstraintLock(int limMin, int limMax);
 	void LRAConstraint();
 	void LRAHierachique();
 	void DistanceHierachy(int indexStart, int indexEnd);
 	void LRAConstraintNode();
-	void FABRIKChain();
-
 	btVector3 fastTrigoPositionCompute(Node* n);
 
 
 
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
+	void ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 	void anchorConstraint ();
 	
 	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
+	void solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, int limitMin, int limitMax);
 	//int solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 
 

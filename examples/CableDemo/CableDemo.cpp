@@ -1036,8 +1036,8 @@ static void initLock(CableDemo* pdemo)
 	// Body
 	btBoxShape * a = new btBoxShape(btVector3(6, 1, 1));
 	// T center
-	btBoxShape* b = new btBoxShape(btVector3(0.4, 0.3, 0.2));
-	btCylinderShape* c = new btCylinderShapeZ(btVector3(0.2,0.2, 0.5));
+	btBoxShape* b = new btBoxShape(btVector3(0.3, 0.3, 0.2));
+	btCylinderShape* c = new btCylinderShapeZ(btVector3(0.15,0.15, 0.5));
 	//btBoxShape* c = new btBoxShape(btVector3(0.2, 0.3, 1));
 	btBoxShape* d = new btBoxShape(btVector3(0.3, 0.3, 0.2));
 
@@ -1133,10 +1133,12 @@ static void Init_TestSupportA18(CableDemo* pdemo)
 	btCable* cable = pdemo->createCableWaypoint(resolution, iterations, 3, waypointPos, Lest, AnchorUp ,true,true);
 	//btCable* cable = pdemo->createCable(resolution, iterations, 3, LestTransform.getOrigin() + btVector3(0, 0.5, 0), AnchorUpPos.getOrigin() + btVector3(0, -0.5, 0), AnchorUp, Lest, false, false);
 	cable->setFriction(0);
+	cable->setCollisionStiffness(1000, 100000, 0.001, 0.1);
+	cable->setCollisionViscosity(100);
 	cable->setUseCollision(true);
  	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(true);
-	cable->setCollisionParameters(1,1,0);
+	cable->setCollisionParameters(1,3,0);
 	cable->setCollisionMargin(margin);
 	pdemo->SetCameraPosition(btVector3(0,2,-3));
 
@@ -1746,7 +1748,7 @@ static void Init_TestClaw(CableDemo* pdemo)
 	c->addChildShape(y, b);
 
 	btRigidBody* obj = pdemo->createRigidBody(100, blocCompound, c);
-	obj->setGravity(btVector3(0, 0, 1));
+	obj->setGravity(btVector3(0, 0, 5));
 	obj->getCollisionShape()->setMargin(0);
 
 	btTransform LestTransform = btTransform();

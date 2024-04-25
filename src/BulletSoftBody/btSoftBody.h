@@ -323,6 +323,7 @@ public:
 		btScalar topMargin;
 
 		bool collide;
+		bool collideInAllIteration;
 
 		btVector3 posPreviousIteration;
 		bool computeNodeConstraint;
