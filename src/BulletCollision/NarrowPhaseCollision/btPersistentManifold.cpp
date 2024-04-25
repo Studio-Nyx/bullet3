@@ -284,9 +284,7 @@ void btPersistentManifold::refreshContactPoints(const btTransform& trA, const bt
 		//contact becomes invalid when signed distance exceeds margin (projected on contactnormal direction)
 		if (!validContactDistance(manifoldPoint))
 		{
-			// If the distance is not valid we decrease point lifetime and remove it when needed
-			manifoldPoint.m_lifeTime--;
-			if (manifoldPoint.m_lifeTime <= 0)
+			if(manifoldPoint.m_hasCollided == false)
 			{
 				removeContactPoint(i);
 			}
@@ -300,10 +298,16 @@ void btPersistentManifold::refreshContactPoints(const btTransform& trA, const bt
 			distance2d = projectedDifference.dot(projectedDifference);
 			if (distance2d > getContactBreakingThreshold() * getContactBreakingThreshold())
 			{
-				removeContactPoint(i);
+				if(manifoldPoint.m_hasCollided == false)
+				{
+					removeContactPoint(i);
+				}
 			}
 			else
 			{
+				manifoldPoint.m_hasCollided = true;
+				m_hasCollided = true;
+				
 				//contact point processed callback
 				if (gContactProcessedCallback)
 					(*gContactProcessedCallback)(manifoldPoint, (void*)m_body0, (void*)m_body1);

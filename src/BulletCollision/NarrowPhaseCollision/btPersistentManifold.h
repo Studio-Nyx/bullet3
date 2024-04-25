@@ -89,6 +89,8 @@ public:
 
 	int m_index1a;
 
+	bool m_hasCollided;
+	
 	btPersistentManifold();
 	void freeContactPoint();
 

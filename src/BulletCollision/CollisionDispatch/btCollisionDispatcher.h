@@ -46,6 +46,8 @@ protected:
 
 	btAlignedObjectArray<btPersistentManifold*> m_manifoldsPtr;
 
+	btAlignedObjectArray<btPersistentManifold*> m_collidedManifoldsCache;
+	
 	btNearCallback m_nearCallback;
 
 	btPoolAllocator* m_collisionAlgorithmPoolAllocator;
@@ -164,6 +166,14 @@ public:
 	{
 		return m_persistentManifoldPoolAllocator;
 	}
+
+	virtual void releaseAllCachedManifolds() override;
+	virtual void releaseCachedManifold(btPersistentManifold* manifold) override;
+	virtual int getNumManifoldsCache() const override;
+	virtual btPersistentManifold* getManifoldsCacheByIndexInternal(int index) override;
+	virtual void addManifoldToCache(btPersistentManifold* manifold) override;
+	virtual void ClearManifoldsCache() override;
+	
 };
 
 #endif  //BT_COLLISION__DISPATCHER_H

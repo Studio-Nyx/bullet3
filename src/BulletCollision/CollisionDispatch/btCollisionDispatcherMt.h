@@ -26,6 +26,12 @@ public:
 
 	virtual btPersistentManifold* getNewManifold(const btCollisionObject* body0, const btCollisionObject* body1) BT_OVERRIDE;
 	virtual void releaseManifold(btPersistentManifold* manifold) BT_OVERRIDE;
+	virtual void releaseCachedManifold(btPersistentManifold* manifold) BT_OVERRIDE;
+	virtual void releaseAllCachedManifolds() BT_OVERRIDE;
+	virtual int getNumManifoldsCache() const BT_OVERRIDE;
+	virtual btPersistentManifold* getManifoldsCacheByIndexInternal(int index) BT_OVERRIDE;
+	virtual void addManifoldToCache(btPersistentManifold* manifold) BT_OVERRIDE;
+	virtual void ClearManifoldsCache() BT_OVERRIDE;
 
 	virtual void dispatchAllCollisionPairs(btOverlappingPairCache* pairCache, const btDispatcherInfo& info, btDispatcher* dispatcher) BT_OVERRIDE;
 

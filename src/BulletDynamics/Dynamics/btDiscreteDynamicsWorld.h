@@ -69,6 +69,8 @@ protected:
 	btAlignedObjectArray<btPersistentManifold*> m_predictiveManifolds;
 	btSpinMutex m_predictiveManifoldsMutex;  // used to synchronize threads creating predictive contacts
 
+	int m_clampedSimulationSteps;
+
 	virtual void predictUnconstraintMotion(btScalar timeStep);
 
 	void integrateTransformsInternal(btRigidBody * *bodies, int numBodies, btScalar timeStep);  // can be called in parallel

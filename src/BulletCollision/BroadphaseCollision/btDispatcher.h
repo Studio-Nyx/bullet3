@@ -15,6 +15,7 @@ subject to the following restrictions:
 
 #ifndef BT_DISPATCHER_H
 #define BT_DISPATCHER_H
+#include "LinearMath/btAlignedObjectArray.h"
 #include "LinearMath/btScalar.h"
 
 class btCollisionAlgorithm;
@@ -76,6 +77,7 @@ enum ebtDispatcherQueryType
 class btDispatcher
 {
 public:
+	
 	virtual ~btDispatcher();
 
 	virtual btCollisionAlgorithm* findAlgorithm(const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, btPersistentManifold* sharedManifold, ebtDispatcherQueryType queryType) = 0;
@@ -83,9 +85,9 @@ public:
 	virtual btPersistentManifold* getNewManifold(const btCollisionObject* b0, const btCollisionObject* b1) = 0;
 
 	virtual void releaseManifold(btPersistentManifold* manifold) = 0;
-
+	
 	virtual void clearManifold(btPersistentManifold* manifold) = 0;
-
+	
 	virtual bool needsCollision(const btCollisionObject* body0, const btCollisionObject* body1) = 0;
 
 	virtual bool needsResponse(const btCollisionObject* body0, const btCollisionObject* body1) = 0;
@@ -105,6 +107,18 @@ public:
 	virtual void* allocateCollisionAlgorithm(int size) = 0;
 
 	virtual void freeCollisionAlgorithm(void* ptr) = 0;
+
+	virtual void releaseAllCachedManifolds() = 0;
+
+	virtual void releaseCachedManifold(btPersistentManifold* manifold) = 0;
+	 
+	virtual int getNumManifoldsCache() const = 0;
+	 
+	virtual btPersistentManifold* getManifoldsCacheByIndexInternal(int index) = 0;
+	 
+	virtual void addManifoldToCache(btPersistentManifold* manifold) = 0;
+	 
+	virtual void ClearManifoldsCache() = 0;
 };
 
 #endif  //BT_DISPATCHER_H

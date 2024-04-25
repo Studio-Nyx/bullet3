@@ -25,6 +25,7 @@ subject to the following restrictions:
 #include "LinearMath/btQuickprof.h"
 
 //rigidbody & constraints
+#include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
 #include "BulletDynamics/Dynamics/btRigidBody.h"
 #include "BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h"
 #include "BulletDynamics/ConstraintSolver/btContactSolverInfo.h"
@@ -387,6 +388,8 @@ void btDiscreteDynamicsWorld::synchronizeMotionStates()
 int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep)
 {
 	startProfiling(timeStep);
+	
+	m_dispatcher1->ClearManifoldsCache();
 
 	int numSimulationSubSteps = 0;
 
@@ -428,20 +431,32 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 	if (numSimulationSubSteps)
 	{
 		//clamp the number of substeps, to prevent simulation grinding spiralling down to a halt
-		int clampedSimulationSteps = (numSimulationSubSteps > maxSubSteps) ? maxSubSteps : numSimulationSubSteps;
+		m_clampedSimulationSteps = (numSimulationSubSteps > maxSubSteps) ? maxSubSteps : numSimulationSubSteps;
 
 		// Update the kinematic objects first (may have been moved by animation)
-		saveKinematicState(fixedTimeStep * clampedSimulationSteps);
+		saveKinematicState(fixedTimeStep * m_clampedSimulationSteps);
 
 		applyGravity();
+
+		// Go through all manifolds and set m_lifePoints to clampedSimulationSteps
+		for (int i = 0; i < m_dispatcher1->getNumManifolds(); i++)
+		{
+			btPersistentManifold* manifold = m_dispatcher1->getManifoldByIndexInternal(i);
+			for(int j = 0; j < manifold->getNumContacts(); j++)
+			{
+				manifold->getContactPoint(j).m_hasCollided = false;
+			}
+		}
 		
-		for (int i = 0; i < clampedSimulationSteps; i++)
+		for (int i = 0; i < m_clampedSimulationSteps; i++)
 		{
 			internalSingleStepSimulation(fixedTimeStep);
 			// Once the rigid bodies have been updated (including their kinematic children), we can update their velocities
 			saveKinematicState(fixedTimeStep);
 			synchronizeMotionStates();
 		}
+
+		
 	}
 	else
 	{
@@ -498,6 +513,17 @@ void btDiscreteDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 
 	updateActivationState(timeStep);
 
+	for (int i = 0; i < m_dispatcher1->getNumManifolds(); i++)
+	{
+		btPersistentManifold* manifold = m_dispatcher1->getManifoldByIndexInternal(i);
+		if(manifold->m_hasCollided)
+		{
+			btPersistentManifold* newManifold = new btPersistentManifold;
+			*newManifold = *manifold;
+			m_dispatcher1->addManifoldToCache(newManifold);
+		}
+	}
+	
 	if (0 != m_internalTickCallback)
 	{
 		(*m_internalTickCallback)(this, timeStep);

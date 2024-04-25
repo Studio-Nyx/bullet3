@@ -296,3 +296,56 @@ void btCollisionDispatcher::freeCollisionAlgorithm(void* ptr)
 		btAlignedFree(ptr);
 	}
 }
+
+
+void btCollisionDispatcher::releaseCachedManifold(btPersistentManifold* manifold)
+{
+	//btAssert( !btThreadsAreRunning() );
+	
+	clearManifold(manifold);
+	// batch updater will update manifold pointers array after finishing, so
+	// only need to update array when not batch-updating
+	int findIndex = manifold->m_index1a;
+	btAssert(findIndex < m_collidedManifoldsCache.size());
+	m_collidedManifoldsCache.swap(findIndex, m_collidedManifoldsCache.size() - 1);
+	m_collidedManifoldsCache[findIndex]->m_index1a = findIndex;
+	m_collidedManifoldsCache.pop_back();
+
+	manifold->freeContactPoint();
+	free(manifold);
+}
+
+
+void btCollisionDispatcher::addManifoldToCache(btPersistentManifold* manifold)
+{
+	m_collidedManifoldsCache.push_back(manifold);
+}
+
+void btCollisionDispatcher::ClearManifoldsCache()
+{
+	releaseAllCachedManifolds();
+	m_collidedManifoldsCache.clear();
+}
+
+void btCollisionDispatcher::releaseAllCachedManifolds()
+{
+	//btAssert( !btThreadsAreRunning() );
+	
+	for (int i = 0; i < m_collidedManifoldsCache.size(); i++)
+	{
+		releaseCachedManifold(m_collidedManifoldsCache[i]);
+	}
+}
+
+
+int btCollisionDispatcher::getNumManifoldsCache() const
+{
+	return int(m_collidedManifoldsCache.size());
+}
+
+btPersistentManifold* btCollisionDispatcher::getManifoldsCacheByIndexInternal(int index)
+{
+	btAssert(index>=0);
+	btAssert(index<m_collidedManifoldsCache.size());
+	return m_collidedManifoldsCache[index];
+}

@@ -116,6 +116,63 @@ void btCollisionDispatcherMt::releaseManifold(btPersistentManifold* manifold)
 	}
 }
 
+void btCollisionDispatcherMt::releaseCachedManifold(btPersistentManifold* manifold)
+{
+	//btAssert( !btThreadsAreRunning() );
+	
+	// if (!m_batchUpdating)
+	// {
+		// batch updater will update manifold pointers array after finishing, so
+		// only need to update array when not batch-updating
+		// int findIndex = manifold->m_index1a;
+		// btAssert(findIndex < m_collidedManifoldsCache.size());
+		// m_collidedManifoldsCache.swap(findIndex, m_collidedManifoldsCache.size() - 1);
+		// m_collidedManifoldsCache[findIndex]->m_index1a = findIndex;
+		// m_collidedManifoldsCache.pop_back();
+	// } else {
+	// 	m_batchReleasePtr[btGetCurrentThreadIndex()].push_back(manifold);
+	// 	return;
+	// }
+
+	manifold->freeContactPoint();
+	free(manifold);
+}
+
+
+void btCollisionDispatcherMt::addManifoldToCache(btPersistentManifold* manifold)
+{
+	m_collidedManifoldsCache.push_back(manifold);
+}
+
+void btCollisionDispatcherMt::ClearManifoldsCache()
+{
+	releaseAllCachedManifolds();
+	m_collidedManifoldsCache.clear();
+}
+
+void btCollisionDispatcherMt::releaseAllCachedManifolds()
+{
+	//btAssert( !btThreadsAreRunning() );
+
+	for (int i = 0; i < m_collidedManifoldsCache.size(); ++i) {
+		delete m_collidedManifoldsCache[i]; // If elements were dynamically allocated
+		//releaseManifold(m_collidedManifoldsCache[i]); // Or just set each element to nullptr
+	}
+}
+
+
+int btCollisionDispatcherMt::getNumManifoldsCache() const
+{
+	return int(m_collidedManifoldsCache.size());
+}
+
+btPersistentManifold* btCollisionDispatcherMt::getManifoldsCacheByIndexInternal(int index)
+{
+	btAssert(index>=0);
+	btAssert(index<m_collidedManifoldsCache.size());
+	return m_collidedManifoldsCache[index];
+}
+
 struct CollisionDispatcherUpdater : public btIParallelForBody
 {
 	btBroadphasePair* mPairArray;

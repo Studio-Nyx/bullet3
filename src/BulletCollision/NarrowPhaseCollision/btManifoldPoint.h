@@ -143,7 +143,8 @@ public:
 	btScalar m_frictionCFM;
 
 	int m_lifeTime;  //lifetime of the contactpoint in frames
-
+	bool m_hasCollided;
+	
 	btVector3 m_lateralFrictionDir1;
 	btVector3 m_lateralFrictionDir2;
 
