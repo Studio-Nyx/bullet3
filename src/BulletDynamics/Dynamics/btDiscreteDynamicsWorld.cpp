@@ -450,9 +450,8 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 		
 		for (int i = 0; i < m_clampedSimulationSteps; i++)
 		{
-			internalSingleStepSimulation(fixedTimeStep);
-			// Once the rigid bodies have been updated (including their kinematic children), we can update their velocities
 			saveKinematicState(fixedTimeStep);
+			internalSingleStepSimulation(fixedTimeStep);
 			synchronizeMotionStates();
 		}
 

@@ -99,6 +99,9 @@ protected:
 	void serializeDynamicsWorldInfo(btSerializer * serializer);
     
 public:
+
+	bool debugMode = false;
+
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
 	///this btDiscreteDynamicsWorld constructor gets created objects from the user, and will not delete those

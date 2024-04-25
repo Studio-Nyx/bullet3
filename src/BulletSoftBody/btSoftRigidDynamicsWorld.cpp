@@ -120,6 +120,8 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 
 	btDiscreteDynamicsWorld::internalSingleStepSimulation(timeStep);
 
+	btDiscreteDynamicsWorld::saveKinematicState(timeStep);
+
 	///solve soft bodies constraints
 	solveSoftBodiesConstraints(timeStep);
 
