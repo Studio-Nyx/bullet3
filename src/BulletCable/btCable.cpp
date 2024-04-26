@@ -18,9 +18,6 @@
 #include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
 
-using namespace std::chrono;
-
-
 
 btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count,int section_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
 {
@@ -202,7 +199,7 @@ void btCable::solveConstraints()
 	btAlignedObjectArray<BroadPhasePair *> BroadPhaseOutput = btAlignedObjectArray<BroadPhasePair *>();
 	btAlignedObjectArray<NodePairNarrowPhase> nodePairContact = btAlignedObjectArray<NodePairNarrowPhase>();
 	
-	//btAlignedObjectArray<int> indexNodeContact = btAlignedObjectArray<int>();
+	btAlignedObjectArray<int> indexNodeContact = btAlignedObjectArray<int>();
 
 	if (useCollision)
 	{
@@ -316,10 +313,13 @@ void btCable::solveConstraints()
 						}
 					}
 				}
+
+				if (n.m_nbCollidingObjectPotential > 0)
+					indexNodeContact.push_back(n.index);
 			}
 		}
 	}
-	
+
 	for (int i = 0; i < m_cfg.piterations; ++i)
 	{
 		updateNodeDeltaPos(i);
@@ -341,13 +341,14 @@ void btCable::solveConstraints()
 
 		if (useCollision && (i % m_substepDelayCollision == 0 || i == m_cfg.piterations - 1))
 		{
-			solveContact(&nodePairContact);
+			solveContact(&nodePairContact, &indexNodeContact);
 		}
 	}
 	
 	anchorConstraint();
 	
-	ResolveConflitZone(&nodePairContact);
+	if (useCollision)
+		ResolveConflitZone(&nodePairContact ,&indexNodeContact);
 
 	// Remove unused manifold 
 	UpdateManifoldBroadphase(BroadPhaseOutput);
@@ -395,17 +396,18 @@ void btCable::solveConstraints()
 		delete BroadPhaseOutput.at(i);
 	}
 	BroadPhaseOutput.clear();
+	indexNodeContact.clear();
 	
 }
 
 
 
-void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact)
+void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact,btAlignedObjectArray<int>* indexNodeContact)
 {
 	Node* node;
 	int distSectorMax = 3;
 	Node* nodeAfter;
-	for (int i = 1; i < m_nodes.size()-1; i++)
+	for (int i = 0; i < m_nodes.size()-1; i++)
 	{
 		node = &m_nodes.at(i);
 
@@ -430,14 +432,10 @@ void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* node
 				}
 			}
 
-
-			m_nodes.at(limitMin).m_splitv = btVector3(1, 0, 0);
-			m_nodes.at(limitMax).m_splitv = btVector3(1, 0, 0);
-
 			for (int j = 0; j < 10; j++)
 			{
 				distanceConstraintLock(limitMin, limitMax);
-				solveContact(nodePairContact);
+				solveContactLimited(nodePairContact,limitMin,limitMax);
 			}
 			
 		}
@@ -536,7 +534,7 @@ void btCable::updateNodeDeltaPos(int iteration)
 	{
 		node = &m_nodes.at(i);
 		deltaPos = (node->m_x - node->posPreviousIteration).length();
-		if (deltaPos > getCollisionShape()->getMargin()*0.0001 || iteration==0)
+		if (deltaPos > 0.0001 || iteration==0) 
 		{
 			node->cptIteration++;
 			node->computeNodeConstraint = true;
@@ -631,12 +629,12 @@ btVector3 btCable::PositionStartRayCalculation(Node *n, btCollisionObject * obj)
 	
 }
 
-void btCable::setupNodeForCollision()
+void btCable::setupNodeForCollision(btAlignedObjectArray<int>* indexNodeContact)
 {
 	Node* n;
-	for (int i = 0; i < m_nodes.size(); i++)
+	for (int i = 0; i < indexNodeContact->size(); i++)
 	{
-		n = &m_nodes.at(i);
+		n = &m_nodes.at(indexNodeContact->at(i));
 		n->collide = false;
 		n->posBeforeCollision = n->m_x;
 		if (n->m_nbCollidingObjectPotential > 0)
@@ -652,12 +650,12 @@ void btCable::setupNodeForCollision()
 	}
 }
 
-void btCable::resetNormalAndHitPosition()
+void btCable::resetNormalAndHitPosition(btAlignedObjectArray<int>* indexNodeContact)
 {
 	Node* n;
-	for (int i = 0; i < m_nodes.size(); i++)
+	for (int i = 0; i < indexNodeContact->size(); i++)
 	{
-		n = &m_nodes.at(i);
+		n = &m_nodes.at(indexNodeContact->at(i));
 		n->m_nbCollidingObjectInFrame = 0;
 		for (int nbCollide = 0; nbCollide < n->m_nbCollidingObjectPotential; nbCollide++)
 		{
@@ -723,7 +721,7 @@ btCollisionWorld::ClosestRayResultCallback btCable::castRay(btVector3 positionSt
 	dir = (positionEnd - positionStart) / len;
 	
 	// Correction depends on the link movement
-	btScalar distanceOut = 0.005;
+	btScalar distanceOut = 0.001;
 	btVector3 startRay = positionStart - dir * distanceOut;
 	btVector3 endRay = positionEnd;
 
@@ -751,11 +749,11 @@ btCollisionWorld::ClosestRayResultCallback btCable::castRay(btVector3 positionSt
 
 // Resolve iteratively all the contact constraint
 // Do nbSubStep times the resolution to valid a good collision
-void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact)
+void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btAlignedObjectArray<int>* indexNodeContact)
 {
 	int nbSubStep = m_subIterationCollision;
 	int nbContactPairPotential = nodePairContact->size();
-	if (nbContactPairPotential == 0) return ;
+	if (nbContactPairPotential == 0) return;
 	btVector3 positionStart;
 	btVector3 positionEnd;
 
@@ -772,7 +770,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 	btTransform t;
 	int indexNode;
 
-	setupNodeForCollision(); 
+	setupNodeForCollision(indexNodeContact); 
 
 	bool finish = false;
 
@@ -780,7 +778,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 	for (int j = 0; j < nbSubStep; j++)
 	{
 		// Setup structures
-		resetNormalAndHitPosition();
+		resetNormalAndHitPosition(indexNodeContact);
 
 		// Collision Resolution
 		for (int i = 0; i < nbContactPairPotential; i++)
@@ -834,14 +832,12 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 				btVector3 touchVectorDir = (positionStart - contactPoint).normalized();
 				btScalar dirDotNormal = touchVectorDir.dot(normal);
 				btClamp(dirDotNormal, -1.0, 1.0);
-				btScalar teta = acos(touchVectorDir.dot(normal));
+				btScalar teta = acos(dirDotNormal);
  				btScalar deltaPos = teta * distanceOut;
-
 				btVector3 oppose = (positionStart - (contactPoint + outMouvementPos)).normalized();
-				btVector3 newPosCorrection = oppose * deltaPos * 0.25;
-
+				btVector3 newPosCorrection = oppose * deltaPos * 0.5;
 				btVector3 newPosOut = contactPoint + outMouvementPos + newPosCorrection;
-
+				
 				btVector3 impulse = btVector3(0,0,0);
 
 				btScalar offset = (n->m_x - contactPoint).length();
@@ -876,13 +872,13 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 
 		// Update position
 		Node* node;
-		for (int i = 0; i < m_nodes.size(); i++)
+		for (int i = 0; i < indexNodeContact->size(); i++)
 		{
-			float nbCorrection = m_nodes.at(i).m_nbCollidingObjectInFrame;
+			float nbCorrection = m_nodes.at(indexNodeContact->at(i)).m_nbCollidingObjectInFrame;
 			if (nbCorrection > 0)
 			{
 				has1contact = true;
-				node = &m_nodes.at(i);
+				node = &m_nodes.at(indexNodeContact->at(i));
 				btVector3 newPos = node->positionCollision / nbCorrection;
 				 
 				if (nbCorrection == 1) { 
@@ -932,6 +928,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 					}
 				}
 
+				
 				node->m_x = newPos;
 				node->positionCollision = btVector3(0, 0, 0);
 				node->collide = true;
@@ -980,19 +977,19 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 	}
 
 	// Free structures
-	for (int i = 0; i < m_nodes.size(); i++)
+	for (int i = 0; i < indexNodeContact->size(); i++)
 	{
-		if (m_nodes.at(i).m_nbCollidingObjectPotential > 0)
+		if (m_nodes.at(indexNodeContact->at(i)).m_nbCollidingObjectPotential > 0)
 		{
-			delete[] m_nodes.at(i).normals;
-			delete[] m_nodes.at(i).hitPosition;
-			delete[] m_nodes.at(i).narrowPhaseIndex;
+			delete[] m_nodes.at(indexNodeContact->at(i)).normals;
+			delete[] m_nodes.at(indexNodeContact->at(i)).hitPosition;
+			delete[] m_nodes.at(indexNodeContact->at(i)).narrowPhaseIndex;
 		}
 	}
 	
 }
 
-void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact,int limitLow,int limitHigh)
+void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, int limitLow, int limitHigh)
 {
 	int nbSubStep = m_subIterationCollision;
 	int nbContactPairPotential = nodePairContact->size();
@@ -1013,7 +1010,7 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 	btTransform t;
 	int indexNode;
 
-	for (int i = limitLow; i <= limitHigh; i++)
+	for (int i = limitLow; i < limitHigh; i++)
 	{
 		n = &m_nodes.at(i);
 		n->collide = false;
@@ -1037,7 +1034,7 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 	{
 		// Setup structures
 		Node* n;
-		for (int i = limitLow; i <= limitHigh; i++)
+		for (int i = limitLow; i < limitHigh; i++)
 		{
 			n = &m_nodes.at(i);
 			n->m_nbCollidingObjectInFrame = 0;
@@ -1055,13 +1052,10 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 			temp->hitInIteration = false;
 			n = temp->node;
 
-			if (n->index < limitLow || n->index > limitHigh)
+			if (n->index < limitLow || n->index >= limitHigh)
 				continue;
 			// Update contact index for in the node structure
 			updateContactPos(n, i, j);
-
-			if (!n->computeNodeConstraint)
-				continue;
 
 			// Check if collision is possible
 			if (!checkCondition(n, j))
@@ -1099,11 +1093,11 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 				btVector3 touchVectorDir = (positionStart - contactPoint).normalized();
 				btScalar dirDotNormal = touchVectorDir.dot(normal);
 				btClamp(dirDotNormal, -1.0, 1.0);
-				btScalar teta = acos(touchVectorDir.dot(normal));
+				btScalar teta = acos(dirDotNormal);
 				btScalar deltaPos = teta * distanceOut;
 
 				btVector3 oppose = (positionStart - (contactPoint + outMouvementPos)).normalized();
-				btVector3 newPosCorrection = oppose * deltaPos * 0.25;
+				btVector3 newPosCorrection = oppose * deltaPos * 0.5;
 
 				btVector3 newPosOut = contactPoint + outMouvementPos + newPosCorrection;
 
@@ -1112,20 +1106,11 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 				btScalar offset = (n->m_x - contactPoint).length();
 				btScalar distPenetration = (contactPoint * offset).length();
 
-				if (obj->getInternalType() == CO_RIGID_BODY && impulseCompute)
-				{
-					btRigidBody* rb = btRigidBody::upcast(obj);
-					if (!obj->isStaticOrKinematicObject())
-					{
-						impulse = moveBodyCollision(rb, marginNode, n, normal, contactPoint);
-					}
-				}
 
 				n->positionCollision += newPosOut;
 				n->normals[n->m_nbCollidingObjectInFrame] = normal;
 				n->hitPosition[n->m_nbCollidingObjectInFrame] = contactPoint;
 
-				temp->impulse = impulse;
 				temp->lastPosition = contactPoint;
 				temp->hit = true;
 				temp->normal = normal;
@@ -1210,15 +1195,17 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 	NodePairNarrowPhase* temp;
 	for (int i = 0; i < nbContactPairPotential; i++)
 	{
+
 		temp = &nodePairContact->at(i);
-		if (nodePairContact->at(i).node->collide)
+		
+		if (nodePairContact->at(i).node->collide && nodePairContact->at(i).node->index >= limitLow && nodePairContact->at(i).node->index < limitHigh)
 		{
 			temp->m_Xout = temp->node->m_x;
 		}
 	}
 
 	// Free structures
-	for (int i = limitLow; i <= limitHigh; i++)
+	for (int i = limitLow; i < limitHigh; i++)
 	{
 		if (m_nodes.at(i).m_nbCollidingObjectPotential > 0)
 		{
@@ -1246,6 +1233,8 @@ btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n,
 	// bodyToNodeVector
 	btVector3 ra = hitPosition - wtr.getOrigin();
 	btVector3 vBody = obj->getVelocityInLocalPoint(ra);
+	if (isnan(vBody.x()))
+		vBody = btVector3(0, 0, 0);
 
 
 	btVector3 vNode = (n->posBeforeCollision - n->m_q) * 0.75 / dt;
@@ -1268,8 +1257,6 @@ btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n,
 	btScalar penetrationDistance = (n->m_x - hitPosition).length();
 	btVector3 deltaPosNode = hitPosition - n->m_x;
 	penetrationDistance = deltaPosNode.dot(normal);
-
-
 
 	btScalar k = 0;
 
@@ -1526,11 +1513,12 @@ void btCable::distanceConstraint()
 		b->computeNodeConstraint = true;
 
 		btVector3 AB = b->m_x - a->m_x;
-		btVector3 ABNormalized = AB.normalized();
-		if (ABNormalized.fuzzyZero())
+		
+		if (AB.fuzzyZero())
 		{
 			continue;
 		}
+		btVector3 ABNormalized = AB.normalized();
 		btScalar normAB = AB.length();
 		btScalar k = m_materials[0]->m_kLST;
 

@@ -154,10 +154,10 @@ private:
 
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
-	void ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
+	void ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact,btAlignedObjectArray<int>* indexNodeContact);
 	void anchorConstraint ();
 	
-	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
+	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btAlignedObjectArray<int>* indexNodeContact);
 	void solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, int limitMin, int limitMax);
 	//int solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 
@@ -166,8 +166,9 @@ private:
 	btVector3 PositionStartRayCalculation(Node* n, btCollisionObject* obj);
 
 	// Methods for collision
-	void setupNodeForCollision();
-	void resetNormalAndHitPosition();
+	void setupNodeForCollision(btAlignedObjectArray<int>* indexNodeContact);
+	void resetNormalAndHitPosition(btAlignedObjectArray<int>* indexNodeContact);
+
 	void updateContactPos(Node* n, int position, int step);
 	bool checkCondition(Node* n, int step);
 	btScalar computeCollisionMargin(btCollisionShape* shape);

@@ -1208,9 +1208,10 @@ static void Init_Test1000Nodes(CableDemo* pdemo)
 static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 {
 	// Resolution's cable
-	int resolution = 30;
-	int iterations = 100;
+	int resolution = 100;
+	int iterations = 50;
 	btScalar margin = 0.01;
+
 	/*
 	//btCollisionShape* shape = new btSphereShape(1);
 	btCollisionShape* shape = new btBoxShape(btVector3(1,1,1));
@@ -1249,7 +1250,6 @@ static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 	t.setIdentity();
 	t.setOrigin(btVector3(0, 4, 0));
 
-	//btRigidBody* spheres = pdemo->createRigidBody(1000, t, shape);
 	btRigidBody* spheres = pdemo->createRigidBody(1000, t, compound);
 	
 
@@ -1275,14 +1275,15 @@ static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 	
 	//cable->appendAnchor(10, spheres, true);
 	spheres->setFriction(1);
-	cable->setFriction(1);
+	cable->setFriction(0);
 
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
-	cable->setUseLRA(false);
-	cable->setCollisionViscosity(0);
+	cable->setUseLRA(true);
+	cable->setCollisionViscosity(100);
+	cable->setCollisionStiffness(1000,10000,0,0.1);
 
-	cable->setCollisionParameters(1,3,0);
+	cable->setCollisionParameters(2,3,0);
 	cable->setCollisionMargin(margin);
 	pdemo->SetCameraPosition(btVector3(0, 3.5, 0));
 
@@ -1627,15 +1628,15 @@ static void Init_TestCollisionRingSphere(CableDemo* pdemo)
 
 	btCable* cable = pdemo->createCableWaypoint(resolution, iterations, 3, waypointPos, bodyRightAnchor, bodyLeftAnchor, true, true);
 	//cable->appendAnchor(50, box,true);
-
+	
 	box->setFriction(1);
 	cable->setFriction(1);
-
+	
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setCollisionMargin(margin);
-	cable->setUseLRA(false);
-	cable->setCollisionParameters(1, 25, 0);
+	cable->setUseLRA(true);
+	cable->setCollisionParameters(1, 5, 0);
 	pdemo->SetCameraPosition(btVector3(0, -3, 0));
 }
 
