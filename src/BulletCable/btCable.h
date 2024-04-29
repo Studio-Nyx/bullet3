@@ -17,7 +17,8 @@
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <list>
 #include <vector>
-
+#include <omp.h>
+#include <iostream>
 using namespace std;
 
 class CableManifolds
