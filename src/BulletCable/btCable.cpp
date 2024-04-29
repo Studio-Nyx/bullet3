@@ -318,6 +318,19 @@ void btCable::solveConstraints()
 					indexNodeContact.push_back(n.index);
 			}
 		}
+
+		Node* n;
+		for (int i = 0; i < indexNodeContact.size(); i++)
+		{
+			n = &m_nodes.at(indexNodeContact.at(i));
+			if (n->m_nbCollidingObjectPotential > 0)
+			{
+				n->normals = new btVector3[n->m_nbCollidingObjectPotential];
+				n->hitPosition = new btVector3[n->m_nbCollidingObjectPotential];
+				n->narrowPhaseIndex = new int[n->m_nbCollidingObjectPotential];
+			}
+
+		}
 	}
 
 	for (int i = 0; i < m_cfg.piterations; ++i)
@@ -349,6 +362,17 @@ void btCable::solveConstraints()
 	
 	if (useCollision)
 		ResolveConflitZone(&nodePairContact ,&indexNodeContact);
+
+	// Free structures
+	for (int i = 0; i < indexNodeContact.size(); i++)
+	{
+		if (m_nodes.at(indexNodeContact.at(i)).m_nbCollidingObjectPotential > 0)
+		{
+			delete[] m_nodes.at(indexNodeContact.at(i)).normals;
+			delete[] m_nodes.at(indexNodeContact.at(i)).hitPosition;
+			delete[] m_nodes.at(indexNodeContact.at(i)).narrowPhaseIndex;
+		}
+	}
 
 	// Remove unused manifold 
 	UpdateManifoldBroadphase(BroadPhaseOutput);
@@ -417,6 +441,7 @@ void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* node
 			int limitMax = i;
 			int indexDist = distSectorMax;
 			bool continousSector = true;
+
 			while (continousSector && i < m_nodes.size()-1)
 			{
 				i++;
@@ -432,7 +457,7 @@ void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* node
 				}
 			}
 
-			for (int j = 0; j < 10; j++)
+			for (int j = 0; j < 5; j++)
 			{
 				distanceConstraintLock(limitMin, limitMax);
 				solveContactLimited(nodePairContact,limitMin,limitMax);
@@ -639,9 +664,9 @@ void btCable::setupNodeForCollision(btAlignedObjectArray<int>* indexNodeContact)
 		n->posBeforeCollision = n->m_x;
 		if (n->m_nbCollidingObjectPotential > 0)
 		{
-			n->normals = new btVector3[n->m_nbCollidingObjectPotential];
-			n->hitPosition = new btVector3[n->m_nbCollidingObjectPotential];
-			n->narrowPhaseIndex = new int[n->m_nbCollidingObjectPotential];
+			//n->normals = new btVector3[n->m_nbCollidingObjectPotential];
+			//n->hitPosition = new btVector3[n->m_nbCollidingObjectPotential];
+			//n->narrowPhaseIndex = new int[n->m_nbCollidingObjectPotential];
 			for (int nbCollide = 0; nbCollide < n->m_nbCollidingObjectPotential; nbCollide++)
 				n->narrowPhaseIndex[nbCollide] = -1;
 		}
@@ -695,6 +720,7 @@ bool btCable::checkCondition(Node *n, int step)
 	return true;
 	
 }
+
 btScalar btCable::computeCollisionMargin(btCollisionShape* shape)
 {
 	bool isSphereShape = shape->getShapeType() == SPHERE_SHAPE_PROXYTYPE;
@@ -745,7 +771,6 @@ btCollisionWorld::ClosestRayResultCallback btCable::castRay(btVector3 positionSt
 	return m_resultCallback;
 	
 }
-
 
 // Resolve iteratively all the contact constraint
 // Do nbSubStep times the resolution to valid a good collision
@@ -976,16 +1001,7 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 		}
 	}
 
-	// Free structures
-	for (int i = 0; i < indexNodeContact->size(); i++)
-	{
-		if (m_nodes.at(indexNodeContact->at(i)).m_nbCollidingObjectPotential > 0)
-		{
-			delete[] m_nodes.at(indexNodeContact->at(i)).normals;
-			delete[] m_nodes.at(indexNodeContact->at(i)).hitPosition;
-			delete[] m_nodes.at(indexNodeContact->at(i)).narrowPhaseIndex;
-		}
-	}
+
 	
 }
 
@@ -1017,9 +1033,7 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 		n->posBeforeCollision = n->m_x;
 		if (n->m_nbCollidingObjectPotential > 0)
 		{
-			n->normals = new btVector3[n->m_nbCollidingObjectPotential];
-			n->hitPosition = new btVector3[n->m_nbCollidingObjectPotential];
-			n->narrowPhaseIndex = new int[n->m_nbCollidingObjectPotential];
+			
 			for (int nbCollide = 0; nbCollide < n->m_nbCollidingObjectPotential; nbCollide++)
 				n->narrowPhaseIndex[nbCollide] = -1;
 		}
@@ -1195,25 +1209,13 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 	NodePairNarrowPhase* temp;
 	for (int i = 0; i < nbContactPairPotential; i++)
 	{
-
 		temp = &nodePairContact->at(i);
-		
 		if (nodePairContact->at(i).node->collide && nodePairContact->at(i).node->index >= limitLow && nodePairContact->at(i).node->index < limitHigh)
 		{
 			temp->m_Xout = temp->node->m_x;
 		}
 	}
 
-	// Free structures
-	for (int i = limitLow; i < limitHigh; i++)
-	{
-		if (m_nodes.at(i).m_nbCollidingObjectPotential > 0)
-		{
-			delete[] m_nodes.at(i).normals;
-			delete[] m_nodes.at(i).hitPosition;
-			delete[] m_nodes.at(i).narrowPhaseIndex;
-		}
-	}
 }
 
 btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n, btVector3 normal, btVector3 hitPosition)
@@ -1405,7 +1407,7 @@ btVector3 btCable::fastTrigoPositionCompute(Node* n)
 	angle = PI - acos(dotProduct);
 	moyDirection = ((n0 + n1) * 0.5).normalized();
 	btScalar sinA = sin(angle);
-	btScalar a = n->topMargin + 0.005 ;
+	btScalar a = n->topMargin;
 	btScalar B = 0.5*PI - (angle * 0.5);
 
 	btScalar b = (a * 0.5) /( sinA* 0.5) * sin(B);
