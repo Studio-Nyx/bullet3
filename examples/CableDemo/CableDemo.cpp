@@ -111,10 +111,11 @@ public:
 	virtual void resetCamera()
 	{
 		//@todo depends on current_demo?
-		float dist = 10;
+		float dist = 5;
 		float pitch = 0;
 		float yaw = 180;
-		float targetPos[3] = {(float)m_cameraStartPosition.x(), (float)m_cameraStartPosition.y(), (float)m_cameraStartPosition.z()};
+		// float targetPos[3] = {(float)m_cameraStartPosition.x(), (float)m_cameraStartPosition.y(), (float)m_cameraStartPosition.z()};
+		float targetPos[3] = {0,0,0};
 		m_guiHelper->resetCamera(dist, yaw, pitch, targetPos[0], targetPos[1], targetPos[2]);
 	}
 
@@ -211,6 +212,18 @@ public:
 				speed -= 1;
 		}
 
+		if (key == '4' && state)
+		{
+			m_moveBody = true;
+			speed = 20;
+		}
+
+		if (key == '6' && state)
+		{
+			m_moveBody = true;
+			speed = -20;
+		}
+
 		if (key == 'f' && state)
 		{
 			m_printFPS = ! m_printFPS;
@@ -288,6 +301,18 @@ public:
 			btCollisionObject* objKey = softWorld->getCollisionObjectArray().at(2);
 			btRigidBody* obj = (btRigidBody*)objKey;
 			obj->applyCentralForce(btVector3(speed*500, 0, 0));
+		}
+
+		if (m_currentDemoIndex == 17)
+		{
+			//btCollisionObject* objKey = softWorld->getCollisionObjectArray().at(0);
+			//btTransform tr = objKey->getWorldTransform();
+			//tr.setOrigin(tr.getOrigin() + btVector3(speed*0.01, 0, 0));
+			//objKey->setWorldTransform(tr);
+
+			btCollisionObject* objKey = softWorld->getCollisionObjectArray().at(0);
+			btRigidBody* obj = (btRigidBody*)objKey;
+			obj->applyCentralForce(btVector3(speed * 100, 0, 0));
 		}
 		/*
 		btCollisionObject* objKey = softWorld->getCollisionObjectArray().at(0);
@@ -1775,8 +1800,64 @@ static void Init_TestClaw(CableDemo* pdemo)
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setCollisionMargin(margin);
 	cable->setCollisionParameters(1, 1, 0);
+}
 
-	
+static void Init_TestConstraintClawA18(CableDemo* pdemo)
+{
+	// A18
+	btTransform transformA18 = btTransform::getIdentity();
+	transformA18.setOrigin(btVector3(-4, 0, 0));
+	// transformA18.setRotation(btQuaternion(btVector3(0, 1, 0), SIMD_PI / 4.0));
+	btRigidBody* a18 = pdemo->createRigidBody(704, transformA18, new btBoxShape(btVector3(3, 0.4, 0.4)));
+	a18->getCollisionShape()->setMargin(0);
+	a18->setGravity(btVector3(0, 0, 0));
+
+	// A18's claw
+	btTransform transformA18Claw = btTransform::getIdentity();
+	transformA18Claw.setOrigin(btVector3(-2, 0, 0));
+	// transformA18Claw.setRotation(btQuaternion(btVector3(0, 1, 0), -SIMD_PI/4.0));
+	btRigidBody* a18Claw = pdemo->createRigidBody(1, transformA18Claw, new btBoxShape(btVector3(1, 0.2, 0.2)));
+	a18Claw->getCollisionShape()->setMargin(0);
+	a18Claw->setGravity(btVector3(0, 0, 0)); 
+
+	// A18's claw FixedConstraint
+	btTransform frameInA = btTransform::getIdentity();
+	btTransform frameLocalA = a18Claw->getWorldTransform().inverse() * a18->getWorldTransform();
+	frameInA.setOrigin(frameLocalA.getOrigin()); // + pivot
+	frameInA.setBasis(a18Claw->getWorldTransform().inverse().getBasis());
+	btTransform frameInB = btTransform::getIdentity();
+	frameInB.setBasis(a18->getWorldTransform().inverse().getBasis());
+	btFixedConstraint* fixedA18 = pdemo->createFixedConstraint(*a18Claw, *a18, frameInA, frameInB);
+	fixedA18->setAngularLowerLimit(btVector3(0, -SIMD_PI / 2.0, 0));
+	fixedA18->setAngularUpperLimit(btVector3(0, -SIMD_PI / 2.0, 0));
+
+	// Lest
+	btTransform transformLest = btTransform::getIdentity();
+	transformLest.setOrigin(btVector3(0, -3, 0));
+	btRigidBody* lest = pdemo->createRigidBody(10, transformLest, new btBoxShape(btVector3(0.1, 0.2, 0.11)));
+	lest->getCollisionShape()->setMargin(0);
+
+	// Lest's support
+	btTransform transformLestSupport = btTransform::getIdentity();
+	transformLestSupport.setOrigin(btVector3(0, 3, 0));
+	btRigidBody* lestSupport = pdemo->createRigidBody(0, transformLestSupport, new btBoxShape(btVector3(1, 1, 1)));
+	lestSupport->getCollisionShape()->setMargin(0);
+
+	// Cable
+	int resolution = 75;
+	int iterations = 100;
+	btScalar margin = 0.005;
+	btAlignedObjectArray<btVector3> waypointPos = btAlignedObjectArray<btVector3>();
+	waypointPos.push_back(transformLest.getOrigin());
+	waypointPos.push_back(transformLestSupport.getOrigin());  // Arrivée
+	btCable* cable = pdemo->createCableWaypoint(resolution, iterations, 1, waypointPos, lest, lestSupport, true, true);
+	cable->setCollisionViscosity(100);
+	cable->setUseBending(true);
+	cable->setUseCollision(true);
+	cable->setUseLRA(true);
+	cable->getCollisionShape()->setMargin(margin);
+	cable->setCollisionMargin(margin);
+	cable->setCollisionParameters(5, 1, 0);
 }
 
 void (*demofncs[])(CableDemo*) =
@@ -1797,7 +1878,9 @@ void (*demofncs[])(CableDemo*) =
 		Init_TestCollisionRingBox,
 		Init_TestCollisionRingSphere,
 		Init_TestCollisionOn1Node, 
-		Init_TestClaw};
+		Init_TestClaw,
+		Init_TestConstraintClawA18
+};
 
 ////////////////////////////////////
 ///for mouse picking
@@ -1997,8 +2080,7 @@ void CableDemo::initPhysics()
 	m_dynamicsWorld = world;
 	m_dynamicsWorld->setInternalTickCallback(pickingPreTickCallbackCable, this, true);
 
-	m_dynamicsWorld->getSolverInfo().m_numIterations = 100;
-
+	m_dynamicsWorld->getSolverInfo().m_numIterations = 256;
 
 	m_dynamicsWorld->getDispatchInfo().m_enableSPU = true;
 	m_dynamicsWorld->setGravity(btVector3(0, -9.81, 0));

@@ -300,6 +300,7 @@ static ExampleEntry gDefaultExamples[] =
 		ExampleEntry(1, "Test Collision with ring(Sphere)", "Test Collision Response on a ring", CableDemoCreateFunc, 14),
 		ExampleEntry(1, "Test Impulse On 1 node", "Compute cable collision on 1 node to validate the impulse given", CableDemoCreateFunc, 15),
 		ExampleEntry(1, "Test Claw A18", "Test collision claw/cable with a mouving A18", CableDemoCreateFunc, 16),
+		ExampleEntry(1, " Test Constraint & Claw", " Test a constraint and collision with a cable", CableDemoCreateFunc, 17),
 
 #endif  //INCLUDE_CLOTH_DEMOS
 

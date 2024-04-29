@@ -438,6 +438,16 @@ struct CommonRigidBodyBase : public CommonExampleInterface
 		return body;
 	}
 
+	
+	btFixedConstraint* createFixedConstraint(btRigidBody& rigidA, btRigidBody& rigidB,
+		btTransform& frameInA, btTransform& frameInB, bool wantedCollision = false, int iteration = 256)
+	{
+		btFixedConstraint* fixedA18 = new btFixedConstraint(rigidA, rigidB, frameInA, frameInB);
+		fixedA18->setOverrideNumSolverIterations(iteration);
+		m_dynamicsWorld->addConstraint(fixedA18, !wantedCollision);
+		return fixedA18;
+	}
+
 	virtual void renderScene()
 	{
 		if (m_dynamicsWorld)
