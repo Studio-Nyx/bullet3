@@ -970,16 +970,16 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 				{
 					obj = temp->pair->body;
 					btTransform wtr = obj->getWorldTransform();
-					btVector3 ra = temp->node->m_x - wtr.getOrigin();
+					// btVector3 ra = temp->node->m_x - wtr.getOrigin();
 					btVector3 impulse = temp->impulse;
-
 					temp->impulse = btVector3(0, 0, 0);
 					if (obj->getInternalType() == CO_RIGID_BODY)
 					{
 						btRigidBody* rb = btRigidBody::upcast(obj);
 						if (!obj->isStaticOrKinematicObject())
 						{
-							rb->applyImpulse(impulse, ra);
+							rb->applyRedirectionImpulse(impulse, temp->node->m_x);
+							// rb->applyImpulse(impulse, ra);
 						}
 					}
 				}
@@ -1244,14 +1244,14 @@ btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n,
 	btVector3 vRelativeTangent = vRelative - (normal * vRelativeOnNormal);
 	btVector3 tangentDir = vRelativeTangent.normalized();
 
-	//int frictionCoef = obj->getFriction() * getFriction();
-	int frictionCoef = 0;
+	int frictionCoef = obj->getFriction() * getFriction();
+	// int frictionCoef = 0;
 
 	// Part of vRelativeOnTangentDir
 	btScalar jt = -vRelative.dot(tangentDir) * frictionCoef;
 	jt = jt / totalMass;
 
-	btScalar penetrationDistance = (n->m_x - hitPosition).length();
+	btScalar penetrationDistance = n->m_x.distance(hitPosition);
 	btVector3 deltaPosNode = hitPosition - n->m_x;
 	penetrationDistance = deltaPosNode.dot(normal);
 
@@ -1276,7 +1276,7 @@ btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n,
 	
  	btScalar responseVector = -k * penetrationDistance + viscosityCoef * vRelativeOnNormal;
 
-	const btVector3 impulse = ((responseVector * normal) *dt);//- (tangentDir * jt * m_sst.isdt)) * dt;
+	const btVector3 impulse = ((responseVector * normal) - (tangentDir * jt * m_sst.isdt)) * dt;
 
 	return impulse;
 }

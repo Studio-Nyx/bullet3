@@ -295,12 +295,13 @@ static ExampleEntry gDefaultExamples[] =
 		ExampleEntry(1, "Test 1000 Nodes", "1000 nodes on 1km distance", CableDemoCreateFunc, 9),
 		ExampleEntry(1, "Test CollisionSpheres", "A coumpound with 2 spheres fall on an horizontal cable", CableDemoCreateFunc, 10),
 		ExampleEntry(1, "Test Collision on a falling a18", " Test the collision on a dynamic body ", CableDemoCreateFunc, 11), 
-		ExampleEntry(1, "Test Collision with convexHullShape", " Test the collision on a sphere Mesh", CableDemoCreateFunc, 12),
-		ExampleEntry(1, "Test Collision with ring(box)", "Test Collision Response on a ring", CableDemoCreateFunc, 13),
-		ExampleEntry(1, "Test Collision with ring(Sphere)", "Test Collision Response on a ring", CableDemoCreateFunc, 14),
-		ExampleEntry(1, "Test Impulse On 1 node", "Compute cable collision on 1 node to validate the impulse given", CableDemoCreateFunc, 15),
-		ExampleEntry(1, "Test Claw A18", "Test collision claw/cable with a mouving A18", CableDemoCreateFunc, 16),
-		ExampleEntry(1, " Test Constraint & Claw", " Test a constraint and collision with a cable", CableDemoCreateFunc, 17),
+		ExampleEntry(1, " Test Collision on a falling a18 (with constraint)", " Test the collision on a dynamic body ", CableDemoCreateFunc, 12), 
+		ExampleEntry(1, "Test Collision with convexHullShape", " Test the collision on a sphere Mesh", CableDemoCreateFunc, 13),
+		ExampleEntry(1, "Test Collision with ring(box)", "Test Collision Response on a ring", CableDemoCreateFunc, 14),
+		ExampleEntry(1, "Test Collision with ring(Sphere)", "Test Collision Response on a ring", CableDemoCreateFunc, 15),
+		ExampleEntry(1, "Test Impulse On 1 node", "Compute cable collision on 1 node to validate the impulse given", CableDemoCreateFunc, 16),
+		ExampleEntry(1, "Test Claw A18", "Test collision claw/cable with a mouving A18", CableDemoCreateFunc, 17),
+		ExampleEntry(1, " Test Constraint & Claw", " Test a constraint and collision with a cable", CableDemoCreateFunc, 18),
 
 #endif  //INCLUDE_CLOTH_DEMOS
 

@@ -100,6 +100,7 @@ public:
 
 	// to synchronize the bodies of the kinematics (for Unity)
 	std::vector<btRigidBody*> m_kinematicChildren;
+	btRigidBody* m_redirectionTarget;
 	btTransform m_localTransform;
 
 protected:
@@ -356,6 +357,22 @@ public:
 			{
 				applyTorqueImpulse(rel_pos.cross(impulse * m_linearFactor));
 			}
+		}
+	}
+
+	void applyRedirectionImpulse(const btVector3& impulse, const btVector3& hitWorldPosition)
+	{
+		// Apply the impulse on the redirection target
+		if (m_redirectionTarget != NULL)
+		{
+			btVector3 targetHitWorldPosition = hitWorldPosition - m_redirectionTarget->getCenterOfMassPosition();
+			m_redirectionTarget->applyImpulse(impulse, targetHitWorldPosition);
+		} 
+		// Apply the impulse on the current rigidbody
+		else
+		{
+			btVector3 ra = hitWorldPosition - getCenterOfMassPosition();
+			applyImpulse(impulse, ra);
 		}
 	}
     
