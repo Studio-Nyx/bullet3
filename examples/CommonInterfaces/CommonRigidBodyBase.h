@@ -440,7 +440,7 @@ struct CommonRigidBodyBase : public CommonExampleInterface
 
 	
 	btFixedConstraint* createFixedConstraint(btRigidBody& rigidA, btRigidBody& rigidB,
-		btTransform& frameInA, btTransform& frameInB, bool wantedCollision = false, int iteration = 256)
+		btTransform& frameInA, btTransform& frameInB, int iteration, bool wantedCollision = false)
 	{
 		btFixedConstraint* fixedA18 = new btFixedConstraint(rigidA, rigidB, frameInA, frameInB);
 		fixedA18->setOverrideNumSolverIterations(iteration);

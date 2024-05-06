@@ -413,7 +413,7 @@ public:
 			int subStep = substepSolver;
 			m_dynamicsWorld->stepSimulation(deltaTime, subStep, deltaTime / subStep);
 			//m_dynamicsWorld->stepSimulation(deltaTime);
-		
+
 			delta_ticks = clock() - current_ticks;
 			
 			if (m_printFPS)
@@ -1457,18 +1457,20 @@ static void Init_TestCollisionFallingA18Constraint(CableDemo* pdemo)
 	btTransform trClaw = btTransform();
 	trClaw.setIdentity();
 	trClaw.setOrigin(btVector3(0, 7.5, 0));
-	btRigidBody* claw = pdemo->createRigidBody(1, trClaw, new btBoxShape(btVector3(4, 0.5, 0.5)));
+	btRigidBody* claw = pdemo->createRigidBody(0, trClaw, new btBoxShape(btVector3(4, 0.5, 0.5)));
+	claw->setCollisionFlags(claw->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 	claw->m_redirectionTarget = a18;
+	claw->m_localTransform = btTransform(btMatrix3x3::getIdentity(), btVector3(0, 6.5, 0));
+	a18->m_kinematicChildren.push_back(claw);
 
 	// FixedConstraint
-	btTransform frameInA = btTransform::getIdentity();
-	btTransform frameLocalA = claw->getWorldTransform().inverse() * a18->getWorldTransform();
-	frameInA.setOrigin(frameLocalA.getOrigin());
-	frameInA.setBasis(claw->getWorldTransform().inverse().getBasis());
-	btTransform frameInB = btTransform::getIdentity();
-	frameInB.setBasis(a18->getWorldTransform().inverse().getBasis());
-	btFixedConstraint* fixedA18 = pdemo->createFixedConstraint(*claw, *a18, frameInA, frameInB);
-	fixedA18->setOverrideNumSolverIterations(256);
+	// btTransform frameInA = btTransform::getIdentity();
+	// btTransform frameLocalA = claw->getWorldTransform().inverse() * a18->getWorldTransform();
+	// frameInA.setOrigin(frameLocalA.getOrigin());
+	// frameInA.setBasis(claw->getWorldTransform().inverse().getBasis());
+	// btTransform frameInB = btTransform::getIdentity();
+	// frameInB.setBasis(a18->getWorldTransform().inverse().getBasis());
+	// btFixedConstraint* fixedA18 = pdemo->createFixedConstraint(*claw, *a18, frameInA, frameInB, 256);
 
 	btAlignedObjectArray<btVector3> waypointPos = btAlignedObjectArray<btVector3>();
 	waypointPos.push_back(Lest.getOrigin() + btVector3(0, 0, 0));
@@ -1477,8 +1479,8 @@ static void Init_TestCollisionFallingA18Constraint(CableDemo* pdemo)
 	waypointPos.push_back(trAnchorUp.getOrigin());  // Arrivée
 	
 	// Resolution's cable
-	int resolution = 40;
-	int iterations = 70;
+	int resolution = 60;
+	int iterations = 120;
 	btScalar margin = 0.01;
 
 	// Cable
@@ -1489,6 +1491,7 @@ static void Init_TestCollisionFallingA18Constraint(CableDemo* pdemo)
 	cable->setUseLRA(true);
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setCollisionMargin(margin);
+	cable->setCollisionResponseActive(true);
 	cable->setCollisionParameters(1,1,0);
 	pdemo->SetCameraPosition(btVector3(0, 10, 0));
 }
@@ -1902,7 +1905,7 @@ static void Init_TestConstraintClawA18(CableDemo* pdemo)
 	frameInA.setBasis(a18Claw->getWorldTransform().inverse().getBasis());
 	btTransform frameInB = btTransform::getIdentity();
 	frameInB.setBasis(a18->getWorldTransform().inverse().getBasis());
-	btFixedConstraint* fixedA18 = pdemo->createFixedConstraint(*a18Claw, *a18, frameInA, frameInB);
+	btFixedConstraint* fixedA18 = pdemo->createFixedConstraint(*a18Claw, *a18, frameInA, frameInB, 256);
 	// fixedA18->setAngularLowerLimit(btVector3(0, -SIMD_PI / 2.0, 0));
 	// fixedA18->setAngularUpperLimit(btVector3(0, -SIMD_PI / 2.0, 0));
 

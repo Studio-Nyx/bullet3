@@ -371,8 +371,8 @@ public:
 		// Apply the impulse on the current rigidbody
 		else
 		{
-			btVector3 ra = hitWorldPosition - getCenterOfMassPosition();
-			applyImpulse(impulse, ra);
+			btVector3 emitterHitWorldPosition = hitWorldPosition - getCenterOfMassPosition();
+			applyImpulse(impulse, emitterHitWorldPosition);
 		}
 	}
     

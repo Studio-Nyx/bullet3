@@ -256,13 +256,10 @@ void btDiscreteDynamicsWorld::saveKinematicState(btScalar timeStep)
 	{
 		btCollisionObject* colObj = m_collisionObjects[i];
 		btRigidBody* body = btRigidBody::upcast(colObj);
-		if (body && body->getActivationState() != ISLAND_SLEEPING)
+		if (body && body->isKinematicObject())
 		{
-			if (body->isKinematicObject())
-			{
-				//to calculate velocities next frame
-				body->saveKinematicState(timeStep);
-			}
+			//to calculate velocities next frame
+			body->saveKinematicState(timeStep);
 		}
 	}
 }
