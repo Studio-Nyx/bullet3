@@ -357,6 +357,8 @@ void btCable::solveConstraints()
 		}
 	}
 
+	anchorConstraint();
+
 	if (useCollision)
 		ResolveConflitZone(&nodePairContact ,&indexNodeContact);
 
@@ -643,13 +645,64 @@ btVector3 btCable::PositionStartRayCalculation(Node *n, btCollisionObject * obj)
 	{
 		velocity = obj->getInterpolationLinearVelocity() * dt;
 	}
-
-	if (btFuzzyZero(velocity.length())) {
-		return n->m_q ;
+	btVector3 position = n->m_q;
+	if (!btFuzzyZero(velocity.length())) {
+		position += velocity;
 	}
-	return (n->m_q + velocity );
-	
+
+	return ComputeCollisionSphere(position, obj, n);	
 }
+struct MyContactResultCallback : public btCollisionWorld::ContactResultCallback
+{
+	bool m_connected;
+	btScalar maxDist = -FLT_MAX;
+	btScalar m_margin;
+	btVector3 contactPoint;
+	btVector3 contactNorm;
+	
+	MyContactResultCallback(btScalar dist) : m_connected(false), m_margin(dist)
+	{
+	}
+	virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1)
+	{
+		btScalar dist = cp.getDistance();
+		if (dist <= m_margin)
+		{
+			m_connected = true;
+			if (dist > maxDist)
+			{
+				contactPoint = cp.getPositionWorldOnA();
+				contactNorm = cp.m_normalWorldOnB;
+				maxDist = dist;
+			}
+			
+		}
+		return 1.f;
+	}
+};
+
+
+btVector3 btCable::ComputeCollisionSphere(btVector3 pos, btCollisionObject* obj, Node* n)
+{
+	btSphereShape sphere = btSphereShape(this->m_collisionMargin);
+	btCollisionObject obj2 = btCollisionObject();
+	btTransform transform = btTransform();
+	transform.setIdentity();
+	transform.setOrigin(pos);
+	obj2.setWorldTransform(transform);
+	obj2.setCollisionShape(&sphere);
+	
+
+	MyContactResultCallback result(0);
+
+ 	m_world->contactPairTest(obj, &obj2, result);
+	btScalar margin;
+	if (result.m_connected) {
+		return result.contactPoint - result.contactNorm * (m_collisionMargin + 0.01);
+	}
+	return pos;
+}
+
 
 void btCable::setupNodeForCollision(btAlignedObjectArray<int>* indexNodeContact)
 {
@@ -661,9 +714,6 @@ void btCable::setupNodeForCollision(btAlignedObjectArray<int>* indexNodeContact)
 		n->posBeforeCollision = n->m_x;
 		if (n->m_nbCollidingObjectPotential > 0)
 		{
-			//n->normals = new btVector3[n->m_nbCollidingObjectPotential];
-			//n->hitPosition = new btVector3[n->m_nbCollidingObjectPotential];
-			//n->narrowPhaseIndex = new int[n->m_nbCollidingObjectPotential];
 			for (int nbCollide = 0; nbCollide < n->m_nbCollidingObjectPotential; nbCollide++)
 				n->narrowPhaseIndex[nbCollide] = -1;
 		}
@@ -868,14 +918,13 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 				if (obj->getInternalType() == CO_RIGID_BODY && impulseCompute)
 				{
 					btRigidBody* rb = btRigidBody::upcast(obj);
-					impulse = moveBodyCollision(rb, marginNode, n, normal, contactPoint);
+					impulse = calculateBodyImpulse(rb, marginNode, n, normal, contactPoint);
 				}
 
 				n->positionCollision += newPosOut;
 				n->normals[n->m_nbCollidingObjectInFrame] = normal;
 				n->hitPosition[n->m_nbCollidingObjectInFrame] = contactPoint;
 
-				
 				temp->impulse = impulse;
 				temp->lastPosition = contactPoint;
 				temp->hit = true;
@@ -1208,7 +1257,7 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 
 }
 
-btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n, btVector3 normal, btVector3 hitPosition)
+btVector3 btCable::calculateBodyImpulse(btRigidBody* obj, btScalar margin, Node* n, btVector3 normal, btVector3 hitPosition)
 {	
 	// a = node
 	// b = body
@@ -1232,8 +1281,8 @@ btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n,
 	btScalar vRelativeOnNormal = btDot(vRelative, normal);
 	
 	// Friction value
-	btVector3 vRelativeTangent = vRelative - (normal * vRelativeOnNormal);
-	btVector3 tangentDir = vRelativeTangent.normalized();
+	// btVector3 vRelativeTangent = vRelative - (normal * vRelativeOnNormal);
+	// btVector3 tangentDir = vRelativeTangent.normalized();
 
 	// int frictionCoef = obj->getFriction() * getFriction();
 	// int frictionCoef = 0;
@@ -1244,7 +1293,7 @@ btVector3 btCable::moveBodyCollision(btRigidBody* obj, btScalar margin, Node* n,
 
 	btScalar penetrationDistance = n->m_x.distance(hitPosition);
 	btVector3 deltaPosNode = hitPosition - n->m_x;
-	penetrationDistance = deltaPosNode.dot(normal);
+	penetrationDistance = deltaPosNode.dot(normal); 
 
 	btScalar penetrationApplied = exp((pow(6 * penetrationDistance, 3))) - 1; 
 
@@ -1466,7 +1515,7 @@ void btCable::bendingConstraintDistance()
 
 			if (btFuzzyZero(dLen))
 			{
-				continue;
+				continue;  
 			}
 
 			btVector3 dNorm = d/dLen;

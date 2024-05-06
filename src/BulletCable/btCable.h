@@ -160,10 +160,12 @@ private:
 	
 	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btAlignedObjectArray<int>* indexNodeContact);
 	void solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, int limitMin, int limitMax);
+
+	btVector3 ComputeCollisionSphere(btVector3 pos, btCollisionObject* obj, Node* n);
 	//int solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact);
 
 
-	btVector3 moveBodyCollision(btRigidBody* body, btScalar margin, Node* n, btVector3 normal, btVector3 hitPosition);
+	btVector3 calculateBodyImpulse(btRigidBody* body, btScalar margin, Node* n, btVector3 normal, btVector3 hitPosition);
 	btVector3 PositionStartRayCalculation(Node* n, btCollisionObject* obj);
 
 	// Methods for collision
