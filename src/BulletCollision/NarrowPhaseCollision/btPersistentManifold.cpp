@@ -44,7 +44,6 @@ btPersistentManifold::btPersistentManifold()
 }
 
 
-
 #ifdef DEBUG_PERSISTENCY
 #include <stdio.h>
 void btPersistentManifold::DebugPersistency()
@@ -57,6 +56,17 @@ void btPersistentManifold::DebugPersistency()
 	}
 }
 #endif  //DEBUG_PERSISTENCY
+
+void btPersistentManifold::CopyContactsFromManifold(btPersistentManifold* mfPtr)
+{
+	m_pointCache = new btManifoldPoint[mfPtr->getNumContacts()];
+	for (int i = 0; i < mfPtr->getNumContacts(); i++)
+	{
+		btManifoldPoint* srcPt = &mfPtr->getContactPoint(i);
+		btManifoldPoint* dstPt = &m_pointCache[i];
+		*dstPt = *srcPt;
+	}
+}
 
 void btPersistentManifold::clearUserCache(btManifoldPoint& pt)
 {

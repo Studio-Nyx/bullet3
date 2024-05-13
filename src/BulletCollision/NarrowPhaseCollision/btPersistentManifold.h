@@ -120,6 +120,8 @@ public:
 
 	void clearUserCache(btManifoldPoint & pt);
 
+	void btPersistentManifold::CopyContactsFromManifold(btPersistentManifold* mfPtr);
+
 #ifdef DEBUG_PERSISTENCY
 	void DebugPersistency();
 #endif  //
