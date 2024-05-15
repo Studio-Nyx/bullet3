@@ -63,6 +63,12 @@ class btCable : public btSoftBody
 		bool hitInIteration = false;
 	};
 	
+	enum class CollisionMode
+	{
+		Linear = 0,
+		Exponential
+	};
+
 	//
 	~btCable()
 	{
@@ -151,8 +157,6 @@ private:
 	void LRAConstraintNode();
 	btVector3 fastTrigoPositionCompute(Node* n);
 
-
-
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
 	void ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact,btAlignedObjectArray<int>* indexNodeContact);
@@ -193,6 +197,7 @@ public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count,int section_count, const btVector3* x, const btScalar* m);
 
 	
+	CollisionMode collisionMode;
 	btScalar WantedDistance = 0;
 	btScalar WantedSpeed = 0;
 	btScalar forceResponseCoef;
@@ -320,6 +325,7 @@ public:
 	void setCollisionStiffness(btScalar stiffnessMin, btScalar stiffnessMax, btScalar distMin, btScalar distMax);
 	void setCollisionViscosity(btScalar viscosity);
 	void setCollisionResponseActive(bool active);
+	void setCollisionMode(int mode);
 
 #pragma endregion
 };

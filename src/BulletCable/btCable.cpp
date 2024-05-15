@@ -460,6 +460,7 @@ void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* node
 			{
 				distanceConstraintLock(limitMin, limitMax);
 				solveContactLimited(nodePairContact,limitMin,limitMax);
+				anchorConstraint();
 			}
 			
 		}
@@ -1259,66 +1260,70 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 
 btVector3 btCable::calculateBodyImpulse(btRigidBody* obj, btScalar margin, Node* n, btVector3 normal, btVector3 hitPosition)
 {	
-	// a = node
-	// b = body
-	btScalar viscosityCoef = this->collisionViscosity;
-
-	btScalar ima = n->m_im;
-	btScalar imb = obj->getInvMass();
-	btScalar dt = this->m_sst.sdt;
-	// if (imb == 0) return btVector3(0,0,0);
-
-	// btScalar totalMass = ima + imb;
-	btTransform wtr = obj->getWorldTransform();
-
-	// bodyToNodeVector
-	btVector3 ra = hitPosition - wtr.getOrigin();
-	btVector3 vBody = obj->getVelocityInLocalPoint(ra);
-
-	btVector3 vNode = (n->posBeforeCollision - n->m_q) * 0.75 / dt;
-	btVector3 vRelative = vNode - vBody;
-	
-	btScalar vRelativeOnNormal = btDot(vRelative, normal);
-	
-	// Friction value
-	// btVector3 vRelativeTangent = vRelative - (normal * vRelativeOnNormal);
-	// btVector3 tangentDir = vRelativeTangent.normalized();
-
-	// int frictionCoef = obj->getFriction() * getFriction();
-	// int frictionCoef = 0;
-
-	// Part of vRelativeOnTangentDir
-	// btScalar jt = -vRelative.dot(tangentDir) * frictionCoef;
-	// jt = jt / totalMass;
-
-	btScalar penetrationDistance = n->m_x.distance(hitPosition);
-	btVector3 deltaPosNode = hitPosition - n->m_x;
-	penetrationDistance = deltaPosNode.dot(normal); 
-
-	btScalar penetrationApplied = exp((pow(6 * penetrationDistance, 3))) - 1; 
-
-	btScalar k = 0;
-	// No impulse under penetration min threshold
-	if (penetrationDistance < penetrationMin) return btVector3(0, 0, 0);
-
-	// Max penetration threshold
-	if (penetrationDistance > penetrationMax)
+	if (collisionMode == CollisionMode::Linear)
 	{
-		k = this->collisionStiffnessMax;
-		penetrationDistance = penetrationMax;
+		// a = node
+		// b = body
+		btScalar viscosityCoef = this->collisionViscosity;
+		btScalar dt = this->m_sst.sdt;
+		btTransform wtr = obj->getWorldTransform();
+
+		// btScalar ima = n->m_im;
+		// btScalar imb = obj->getInvMass();
+		// if (imb == 0) return btVector3(0, 0, 0);
+		// btScalar totalMass = ima + imb;
+
+		// bodyToNodeVector
+		btVector3 ra = hitPosition - wtr.getOrigin();
+		btVector3 vBody = obj->getVelocityInLocalPoint(ra);
+		btVector3 vNode = (n->posBeforeCollision - n->m_q) * 0.75 / dt;
+		btVector3 vRelative = vNode - vBody;
+		btScalar vRelativeOnNormal = btDot(vRelative, normal);
+
+		// Friction value
+		btVector3 vRelativeTangent = vRelative - (normal * vRelativeOnNormal);
+		btVector3 tangentDir = vRelativeTangent.normalized();
+
+		int frictionCoef = obj->getFriction() * getFriction();
+
+		// Part of vRelativeOnTangentDir
+		// btScalar jt = -vRelative.dot(tangentDir) * frictionCoef;
+		// jt = jt / totalMass;
+
+		btScalar penetrationDistance = (n->m_x - hitPosition).length();
+		btVector3 deltaPosNode = hitPosition - n->m_x;
+		penetrationDistance = deltaPosNode.dot(normal);
+
+		btScalar k = 0;
+
+		if (penetrationDistance < penetrationMin)
+		{
+			return btVector3(0, 0, 0);
+		}
+
+		if (penetrationDistance > penetrationMax)
+		{
+			k = this->collisionStiffnessMax;
+		}
+		else
+		{
+			btScalar distanceTot = penetrationMax - penetrationMin;
+			btScalar ratio = (penetrationDistance - penetrationMin) / distanceTot;
+			k = Lerp(this->collisionStiffnessMin, this->collisionStiffnessMax, ratio);
+		}
+
+		btScalar responseVector = -k * penetrationDistance + viscosityCoef * vRelativeOnNormal;
+
+		const btVector3 impulse = ((responseVector * normal) /*- (tangentDir * jt * m_sst.isdt)*/) * dt;
+		return impulse;
 	}
-	else
+
+	if (collisionMode == CollisionMode::Exponential)
 	{
-		btScalar distanceTot = penetrationMax - penetrationMin;
-		btScalar ratio = (penetrationDistance - penetrationMin) / distanceTot;
-		k = Lerp(this->collisionStiffnessMin, this->collisionStiffnessMax, ratio);
+		return btVector3(0, 0, 0);
 	}
-	
- 	btScalar responseVector = -k * penetrationDistance + viscosityCoef * vRelativeOnNormal;
 
-	const btVector3 impulse = ((responseVector * normal) /* - (tangentDir * jt * m_sst.isdt)*/) * dt;
-
-	return impulse;
+	return btVector3(0, 0, 0);
 }
 
 void btCable::LRAConstraint()
@@ -1604,8 +1609,8 @@ void btCable::distanceConstraintLock(int limMin, int limMax)
 		if (sumInvMass >= SIMD_EPSILON)
 		{
 			btVector3 denom = 1 / sumInvMass * (normAB - l->m_rl) * ABNormalized;
-			if(i!=limMin)a->m_x += (a->m_im * denom) * k;
-			if (i != limMax-2) b->m_x -= (b->m_im * denom) * k;
+			if (i != limMin && a->m_battach == 0) a->m_x += (a->m_im * denom) * k;
+			if (i != limMax - 2 && b->m_battach == 0) b->m_x -= (b->m_im * denom) * k;
 		}
 	}
 }
@@ -1913,8 +1918,12 @@ void btCable::anchorConstraint()
 		
 		a.m_body->applyImpulse(-finalImpulse, a.m_c1);
 		a.tension += finalImpulse / dt;
-
 	}
+}
+
+void btCable::setCollisionMode(int mode)
+{
+	collisionMode = (CollisionMode)mode;
 }
 
 #pragma endregion
