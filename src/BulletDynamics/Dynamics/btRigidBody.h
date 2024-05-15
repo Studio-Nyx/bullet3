@@ -93,9 +93,9 @@ class btRigidBody : public btCollisionObject
 
 	int m_rigidbodyFlags;
 
-	int m_debugBodyId;
 
 public:
+	int m_debugBodyId;
 	int m_anchorsCount{0};
 
 	// to synchronize the bodies of the kinematics (for Unity)

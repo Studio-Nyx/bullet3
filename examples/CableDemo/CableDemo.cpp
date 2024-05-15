@@ -1432,7 +1432,7 @@ static void Init_TestCollisionFallingA18Constraint(CableDemo* pdemo)
 	btTransform Lest = btTransform();
 	Lest.setIdentity();
 	Lest.setOrigin(btVector3(0, 6.5, 2.8));
-	btRigidBody* LestBody = pdemo->createRigidBody(0, Lest, new btBoxShape(btVector3(0.5, 10, 0.5)));
+	btRigidBody* LestBody = pdemo->createRigidBody(10, Lest, new btBoxShape(btVector3(10, 0.5, 0.5)), 1234);
 
 	// Blue Cube
 	btTransform trAnchorUp = btTransform();
@@ -1457,21 +1457,13 @@ static void Init_TestCollisionFallingA18Constraint(CableDemo* pdemo)
 	btTransform trClaw = btTransform();
 	trClaw.setIdentity();
 	trClaw.setOrigin(btVector3(0, 7.5, 0));
-	btRigidBody* claw = pdemo->createRigidBody(0, trClaw, new btBoxShape(btVector3(4, 0.5, 0.5)));
+	btRigidBody* claw = pdemo->createRigidBody(0, trClaw, new btBoxShape(btVector3(4, 0.5, 0.5)), 6789);
 	claw->setCollisionFlags(claw->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 	claw->m_redirectionTarget = a18;
 	claw->m_localTransform = btTransform(btMatrix3x3::getIdentity(), btVector3(0, 6.5, 0));
 	a18->m_kinematicChildren.push_back(claw);
 
-	// FixedConstraint
-	// btTransform frameInA = btTransform::getIdentity();
-	// btTransform frameLocalA = claw->getWorldTransform().inverse() * a18->getWorldTransform();
-	// frameInA.setOrigin(frameLocalA.getOrigin());
-	// frameInA.setBasis(claw->getWorldTransform().inverse().getBasis());
-	// btTransform frameInB = btTransform::getIdentity();
-	// frameInB.setBasis(a18->getWorldTransform().inverse().getBasis());
-	// btFixedConstraint* fixedA18 = pdemo->createFixedConstraint(*claw, *a18, frameInA, frameInB, 256);
-
+	// Cable's Waypoints
 	btAlignedObjectArray<btVector3> waypointPos = btAlignedObjectArray<btVector3>();
 	waypointPos.push_back(Lest.getOrigin() + btVector3(0, 0, 0));
 	waypointPos.push_back(Lest.getOrigin() + btVector3(0, 0, -3.5));  // point de départ
@@ -1480,7 +1472,7 @@ static void Init_TestCollisionFallingA18Constraint(CableDemo* pdemo)
 	
 	// Resolution's cable
 	int resolution = 60;
-	int iterations = 120;
+	int iterations = 20;
 	btScalar margin = 0.01;
 
 	// Cable
@@ -1492,8 +1484,15 @@ static void Init_TestCollisionFallingA18Constraint(CableDemo* pdemo)
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setCollisionMargin(margin);
 	cable->setCollisionResponseActive(true);
-	cable->setCollisionParameters(1,1,0);
+	cable->setCollisionParameters(1,3,0);
+	cable->setCollisionMode(0);
+	cable->setCollisionStiffness(0,10000,0,0.1);
 	pdemo->SetCameraPosition(btVector3(0, 10, 0));
+
+	for (int i = 0; i < cable->m_anchors.size(); ++i)
+	{
+		// cable->m_anchors[i].BodyMassRatio = 0;
+	}
 }
 
 static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
