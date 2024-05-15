@@ -806,7 +806,10 @@ void btSequentialImpulseConstraintSolver::setupContactConstraint(btSolverConstra
 	btSolverBody* bodyB = &m_tmpSolverBodyPool[solverBodyIdB];
 
 	btRigidBody* rb0 = bodyA->m_originalBody;
+	if (rb0 && rb0->m_redirectionTarget) rb0 = rb0->m_redirectionTarget;
+
 	btRigidBody* rb1 = bodyB->m_originalBody;
+	if (rb1 && rb1->m_redirectionTarget) rb1 = rb1->m_redirectionTarget;
 
 	//			btVector3 rel_pos1 = pos1 - colObj0->getWorldTransform().getOrigin();
 	//			btVector3 rel_pos2 = pos2 - colObj1->getWorldTransform().getOrigin();
@@ -1002,6 +1005,18 @@ void btSequentialImpulseConstraintSolver::convertContact(btPersistentManifold* m
 
 	colObj0 = (btCollisionObject*)manifold->getBody0();
 	colObj1 = (btCollisionObject*)manifold->getBody1();
+
+	btRigidBody* rb0 = btRigidBody::upcast(colObj0);
+	if (rb0 && rb0->m_redirectionTarget != NULL)
+	{
+		colObj0 = rb0->m_redirectionTarget;
+	}
+
+	btRigidBody* rb1 = btRigidBody::upcast(colObj1);
+	if (rb1 && rb1->m_redirectionTarget != NULL)
+	{
+		colObj1 = rb1->m_redirectionTarget;
+	}
 
 	int solverBodyIdA = getOrInitSolverBody(*colObj0, infoGlobal.m_timeStep);
 	int solverBodyIdB = getOrInitSolverBody(*colObj1, infoGlobal.m_timeStep);
