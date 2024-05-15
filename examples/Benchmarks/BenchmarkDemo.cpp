@@ -24,6 +24,7 @@ subject to the following restrictions:
 #include "TaruData.h"
 #include "HaltonData.h"
 #include "landscapeData.h"
+#include "BulletCable/btCable.h"
 #include "BulletCollision/BroadphaseCollision/btDbvtBroadphase.h"
 
 #include "BulletCollision/CollisionDispatch/btSimulationIslandManager.h"
@@ -1150,9 +1151,9 @@ void BenchmarkDemo::createTest5()
 
 					switch (idx)
 					{
-						case 0:
-						case 1:
-						case 2:
+					case 0:
+					case 1:
+					case 2:
 						{
 							float r = 0.5f * (idx + 1);
 							btBoxShape* boxShape = new btBoxShape(boxSize * r);
@@ -1160,9 +1161,9 @@ void BenchmarkDemo::createTest5()
 						}
 						break;
 
-						case 3:
-						case 4:
-						case 5:
+					case 3:
+					case 4:
+					case 5:
 						{
 							float r = 0.5f * (idx - 3 + 1);
 							btSphereShape* sphereShape = new btSphereShape(sphereRadius * r);
@@ -1170,9 +1171,9 @@ void BenchmarkDemo::createTest5()
 						}
 						break;
 
-						case 6:
-						case 7:
-						case 8:
+					case 6:
+					case 7:
+					case 8:
 						{
 							float r = 0.5f * (idx - 6 + 1);
 							btCapsuleShape* capsuleShape = new btCapsuleShape(capsuleRadius * r, capsuleHalf * r);
@@ -1192,6 +1193,8 @@ void BenchmarkDemo::createTest5()
 
 	createLargeMeshBody();
 }
+
+
 void BenchmarkDemo::createTest6()
 {
 	setCameraDistance(btScalar(250.));
