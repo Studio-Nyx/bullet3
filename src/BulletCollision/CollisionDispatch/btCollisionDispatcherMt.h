@@ -35,10 +35,11 @@ public:
 
 	virtual void dispatchAllCollisionPairs(btOverlappingPairCache* pairCache, const btDispatcherInfo& info, btDispatcher* dispatcher) BT_OVERRIDE;
 
+	bool m_batchUpdating;
+
 protected:
 	btAlignedObjectArray<btAlignedObjectArray<btPersistentManifold*> > m_batchManifoldsPtr;
 	btAlignedObjectArray<btAlignedObjectArray<btPersistentManifold*> > m_batchReleasePtr;
-	bool m_batchUpdating;
 	int m_grainSize;
 };
 

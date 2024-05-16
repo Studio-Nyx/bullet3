@@ -21,6 +21,7 @@ subject to the following restrictions:
 #include "btSoftBodyHelpers.h"
 #include "btSoftBodySolvers.h"
 #include "btDefaultSoftBodySolver.h"
+#include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
 #include "LinearMath/btSerializer.h"
 
 btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
@@ -170,8 +171,15 @@ void btSoftRigidDynamicsWorld::solveSoftBodiesConstraints(btScalar timeStep)
 		btSoftBody::solveClusters(m_softBodies);
 	}
 
+	auto* dispatcher = dynamic_cast<btCollisionDispatcherMt*>(m_dispatcher1);
+
+	dispatcher->m_batchUpdating = true;
+	
 	// Solve constraints solver-wise
 	m_softBodySolver->solveConstraints(timeStep * m_softBodySolver->getTimeScale());
+
+	dispatcher->m_batchUpdating = false;
+
 }
 
 void btSoftRigidDynamicsWorld::addSoftBody(btSoftBody* body, int collisionFilterGroup, int collisionFilterMask)
