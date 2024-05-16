@@ -154,10 +154,22 @@ void btCollisionDispatcherMt::releaseAllCachedManifolds()
 {
 	//btAssert( !btThreadsAreRunning() );
 
-	for (int i = 0; i < m_collidedManifoldsCache.size(); ++i) {
-		delete m_collidedManifoldsCache[i]; // If elements were dynamically allocated
-		//releaseManifold(m_collidedManifoldsCache[i]); // Or just set each element to nullptr
+	while (	m_collidedManifoldsCache.size() > 0)
+	{
+		btPersistentManifold* manifold = m_collidedManifoldsCache[m_collidedManifoldsCache.size()-1];
+		m_collidedManifoldsCache.pop_back();
+
+		manifold->freeContactPoint();
+		if (m_persistentManifoldPoolAllocator->validPtr(manifold))
+		{
+			m_persistentManifoldPoolAllocator->freeMemory(manifold);
+		}
+		else
+		{
+			btAlignedFree(manifold);
+		}
 	}
+	
 }
 
 
