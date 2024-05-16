@@ -171,7 +171,7 @@ void btSoftRigidDynamicsWorld::solveSoftBodiesConstraints(btScalar timeStep)
 		btSoftBody::solveClusters(m_softBodies);
 	}
 
-	auto* dispatcher = dynamic_cast<btCollisionDispatcherMt*>(m_dispatcher1);
+	btCollisionDispatcherMt* dispatcher = static_cast<btCollisionDispatcherMt*>(m_dispatcher1);
 
 	dispatcher->m_batchUpdating = true;
 	
