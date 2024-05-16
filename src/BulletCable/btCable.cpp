@@ -1597,11 +1597,12 @@ void btCable::distanceConstraintLock(int limMin, int limMax)
 		
 
 		btVector3 AB = b->m_x - a->m_x;
-		btVector3 ABNormalized = AB.normalized();
-		if (ABNormalized.fuzzyZero())
+		if (AB.fuzzyZero())
 		{
 			continue;
 		}
+		btVector3 ABNormalized = AB.normalized();
+
 		btScalar normAB = AB.length();
 		btScalar k = m_materials[0]->m_kLST;
 
