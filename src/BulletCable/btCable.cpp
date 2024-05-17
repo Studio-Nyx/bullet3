@@ -1,4 +1,4 @@
-#include "btCable.h"
+﻿#include "btCable.h"
 #include <BulletSoftBody/btSoftBodyInternals.h>
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 #include <fstream>
@@ -63,20 +63,20 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 		m_defaultRestLength = m_links.at(0).m_rl;
 	}
 	
-	vector<btScalar> dataX = {0,0.001,1};
-	vector<btScalar> dataY = {0,10, 1000};
-	
-	setControlPoint(dataX, dataY);
+	// vector<btScalar> dataX = {0,0.001,1};
+	// vector<btScalar> dataY = {0,10, 1000};
+	// setControlPoint(dataX, dataY);
 }
 
-void btCable::setControlPoint(vector<btScalar> dataX,vector<btScalar> dataY)
+void btCable::setControlPoint(vector<btScalar> dataX, vector<btScalar> dataY)
 {
 	if (spline) delete spline;
+
 	for (int i = 0; i < dataX.size(); i++)
 	{
 		dataX[i] += 1;
 	}
-	spline = new MonotonicSpline1D(dataX, dataY );
+	spline = new MonotonicSpline1D(dataX, dataY);
 }
 
 #pragma region Constraints
@@ -1352,8 +1352,10 @@ btVector3 btCable::calculateBodyImpulse(btRigidBody* obj, btScalar margin, Node*
 		return impulse;
 	}
 
-	if (collisionMode == CollisionMode::Exponential)
+	if (collisionMode == CollisionMode::Curve)
 	{
+		if (!spline) return btVector3(0,0,0);
+
 		if (penetrationDistance < penetrationMin)
 		{
 			return btVector3(0, 0, 0);
@@ -2214,3 +2216,16 @@ int btCable::getGrowingState()
 }
 
 #pragma endregion
+
+
+void btCable::updateCurveResponse(btScalar* dataX, btScalar* dataY, int size)
+{
+	vector<double> vectorX;
+	vector<double> vectorY;
+	for (int i = 0; i < size; ++i)
+	{
+		vectorX.push_back(dataX[i]);
+		vectorY.push_back(dataY[i]);
+	}
+	setControlPoint(vectorX, vectorY);
+}

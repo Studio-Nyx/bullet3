@@ -70,7 +70,7 @@ class btCable : public btSoftBody
 	enum class CollisionMode
 	{
 		Linear = 0,
-		Exponential
+		Curve
 	};
 
 	//
@@ -205,8 +205,6 @@ private:
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count,int section_count, const btVector3* x, const btScalar* m);
 
-	void setControlPoint(vector<btScalar> dataX, vector<btScalar> dataY);
-	
 	CollisionMode collisionMode;
 	btScalar WantedDistance = 0;
 	btScalar WantedSpeed = 0;
@@ -336,6 +334,8 @@ public:
 	void setCollisionViscosity(btScalar viscosity);
 	void setCollisionResponseActive(bool active);
 	void setCollisionMode(int mode);
+	void setControlPoint(vector<btScalar> dataX, vector<btScalar> dataY);
+	void updateCurveResponse(btScalar* dataX, btScalar* dataY, int size);
 
 #pragma endregion
 };
