@@ -1218,6 +1218,18 @@ public:
 	}
 };
 
+class btVector2
+{
+	public:
+		btScalar _x, _y;
+		btVector2() {}
+		btVector2(btScalar x, btScalar y)
+		{
+			_x = x;
+			_y = y;
+		}
+};
+
 ///btSwapVector3Endian swaps vector endianness, useful for network and cross-platform serialization
 SIMD_FORCE_INLINE void btSwapScalarEndian(const btScalar& sourceVal, btScalar& destVal)
 {

@@ -825,6 +825,7 @@ static void Init_Lengths(CableDemo* pdemo)
 
 static void Init_CableForceDown(CableDemo* pdemo)
 {
+	
 	// Shape
 	btCollisionShape* boxShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
 
@@ -849,11 +850,11 @@ static void Init_CableForceDown(CableDemo* pdemo)
 	int iteration = 50;
 
 	// Create 10 cube and 5 cables
-	for (int i = 0 ; i < 5 ; i++)
+	for (int i = 0 ; i < 1 ; i++)
 	{
 		// Positions
-		btVector3 positionKinematic(-5 + (i * 2.5f), 10, 0);
-		btVector3 positionPhysic(-5 + (i * 2.5f), 4, 0);
+		btVector3 positionKinematic(0, 10, 0);
+		btVector3 positionPhysic(0, 4, 0);
 		transformKinematic.setOrigin(positionKinematic);
 		transformPhysic.setOrigin(positionPhysic);
 		
@@ -868,6 +869,9 @@ static void Init_CableForceDown(CableDemo* pdemo)
 		pdemo->createCable(resolution, iteration, 1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 		
 	}
+
+
+
 }
 
 static void Init_CableForceUp(CableDemo* pdemo)
@@ -1247,7 +1251,7 @@ static void Init_TestSupportA18(CableDemo* pdemo)
 {
 	
 	// Resolution's cable
-	int resolution = 70;
+	int resolution = 50;
 	int iterations = 75;
 	btScalar margin = 0.005;
 
@@ -1286,13 +1290,14 @@ static void Init_TestSupportA18(CableDemo* pdemo)
 
 	btTransform AnchorUpPos = btTransform();
 	AnchorUpPos.setIdentity();
-	AnchorUpPos.setOrigin(btVector3(0, 5, 0));
+	AnchorUpPos.setOrigin(btVector3(0, 3, 0));
 	btRigidBody* AnchorUp = pdemo->createRigidBody(0, AnchorUpPos, new btBoxShape(btVector3(0.2, 0.2, 0.2)));
 
 	btTransform LestTransform = btTransform();
 	LestTransform.setIdentity();
-	LestTransform.setOrigin(btVector3(0, -2, 0));
+	LestTransform.setOrigin(btVector3(0, -3, 0));
 	btRigidBody* Lest = pdemo->createRigidBody(10, LestTransform, cylander);
+
 	//btVector3 positionWall(2, 0.8,0);
 	//btTransform transformWall;
 	//transformWall.setIdentity();
@@ -1317,12 +1322,11 @@ static void Init_TestSupportA18(CableDemo* pdemo)
 	btCable* cable = pdemo->createCableWaypoint(resolution, iterations, 1, waypointPos, Lest, AnchorUp ,true,true);
 	//btCable* cable = pdemo->createCable(resolution, iterations, 3, LestTransform.getOrigin() + btVector3(0, 0.5, 0), AnchorUpPos.getOrigin() + btVector3(0, -0.5, 0), AnchorUp, Lest, false, false);
 
-	cable->setCollisionStiffness(10, 10000, 0, 0.1);
-	cable->setCollisionViscosity(50);
+	cable->setCollisionViscosity(100);
 	cable->setUseCollision(true);
  	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(true);
-	cable->setCollisionParameters(3,3,0);
+	cable->setCollisionParameters(1,1,0);
 	cable->setCollisionMargin(margin);
 	pdemo->SetCameraPosition(btVector3(0,2,-3));
 
@@ -1465,7 +1469,7 @@ static void Init_TestCollisionCableSphere(CableDemo* pdemo)
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setUseLRA(true);
 	cable->setCollisionViscosity(1000);
-	cable->setCollisionStiffness(10000,100000000,0,1);
+	//cable->setCollisionStiffness(10000,100000000,0,1);
 
 	cable->setCollisionParameters(1,3,0);
 	cable->setCollisionMargin(margin);
@@ -1573,6 +1577,7 @@ static void Init_TestCollisionFallingA18(CableDemo* pdemo)
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setCollisionMargin(margin);
 	cable->setCollisionParameters(1, 1, 0);
+	cable->setCollisionMode(1);
 	pdemo->SetCameraPosition(btVector3(0, 5, 0));
 }
 
@@ -1646,8 +1651,10 @@ static void Init_TestCollisionFallingA18Constraint(CableDemo* pdemo)
 	cable->setCollisionMargin(margin);
 	cable->setCollisionResponseActive(true);
 	cable->setCollisionParameters(1,3,0);
-	cable->setCollisionMode(0);
+	//cable->setCollisionMode(0);
 	cable->setCollisionStiffness(0,10000,0,0.1);
+
+	cable->setCollisionMode(1);
 	pdemo->SetCameraPosition(btVector3(0, 10, 0));
 
 	for (int i = 0; i < cable->m_anchors.size(); ++i)
@@ -1972,7 +1979,7 @@ static void Init_TestCollisionOn1Node (CableDemo* pdemo)
 	cable->setUseLRA(true);
 	cable->setCollisionParameters(1, 1, 0);
 	cable->setCollisionViscosity(100);
-	cable->setCollisionStiffness(100, 10000, 0, 0.01);
+	//cable->setCollisionStiffness(100, 10000, 0, 0.01);
 	
 	pdemo->SetCameraPosition(btVector3(0, -3, 0));
 }
@@ -2034,11 +2041,11 @@ static void Init_TestClaw(CableDemo* pdemo)
 	cable->setCollisionViscosity(100);
 	cable->setUseBending(true);
 	cable->setUseCollision(true);
-	cable->setUseLRA(false);
+	cable->setUseLRA(true);
 
 	cable->getCollisionShape()->setMargin(margin);
 	cable->setCollisionMargin(margin);
-	cable->setCollisionParameters(1, 1, 0);
+	cable->setCollisionParameters(1, 3, 0);
 }
 
 static void Init_TestConstraintClawA18(CableDemo* pdemo)

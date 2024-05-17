@@ -19,6 +19,10 @@
 #include <vector>
 #include <omp.h>
 #include <iostream>
+
+#include "cubic_spline.hpp"
+
+
 using namespace std;
 
 class CableManifolds
@@ -99,6 +103,7 @@ class btCable : public btSoftBody
 		{
 			delete[] m_section;
 		}
+		delete spline;
 	}
 
 	btAlignedObjectArray<CableManifolds> manifolds;
@@ -119,6 +124,11 @@ private:
 	bool useCollision = true;
 	btScalar m_linearMass=1.0;
 
+	vector<btScalar> collisionFonctionPointX;
+	vector<btScalar> collisionFonctionPointY;
+
+	MonotonicSpline1D* spline;
+
 	// Node forces members
 	bool impulseCompute = true;
 
@@ -128,7 +138,6 @@ private:
 	btScalar collisionStiffnessMax = 10000;
 
 	btScalar collisionViscosity = 10;
-
 
 	btScalar m_defaultRestLength; 
 
@@ -196,6 +205,7 @@ private:
 public:
 	btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count,int section_count, const btVector3* x, const btScalar* m);
 
+	void setControlPoint(vector<btScalar> dataX, vector<btScalar> dataY);
 	
 	CollisionMode collisionMode;
 	btScalar WantedDistance = 0;

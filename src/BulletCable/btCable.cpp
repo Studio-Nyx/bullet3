@@ -5,18 +5,16 @@
 #include <BulletCollision/CollisionShapes/btSphereShape.h>
 #include <BulletCollision/CollisionShapes/btCapsuleShape.h>
 #include <Bullet3Common/b3Logging.h>
-#include <vector>
-#include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <iostream>
-#include <list>
+#include <vector>
 #include "../../Extras/Serialize/BulletWorldImporter/btWorldImporter.h"
 #include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
 #include <BulletCollision/CollisionShapes/btBoxShape.h>
 #include <BulletCollision/NarrowPhaseCollision/btConvexCast.h>
 #include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
+
 
 
 btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count,int section_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
@@ -55,7 +53,7 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 	m_cableData->radius = getCollisionShape()->getMargin();
 
 
-	if (section_count > 0)
+	if(section_count > 0)
 	{
 		m_sectionCount = section_count;
 		m_section = new SectionInfo[section_count]();
@@ -64,6 +62,21 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 	{
 		m_defaultRestLength = m_links.at(0).m_rl;
 	}
+	
+	vector<btScalar> dataX = {0,0.001,1};
+	vector<btScalar> dataY = {0,10, 1000};
+	
+	setControlPoint(dataX, dataY);
+}
+
+void btCable::setControlPoint(vector<btScalar> dataX,vector<btScalar> dataY)
+{
+	if (spline) delete spline;
+	for (int i = 0; i < dataX.size(); i++)
+	{
+		dataX[i] += 1;
+	}
+	spline = new MonotonicSpline1D(dataX, dataY );
 }
 
 #pragma region Constraints
@@ -342,7 +355,7 @@ void btCable::solveConstraints()
 		
 		if (useBending && i % 2 == 0)
 		{
-			bendingConstraintDistance();	
+			bendingConstraintDistance();
 		}
 
 		if (useLRA)
@@ -361,6 +374,9 @@ void btCable::solveConstraints()
 
 	if (useCollision)
 		ResolveConflitZone(&nodePairContact ,&indexNodeContact);
+
+	//anchorConstraint();
+
 
 	// Free structures
 	for (int i = 0; i < indexNodeContact.size(); i++)
@@ -430,34 +446,56 @@ void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* node
 	Node* node;
 	int distSectorMax = 5;
 	Node* nodeAfter;
+	if (m_nodes.size() <= (distSectorMax*2)+1) return;
 	for (int i = 0; i < m_nodes.size()-1; i++)
 	{
 		node = &m_nodes.at(i);
 
 		if (node->collideInAllIteration)
 		{
+			int limitMax;
 			int limitMin = btMax(i - distSectorMax, 0);
-			int limitMax = i;
-			int indexDist = distSectorMax;
+			int deltaFromStart = (i - distSectorMax);
+
+			int nodeLeft = distSectorMax;
+			if (deltaFromStart < 0) 
+				nodeLeft+=-deltaFromStart;
 			bool continousSector = true;
 
 			while (continousSector && i < m_nodes.size()-1)
 			{
 				i++;
 				nodeAfter = &m_nodes.at(i);
+				// If a new node is colliding in the sector reset the distance else decrease it
 				if (!nodeAfter->collideInAllIteration)
-					indexDist--;
+				{
+					nodeLeft--;	
+				}
 				else
-					indexDist = distSectorMax;
-				if (indexDist == 0)
+				{
+					deltaFromStart = (i - distSectorMax);
+					nodeLeft = distSectorMax;	
+					if (deltaFromStart < 0)
+						nodeLeft += -deltaFromStart;
+				}
+
+				// if count comes to 0 stop the sector
+				if (nodeLeft == 0)
 				{
 					continousSector = false;
 					limitMax = i;
 				}
+				if (i == m_nodes.size() - 1)
+				{
+					limitMax = i;
+					if (nodeLeft > 0)
+						limitMin -= nodeLeft;
+				}
 			}
 
-			for (int j = 0; j < 5; j++)
+			for (int j = 0; j < 10; j++)
 			{
+				//distanceConstraint();
 				distanceConstraintLock(limitMin, limitMax);
 				solveContactLimited(nodePairContact,limitMin,limitMax);
 				anchorConstraint();
@@ -693,11 +731,9 @@ btVector3 btCable::ComputeCollisionSphere(btVector3 pos, btCollisionObject* obj,
 	obj2.setWorldTransform(transform);
 	obj2.setCollisionShape(&sphere);
 	
-
 	MyContactResultCallback result(0);
 
  	m_world->contactPairTest(obj, &obj2, result);
-	btScalar margin;
 	if (result.m_connected) {
 		return result.contactPoint - result.contactNorm * (m_collisionMargin + 0.01);
 	}
@@ -753,7 +789,7 @@ void btCable::updateContactPos(Node* n, int position, int step)
 
 bool btCable::checkCondition(Node *n, int step)
 {
-	if (m_collisionMargin <= 0)
+	if (m_collisionMargin <= 0 || n->m_battach!=0)
 	{
 		return false;
 	}
@@ -982,7 +1018,6 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 												
 							btVector3 temp = fastTrigoPositionCompute(node);
 							newPos = temp;
-
 						}
 					}
 				}
@@ -996,7 +1031,6 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 						newPos = temp;
 					}
 				}
-
 				
 				node->m_x = newPos;
 				node->positionCollision = btVector3(0, 0, 0);
@@ -1260,40 +1294,40 @@ void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nod
 
 btVector3 btCable::calculateBodyImpulse(btRigidBody* obj, btScalar margin, Node* n, btVector3 normal, btVector3 hitPosition)
 {	
+	// a = node
+	// b = body
+	btScalar viscosityCoef = this->collisionViscosity;
+	btScalar dt = this->m_sst.sdt;
+	btTransform wtr = obj->getWorldTransform();
+
+	// btScalar ima = n->m_im;
+	// btScalar imb = obj->getInvMass();
+	// if (imb == 0) return btVector3(0, 0, 0);
+	// btScalar totalMass = ima + imb;
+
+	// bodyToNodeVector
+	btVector3 ra = hitPosition - wtr.getOrigin();
+	btVector3 vBody = obj->getVelocityInLocalPoint(ra);
+	btVector3 vNode = (n->posBeforeCollision - n->m_q) * 0.75 / dt;
+	btVector3 vRelative = vNode - vBody;
+	btScalar vRelativeOnNormal = btDot(vRelative, normal);
+
+	// Friction value
+	btVector3 vRelativeTangent = vRelative - (normal * vRelativeOnNormal);
+	btVector3 tangentDir = vRelativeTangent.normalized();
+
+	int frictionCoef = obj->getFriction() * getFriction();
+
+	// Part of vRelativeOnTangentDir
+	// btScalar jt = -vRelative.dot(tangentDir) * frictionCoef;
+	// jt = jt / totalMass;
+
+	btScalar penetrationDistance = (n->m_x - hitPosition).length();
+	btVector3 deltaPosNode = hitPosition - n->m_x;
+	penetrationDistance = deltaPosNode.dot(normal);
+
 	if (collisionMode == CollisionMode::Linear)
 	{
-		// a = node
-		// b = body
-		btScalar viscosityCoef = this->collisionViscosity;
-		btScalar dt = this->m_sst.sdt;
-		btTransform wtr = obj->getWorldTransform();
-
-		// btScalar ima = n->m_im;
-		// btScalar imb = obj->getInvMass();
-		// if (imb == 0) return btVector3(0, 0, 0);
-		// btScalar totalMass = ima + imb;
-
-		// bodyToNodeVector
-		btVector3 ra = hitPosition - wtr.getOrigin();
-		btVector3 vBody = obj->getVelocityInLocalPoint(ra);
-		btVector3 vNode = (n->posBeforeCollision - n->m_q) * 0.75 / dt;
-		btVector3 vRelative = vNode - vBody;
-		btScalar vRelativeOnNormal = btDot(vRelative, normal);
-
-		// Friction value
-		btVector3 vRelativeTangent = vRelative - (normal * vRelativeOnNormal);
-		btVector3 tangentDir = vRelativeTangent.normalized();
-
-		int frictionCoef = obj->getFriction() * getFriction();
-
-		// Part of vRelativeOnTangentDir
-		// btScalar jt = -vRelative.dot(tangentDir) * frictionCoef;
-		// jt = jt / totalMass;
-
-		btScalar penetrationDistance = (n->m_x - hitPosition).length();
-		btVector3 deltaPosNode = hitPosition - n->m_x;
-		penetrationDistance = deltaPosNode.dot(normal);
-
 		btScalar k = 0;
 
 		if (penetrationDistance < penetrationMin)
@@ -1320,7 +1354,20 @@ btVector3 btCable::calculateBodyImpulse(btRigidBody* obj, btScalar margin, Node*
 
 	if (collisionMode == CollisionMode::Exponential)
 	{
-		return btVector3(0, 0, 0);
+		if (penetrationDistance < penetrationMin)
+		{
+			return btVector3(0, 0, 0);
+		}
+		btScalar k = spline->eval(penetrationDistance);
+		if (isnan(k))
+		{
+			return btVector3(0, 0, 0);
+		
+		}
+		btScalar responseVector = -k * penetrationDistance + viscosityCoef * vRelativeOnNormal;
+
+		const btVector3 impulse = ((responseVector * normal) /*- (tangentDir * jt * m_sst.isdt)*/) * dt;
+		return impulse;
 	}
 
 	return btVector3(0, 0, 0);
@@ -1584,8 +1631,6 @@ void btCable::distanceConstraint()
 
 void btCable::distanceConstraintLock(int limMin, int limMax)
 {
-	BT_PROFILE("PSolve_Links");
-
 	Link* l;
 	Node* a;
 	Node* b;
@@ -1614,6 +1659,7 @@ void btCable::distanceConstraintLock(int limMin, int limMax)
 			if (i != limMax - 2 && b->m_battach == 0) b->m_x -= (b->m_im * denom) * k;
 		}
 	}
+
 }
 
 

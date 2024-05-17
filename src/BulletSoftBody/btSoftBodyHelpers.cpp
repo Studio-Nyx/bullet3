@@ -276,6 +276,8 @@ void btSoftBodyHelpers::Draw(btSoftBody* psb,
 
 				if (n.m_splitv == btVector3(1,0,0))
 					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(255, 255, 255));
+				else if (n.m_splitv == btVector3(2, 0, 0))
+					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(255, 0, 0));
 				else
 					idraw->drawSphere(n.m_x, psb->getCollisionShape()->getMargin(), btVector3(0, 0, 0));
 
