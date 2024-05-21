@@ -48,6 +48,9 @@ btSoftRigidDynamicsWorld::btSoftRigidDynamicsWorld(
 	m_sbi = btSoftBodyWorldInfo(worldInfo);
 	// Check if it's unecessary
 	//m_sbi.m_sparsesdf.Initialize();
+
+	// Set numThread From SoftBodyWorldInfo
+	m_softBodySolver->numThread = m_sbi.numThread;
 	
 
 	// () used to force 0 initialization

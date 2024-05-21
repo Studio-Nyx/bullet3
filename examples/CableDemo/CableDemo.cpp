@@ -2448,6 +2448,8 @@ void CableDemo::initPhysics()
 
 	m_softBodyWorldInfo.m_broadphase = m_broadphase;
 
+	m_softBodyWorldInfo.numThread = 4;
+
 	//btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
 	btSequentialImpulseConstraintSolverMt* solver = new btSequentialImpulseConstraintSolverMt();
 	

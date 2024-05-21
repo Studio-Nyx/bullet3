@@ -58,6 +58,7 @@ struct btSoftBodyWorldInfo
 	btDispatcher* m_dispatcher;
 	btVector3 m_gravity;
 	btSparseSdf<3> m_sparsesdf;
+	int numThread;
 	int maxCableNumber;
 	int maxNodeNumber;
 	int numIteration;
@@ -71,6 +72,7 @@ struct btSoftBodyWorldInfo
 		  m_broadphase(0),
 		  m_dispatcher(0),
 		  m_gravity(0, -10, 0),
+		  numThread(6),
 		  maxCableNumber(100),
 		  maxNodeNumber(8192),
 		  numIteration(1)
@@ -86,6 +88,7 @@ struct btSoftBodyWorldInfo
 		  m_broadphase(worldInfo->m_broadphase),
 		  m_dispatcher(worldInfo->m_dispatcher),
 		  m_gravity(worldInfo->m_gravity),
+		  numThread(worldInfo->numThread),
 		  maxCableNumber(worldInfo->maxCableNumber),
 		  maxNodeNumber(worldInfo->maxNodeNumber),
 		  numIteration(worldInfo->numIteration)

@@ -64,10 +64,10 @@ bool btDefaultSoftBodySolver::checkInitialized()
 void btDefaultSoftBodySolver::solveConstraints(btScalar solverdt)
 {
 	// Solve constraints for non-solver softbodies
-	omp_set_dynamic(0);      // Explicitly disable dynamic teams
-	// omp_set_num_threads(4);  // Use 4 threads for all consecutive parallel regions
 	
-	#pragma omp parallel for
+	omp_set_dynamic(0);      // Explicitly disable dynamic teams
+	omp_set_num_threads(numThread);  // Use numThread threads for all consecutive parallel regions
+	#pragma omp parallel for	
 	for (int i = 0; i < m_softBodySet.size(); ++i)
 	{
 		btSoftBody *psb = static_cast<btSoftBody *>(m_softBodySet[i]);

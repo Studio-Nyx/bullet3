@@ -40,6 +40,8 @@ public:
 		REDUCED_DEFORMABLE_SOLVER
 	};
 
+	int numThread = 6;
+
 protected:
 	int m_numberOfPositionIterations;
 	int m_numberOfVelocityIterations;
