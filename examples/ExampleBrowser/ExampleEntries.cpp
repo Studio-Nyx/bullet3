@@ -302,7 +302,8 @@ static ExampleEntry gDefaultExamples[] =
 		ExampleEntry(1, "Test Impulse On 1 node", "Compute cable collision on 1 node to validate the impulse given", CableDemoCreateFunc, 16),
 		ExampleEntry(1, "Test Claw A18", "Test collision claw/cable with a mouving A18", CableDemoCreateFunc, 17),
 		ExampleEntry(1, " Test Constraint & Claw", " Test a constraint and collision with a cable", CableDemoCreateFunc, 18),
-		ExampleEntry(1, "Test Cable CollisionMt", " Test multi threaded collisions with two cables", CableDemoCreateFunc, 19),
+		ExampleEntry(1, " Test Growth Speed", " Test duration of cable growth", CableDemoCreateFunc, 19),
+		ExampleEntry(1, "Test Cable CollisionMt", " Test multi threaded collisions with two cables", CableDemoCreateFunc, 20),
 
 #endif  //INCLUDE_CLOTH_DEMOS
 

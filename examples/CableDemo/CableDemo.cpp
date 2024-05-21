@@ -32,6 +32,7 @@
 #include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h>
 #include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
 #include <iostream>
+#include <chrono>
 
 class btBroadphaseInterface;
 class btCollisionShape;
@@ -93,14 +94,28 @@ private:
 	bool m_printTens;
 	bool m_close = false;
 	bool m_grow = false;
+	bool m_growWithSpeedAndDistance = false;
 	bool m_shrink = false;
 	btScalar speed = 0;
+
+	int nbDelta = 0;
+	int totalDelta = 0;
+
+	btScalar growthSpeed = 0.5;
+	btScalar growthDistance = 6;
+	btScalar initialCableLength = 0;
+	// Calculate the time in seconds
+	std::chrono::steady_clock::duration theoricalTime;
 
 	bool m_printFPS;
 	clock_t current_ticks, delta_ticks;
 	clock_t m_fps = 0;
 
 	btVector3 m_cameraStartPosition;
+
+	using Clock = std::chrono::high_resolution_clock;
+
+	std::chrono::steady_clock::time_point startingTime{Clock::now()};
 
 
 public:
@@ -192,7 +207,31 @@ public:
 			m_grow = false;
 			m_shrink = false;
 		}
-			
+
+		if (key == '9' && state)
+		{
+			GrowsWithSpeedAndDistance(growthSpeed, growthDistance);
+		}		
+
+		if (key == 'o' && state)
+		{
+			ChangeAndPrintGrowDistance(0.5);
+		}	
+
+		if (key == 'l' && state)
+		{
+			ChangeAndPrintGrowDistance(-0.5);
+		}	
+
+		if (key == 'p' && state)
+		{
+			ChangeAndPrintGrowSpeed(0.5);
+		}
+
+		if (key == 'm' && state)
+		{
+			ChangeAndPrintGrowSpeed(-0.5);
+		}	
 
 		if (key == 'x' && state)
 		{
@@ -243,9 +282,6 @@ public:
 	void mouseFunc(int button, int state, int x, int y);
 	void mouseMotionFunc(int x, int y);
 
-
-
-
 	void Grows(float dt,bool test = true)
 	{
 		if (getSoftDynamicsWorld()->getSoftBodyArray().size() == 0) return;
@@ -255,6 +291,49 @@ public:
 		else
 			_cable->WantedSpeed = 0;
 	}
+
+	void GrowsWithSpeedAndDistance(double speed, double distance, bool test = true)
+	{
+		if (getSoftDynamicsWorld()->getSoftBodyArray().size() == 0) return;
+		btCable* _cable = (btCable*)getSoftDynamicsWorld()->getSoftBodyArray()[0];
+		if (test)
+		{	
+			initialCableLength = _cable->getRestLength();
+			double theoricalTime_d = (distance - initialCableLength) / speed;
+			nbDelta = 0;
+			// Convert seconds to a duration
+			auto duration = std::chrono::duration<double>(theoricalTime_d);
+			theoricalTime = std::chrono::duration_cast<std::chrono::system_clock::duration>(duration);
+			b3Printf("Change Cable Length with speed : %f , and target length %f. It should take %f secondes with a cable of %f", speed, distance, theoricalTime_d, initialCableLength);
+			startingTime = Clock::now();
+			m_growWithSpeedAndDistance = true;
+			_cable->setWantedGrowSpeedAndDistance(speed, distance);
+		}
+		else
+		{
+			m_growWithSpeedAndDistance = false;
+			_cable->WantedSpeed = 0;
+		}
+	}
+
+	void ChangeAndPrintGrowSpeed(btScalar addedValue) 
+	{
+		growthSpeed += addedValue;
+		
+		b3Printf("New GrowthSpeed Value : %f ", growthSpeed);
+	}
+
+	void ChangeAndPrintGrowDistance(btScalar addedValue)
+	{
+		growthDistance += addedValue;
+
+		if (growthDistance <= 0)
+		{
+			growthDistance = 0.0;
+		}
+		b3Printf("New GrowthDistance Value : %f ", growthDistance);
+	}
+
 	void Shrinks(float dt)
 	{
 		if (getSoftDynamicsWorld()->getSoftBodyArray().size() == 0) return;
@@ -376,6 +455,7 @@ public:
 	{
 		if (m_dynamicsWorld)
 		{
+			const auto currentTime{Clock::now()};
 			if ( m_applyForceOnRigidbody)
 			{
 				auto wall = (btRigidBody*)m_dynamicsWorld->getCollisionObjectArray().at(2);
@@ -400,9 +480,45 @@ public:
 			if (m_grow)
 				Grows(deltaTime);
 			else
-				Grows(deltaTime,false);
+			{
+				if (!m_growWithSpeedAndDistance)
+					Grows(deltaTime, false);
+			}
 			if (m_shrink)
 				Shrinks(deltaTime);
+
+			// Test grow speed
+			if (m_growWithSpeedAndDistance)
+			{
+				
+				b3Printf("Dt is %f with a speed of %f, which gives a dt speed of %f. ", deltaTime, growthSpeed, growthSpeed * deltaTime);
+
+				std::chrono::steady_clock::duration timeSpent = currentTime - startingTime;
+				if (getSoftDynamicsWorld()->getSoftBodyArray().size() == 0) return;
+				btCable* _cable = (btCable*)getSoftDynamicsWorld()->getSoftBodyArray()[0];
+
+				if (initialCableLength < growthDistance)
+				{
+					if (_cable->getRestLength() >= growthDistance)
+					{
+						b3Printf("total dt length : %f. Total duration of delta : %f", nbDelta * growthSpeed * deltaTime, nbDelta * deltaTime);
+						b3Printf("Time to reach %f meters from initial Cable length (%f) is %f secondes while theorical time was %f ", growthDistance, initialCableLength, std::chrono::duration<double>(timeSpent).count(), std::chrono::duration<double>(theoricalTime).count());
+						m_growWithSpeedAndDistance = false;
+					}
+				}
+				else
+				{
+					if (_cable->getRestLength() <= growthDistance)
+					{
+						b3Printf("total dt length : %f. Total duration of delta : %f", nbDelta * growthSpeed * deltaTime, nbDelta * deltaTime);
+						b3Printf("Time to reach %f meters from initial Cable length (%f) is %f secondes while theorical time was %f ", growthDistance, initialCableLength, std::chrono::duration<double>(timeSpent).count(), std::chrono::duration<double>(theoricalTime).count());
+						m_growWithSpeedAndDistance = false;
+					}
+				}
+
+				nbDelta += 1;
+				
+			}
 
 			//if ( m_currentDemoIndex == 16)
 				
@@ -2105,6 +2221,52 @@ static void Init_TestConstraintClawA18(CableDemo* pdemo)
 	cable->setCollisionParameters(5, 1, 0);
 }
 
+static void Init_Growth(CableDemo* pdemo)
+{
+	// Shape
+	btCollisionShape* boxShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
+
+	// Masses
+	btScalar massKinematic(0);
+	btScalar massPhysic(1);
+
+	// Rotation
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+
+	// Resolution's cable
+	int resolution = 20;
+	int iteration = 100;
+
+	// Create cube and cable
+	massPhysic = 22000;
+
+	// Positions
+	btVector3 positionKinematic(0, 10, 0);
+	btVector3 positionPhysic(0, 4, 0);
+	transformKinematic.setOrigin(positionKinematic);
+	transformPhysic.setOrigin(positionPhysic);
+
+	// Create the rigidbodys
+	btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
+	btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
+
+	// Anchor's positions
+	btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
+	btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
+
+	btCable* cable = pdemo->createCable(resolution, iteration, 25, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+	cable->setCollisionParameters(1, 1, 0);
+}
+
 void (*demofncs[])(CableDemo*) =
 {
 		Init_CableForceDown,
@@ -2126,6 +2288,7 @@ void (*demofncs[])(CableDemo*) =
 		Init_TestCollisionOn1Node, 
 		Init_TestClaw,
 		Init_TestConstraintClawA18,
+		Init_Growth,
 		Init_TestCableCollisionMt
 };
 
