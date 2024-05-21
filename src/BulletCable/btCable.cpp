@@ -441,66 +441,48 @@ void btCable::solveConstraints()
 
 
 
-void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact,btAlignedObjectArray<int>* indexNodeContact)
+void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btAlignedObjectArray<int>* indexNodeContact)
 {
 	Node* node;
 	int distSectorMax = 5;
 	Node* nodeAfter;
-	if (m_nodes.size() <= (distSectorMax*2)+1) return;
-	for (int i = 0; i < m_nodes.size()-1; i++)
+
+	for (int i = 0; i < m_nodes.size() - 1; i++)
 	{
 		node = &m_nodes.at(i);
 
 		if (node->collideInAllIteration)
 		{
-			int limitMax;
 			int limitMin = btMax(i - distSectorMax, 0);
-			int deltaFromStart = (i - distSectorMax);
+			int limitMax = i;
+			int indexDist = distSectorMax;
 
-			int nodeLeft = distSectorMax;
-			if (deltaFromStart < 0) 
-				nodeLeft+=-deltaFromStart;
 			bool continousSector = true;
 
-			while (continousSector && i < m_nodes.size()-1)
+			while (continousSector && i < m_nodes.size() - 1)
 			{
 				i++;
 				nodeAfter = &m_nodes.at(i);
-				// If a new node is colliding in the sector reset the distance else decrease it
-				if (!nodeAfter->collideInAllIteration)
-				{
-					nodeLeft--;	
-				}
-				else
-				{
-					deltaFromStart = (i - distSectorMax);
-					nodeLeft = distSectorMax;	
-					if (deltaFromStart < 0)
-						nodeLeft += -deltaFromStart;
-				}
 
-				// if count comes to 0 stop the sector
-				if (nodeLeft == 0)
+				if (!nodeAfter->collideInAllIteration)
+					indexDist--;
+
+				else
+					indexDist = distSectorMax;
+				if (indexDist == 0)
+
 				{
 					continousSector = false;
 					limitMax = i;
 				}
-				if (i == m_nodes.size() - 1)
-				{
-					limitMax = i;
-					if (nodeLeft > 0)
-						limitMin -= nodeLeft;
-				}
 			}
 
-			for (int j = 0; j < 10; j++)
+			for (int j = 0; j < 5; j++)
 			{
-				//distanceConstraint();
 				distanceConstraintLock(limitMin, limitMax);
-				solveContactLimited(nodePairContact,limitMin,limitMax);
+				solveContactLimited(nodePairContact, limitMin, limitMax);
 				anchorConstraint();
 			}
-			
 		}
 	}
 }
@@ -1356,15 +1338,11 @@ btVector3 btCable::calculateBodyImpulse(btRigidBody* obj, btScalar margin, Node*
 	{
 		if (!spline) return btVector3(0,0,0);
 
-		if (penetrationDistance < penetrationMin)
-		{
-			return btVector3(0, 0, 0);
-		}
+		
 		btScalar k = spline->eval(penetrationDistance);
 		if (isnan(k))
 		{
 			return btVector3(0, 0, 0);
-		
 		}
 		btScalar responseVector = -k * penetrationDistance + viscosityCoef * vRelativeOnNormal;
 
