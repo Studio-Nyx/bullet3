@@ -14,6 +14,7 @@
 #include <BulletCollision/NarrowPhaseCollision/btConvexCast.h>
 #include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
+#include <tuple>
 
 
 
@@ -281,8 +282,7 @@ void btCable::solveConstraints()
 				{
 					btCollisionObject* obj = BroadPhaseOutput[j]->body;
 					
-					if (checkCollisionAnchor(&n, obj))
-						continue;
+					// if (checkCollisionAnchor(&n, obj)) continue;
 					
 					btVector3 velB = obj->getInterpolationLinearVelocity() * m_sst.sdt;
 					
@@ -346,11 +346,16 @@ void btCable::solveConstraints()
 		}
 	}
 
+	bool impacted = false;
+	btScalar distAnchor = 0.0;
 	for (int i = 0; i < m_cfg.piterations; ++i)
 	{
 		updateNodeDeltaPos(i);
 
-		anchorConstraint();
+		std::tuple<bool, btScalar> hasImpacted = anchorConstraint();
+		impacted = std::get<0>(hasImpacted);
+		distAnchor = std::get<1>(hasImpacted);
+		
 		distanceConstraint();
 		
 		if (useBending && i % 2 == 0)
@@ -369,14 +374,35 @@ void btCable::solveConstraints()
 			solveContact(&nodePairContact, &indexNodeContact);
 		}
 	}
+	if (useCollision) ResolveConflitZone(&nodePairContact, &indexNodeContact);
 
-	anchorConstraint();
+	for (int i = 0; i < m_anchors.size(); ++i)
+	{
+		Anchor& a = this->m_anchors[i];
+		if (a.m_body->canChangedMassAtImpact() && !a.m_body->isStaticOrKinematicObject())
+		{
+			if (impacted)
+			{
+				btScalar limit = a.m_body->getUpperLimitDistanceImpact() - a.m_body->getLowerLimitDistanceImpact();
+				btScalar ratio = (distAnchor - a.m_body->getLowerLimitDistanceImpact()) / limit;
+				btScalar clampRatio = Clamp(ratio, 0.0, 1.0);
+				btScalar newMass = Lerp(a.m_body->getLowerLimitMassImpact(), a.m_body->getUpperLimitMassImpact(), clampRatio);
+				a.m_body->setMassProps(newMass, newMass * a.m_body->getLocalInertia() * a.m_body->getInvMass());
+			}
+			else
+			{
+				a.m_body->setMassProps(a.m_body->getLowerLimitMassImpact(), a.m_body->getLowerLimitMassImpact() * a.m_body->getLocalInertia() * a.m_body->getInvMass());
+			}
+		}
+	}
 
-	if (useCollision)
-		ResolveConflitZone(&nodePairContact ,&indexNodeContact);
-
-	//anchorConstraint();
-
+	// std::cout << "Impacted? " << impacted << std::endl;
+	// std::cout << "Distance Anchor-Node? " << distAnchor << std::endl;
+	// for (int i = 0; i < m_anchors.size(); ++i)
+	// {
+	// 	std::cout << "Impulse at anchor[" << i << "]: " << m_anchors[i].tension.toString().c_str() << std::endl;
+	// }
+	// std::cout << std::endl;
 
 	// Free structures
 	for (int i = 0; i < indexNodeContact.size(); i++)
@@ -481,7 +507,6 @@ void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* node
 			{
 				distanceConstraintLock(limitMin, limitMax);
 				solveContactLimited(nodePairContact, limitMin, limitMax);
-				anchorConstraint();
 			}
 		}
 	}
@@ -1307,7 +1332,6 @@ btVector3 btCable::calculateBodyImpulse(btRigidBody* obj, btScalar margin, Node*
 	btScalar penetrationDistance = (n->m_x - hitPosition).length();
 	btVector3 deltaPosNode = hitPosition - n->m_x;
 	penetrationDistance = deltaPosNode.dot(normal);
-
 	if (collisionMode == CollisionMode::Linear)
 	{
 		btScalar k = 0;
@@ -1337,8 +1361,8 @@ btVector3 btCable::calculateBodyImpulse(btRigidBody* obj, btScalar margin, Node*
 	if (collisionMode == CollisionMode::Curve)
 	{
 		if (!spline) return btVector3(0,0,0);
-
-		
+	
+		penetrationDistance *= 1.0 / m_substepDelayCollision;
 		btScalar k = spline->eval(penetrationDistance);
 		if (isnan(k))
 		{
@@ -1347,7 +1371,7 @@ btVector3 btCable::calculateBodyImpulse(btRigidBody* obj, btScalar margin, Node*
 		btScalar responseVector = -k * penetrationDistance + viscosityCoef * vRelativeOnNormal;
 
 		const btVector3 impulse = ((responseVector * normal) /*- (tangentDir * jt * m_sst.isdt)*/) * dt;
-		return impulse;
+		return impulse * m_substepDelayCollision;
 	}
 
 	return btVector3(0, 0, 0);
@@ -1912,40 +1936,44 @@ void btCable::Shrinks(float dt)
 	m_growingState = 1;
 }
 
-void btCable::anchorConstraint()
+std::tuple<bool, btScalar> btCable::anchorConstraint()
 {
 	BT_PROFILE("PSolve_Anchors");
 	const btScalar kAHR = m_cfg.kAHR;
 	const btScalar dt = m_sst.sdt;
-
-
+	bool impact = false;
+	btScalar distAnchor = 0.0;
 	for (int i = 0, ni = this->m_anchors.size(); i < ni; ++i)
 	{
 		Anchor& a = this->m_anchors[i];
-		const btTransform& t = a.m_body->getWorldTransform();
 		Node& n = *a.m_node;
 
-		const btVector3 wa = t * a.m_local;
+		const btVector3 wa = a.m_body->getCenterOfMassPosition() + a.m_c1;
 		const btVector3 va = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt;
 		const btVector3 vb = n.m_x - n.m_q;
-
-		const btVector3 vectAnchorNode = (wa - n.m_x);
-		const btScalar distAnchorNode = vectAnchorNode.length();
-		const btVector3 vr = (va - vb) + vectAnchorNode * kAHR;
-
-		btScalar ratio = distAnchorNode / 0.01;
-		ratio = Clamp(ratio, 0.0, 1.0);
+		const btVector3 vr = (va - vb) + (wa - n.m_x) * kAHR;
 		
-		n.m_x = a.m_body->getCenterOfMassPosition() + a.m_c1;
-		
-		const btVector3 impulseMassBalance = a.m_c0_massBalance * vr * a.m_influence;
+		btScalar ratio_Distance_Mimimeter = a.m_body->getMass() * wa.distance(n.m_x);
+		btScalar ratio_Distance_Weight = wa.distance(n.m_x) * a.m_body->getMass();
+		if (a.m_body->canChangedMassAtImpact() && !a.m_body->isStaticOrKinematicObject())
+		{
+			// distance Anchor-Node
+			if (wa.distance(n.m_x) > a.m_body->getLowerLimitDistanceImpact())
+			{
+				impact = true;
+				distAnchor = wa.distance(n.m_x);
+			}
+		}
+
 		const btVector3 impulse = a.m_c0 * vr * a.m_influence;
-		
- 		btVector3 finalImpulse = lerp(impulse, impulseMassBalance, ratio);
+		const btVector3 impulseMassBalance = a.m_c0_massBalance * vr * a.m_influence;
+		const btVector3 finalImpulse = impulseMassBalance;
 		
 		a.m_body->applyImpulse(-finalImpulse, a.m_c1);
 		a.tension += finalImpulse / dt;
+		n.m_x = wa;
 	}
+	return std::tuple<bool, btScalar>{impact, distAnchor};
 }
 
 void btCable::setCollisionMode(int mode)

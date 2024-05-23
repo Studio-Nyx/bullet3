@@ -169,7 +169,7 @@ private:
 	void predictMotion(btScalar dt) override;
 	void solveConstraints() override;
 	void ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact,btAlignedObjectArray<int>* indexNodeContact);
-	void anchorConstraint ();
+	std::tuple<bool, btScalar> anchorConstraint();
 	
 	void solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btAlignedObjectArray<int>* indexNodeContact);
 	void solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, int limitMin, int limitMax);

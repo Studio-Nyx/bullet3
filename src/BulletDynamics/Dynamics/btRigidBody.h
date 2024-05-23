@@ -191,8 +191,48 @@ public:
 protected:
 	///setupRigidBody is only used internally by the constructor
 	void setupRigidBody(const btRigidBodyConstructionInfo& constructionInfo);
+	bool m_canChangedMassAtImpact;
+	btScalar m_lowerLimitMassImpact;
+	btScalar m_upperLimitMassImpact;
+	btScalar m_lowerLimitDistanceImpact;
+	btScalar m_upperLimitDistanceImpact;
 
 public:
+
+	bool canChangedMassAtImpact()
+	{
+		return m_canChangedMassAtImpact;
+	}
+
+	btScalar getLowerLimitMassImpact()
+	{
+		return m_lowerLimitMassImpact;
+	}
+
+	btScalar getUpperLimitMassImpact()
+	{
+		return m_upperLimitMassImpact;
+	}
+
+	btScalar getLowerLimitDistanceImpact()
+	{
+		return m_lowerLimitDistanceImpact;
+	}
+
+	btScalar getUpperLimitDistanceImpact()
+	{
+		return m_upperLimitDistanceImpact;
+	}
+
+	void updateMassAtImpact(bool impacted, btScalar upperMass, btScalar lowerLimit, btScalar upperLimit)
+	{ 
+		m_canChangedMassAtImpact = impacted;
+		// // TODO: 
+		m_lowerLimitMassImpact = getMass();
+		m_upperLimitMassImpact = upperMass;
+		m_lowerLimitDistanceImpact = lowerLimit;
+		m_upperLimitDistanceImpact = upperLimit;
+	}
 
 	void updateKinematicChildren();
 
