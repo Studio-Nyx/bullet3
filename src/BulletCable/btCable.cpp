@@ -388,10 +388,12 @@ void btCable::solveConstraints()
 				btScalar clampRatio = Clamp(ratio, 0.0, 1.0);
 				btScalar newMass = Lerp(a.m_body->getLowerLimitMassImpact(), a.m_body->getUpperLimitMassImpact(), clampRatio);
 				a.m_body->setMassProps(newMass, newMass * a.m_body->getLocalInertia() * a.m_body->getInvMass());
+				a.m_body->setGravity(m_worldInfo->m_gravity  * (a.m_body->getLowerLimitMassImpact() /  newMass));
 			}
 			else
 			{
 				a.m_body->setMassProps(a.m_body->getLowerLimitMassImpact(), a.m_body->getLowerLimitMassImpact() * a.m_body->getLocalInertia() * a.m_body->getInvMass());
+				a.m_body->setGravity(m_worldInfo->m_gravity);
 			}
 		}
 	}
@@ -604,7 +606,7 @@ void btCable::updateNodeDeltaPos(int iteration)
 	{
 		node = &m_nodes.at(i);
 		deltaPos = (node->m_x - node->posPreviousIteration).length();
-		if (deltaPos > 0.0001 || iteration==0) 
+		if (deltaPos > 0.0001 || iteration == 0 || node->m_battach != 0) 
 		{
 			node->cptIteration++;
 			node->computeNodeConstraint = true;
