@@ -374,7 +374,18 @@ void btCable::solveConstraints()
 			solveContact(&nodePairContact, &indexNodeContact);
 		}
 	}
+	// std::tuple<bool, btScalar> hasImpacted = anchorConstraint();
+	// impacted = std::get<0>(hasImpacted);
+	// distAnchor = std::get<1>(hasImpacted);
+
 	if (useCollision) ResolveConflitZone(&nodePairContact, &indexNodeContact);
+
+	// if (impacted)
+	// {
+	// 	std::tuple<bool, btScalar> hasImpacted = anchorConstraint();
+	// 	impacted = std::get<0>(hasImpacted);
+	// 	distAnchor = std::get<1>(hasImpacted);
+	// }
 
 	for (int i = 0; i < m_anchors.size(); ++i)
 	{
@@ -385,7 +396,7 @@ void btCable::solveConstraints()
 			{
 				btScalar limit = a.m_body->getUpperLimitDistanceImpact() - a.m_body->getLowerLimitDistanceImpact();
 				btScalar ratio = (distAnchor - a.m_body->getLowerLimitDistanceImpact()) / limit;
-				btScalar clampRatio = Clamp(ratio, 0.0, 1.0);
+				btScalar clampRatio = Clamp(ratio*ratio*ratio, 0.0, 1.0);
 				btScalar newMass = Lerp(a.m_body->getLowerLimitMassImpact(), a.m_body->getUpperLimitMassImpact(), clampRatio);
 				a.m_body->setMassProps(newMass, newMass * a.m_body->getLocalInertia() * a.m_body->getInvMass());
 				a.m_body->setGravity(m_worldInfo->m_gravity  * (a.m_body->getLowerLimitMassImpact() /  newMass));
@@ -1661,8 +1672,8 @@ void btCable::distanceConstraintLock(int limMin, int limMax)
 		if (sumInvMass >= SIMD_EPSILON)
 		{
 			btVector3 denom = 1 / sumInvMass * (normAB - l->m_rl) * ABNormalized;
-			if (i != limMin && a->m_battach == 0) a->m_x += (a->m_im * denom) * k;
-			if (i != limMax - 2 && b->m_battach == 0) b->m_x -= (b->m_im * denom) * k;
+			if (i != limMin) a->m_x += (a->m_im * denom) * k;
+			if (i != limMax - 2) b->m_x -= (b->m_im * denom) * k;
 		}
 	}
 
@@ -1954,9 +1965,12 @@ std::tuple<bool, btScalar> btCable::anchorConstraint()
 		const btVector3 va = a.m_body->getVelocityInLocalPoint(a.m_c1) * dt;
 		const btVector3 vb = n.m_x - n.m_q;
 		const btVector3 vr = (va - vb) + (wa - n.m_x) * kAHR;
-		
-		btScalar ratio_Distance_Mimimeter = a.m_body->getMass() * wa.distance(n.m_x);
-		btScalar ratio_Distance_Weight = wa.distance(n.m_x) * a.m_body->getMass();
+
+		const btVector3 vectAnchorNode = (wa - n.m_x);
+		const btScalar distAnchorNode = vectAnchorNode.length();
+		btScalar ratio = distAnchorNode / 0.1;
+		ratio = Clamp(ratio, 0.0, 1.0);
+
 		if (a.m_body->canChangedMassAtImpact() && !a.m_body->isStaticOrKinematicObject())
 		{
 			// distance Anchor-Node
@@ -1969,8 +1983,8 @@ std::tuple<bool, btScalar> btCable::anchorConstraint()
 
 		const btVector3 impulse = a.m_c0 * vr * a.m_influence;
 		const btVector3 impulseMassBalance = a.m_c0_massBalance * vr * a.m_influence;
-		const btVector3 finalImpulse = impulseMassBalance;
-		
+		const btVector3 finalImpulse = lerp(impulse, impulseMassBalance, ratio);
+
 		a.m_body->applyImpulse(-finalImpulse, a.m_c1);
 		a.tension += finalImpulse / dt;
 		n.m_x = wa;

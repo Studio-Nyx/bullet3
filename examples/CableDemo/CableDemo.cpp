@@ -820,6 +820,9 @@ static void Init_Weigths(CableDemo* pdemo)
 
 		btCable*  cable =pdemo->createCable(resolution, iteration,25, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 		cable->setCollisionParameters(1, 1, 0);
+
+		cable->m_anchors[0].BodyMassRatio = 1;
+		cable->m_anchors[1].BodyMassRatio = 1;
 	}
 }
 
@@ -1358,7 +1361,7 @@ static void initLock(CableDemo* pdemo)
 	btRigidBody* box = pdemo->createRigidBody(704, pos, a18shape);
 	box->setRestitution(0);
 	box->setDamping(0.1, 0.1);
-	//box->setGravity(btVector3(0, 0, 0));
+	// box->setGravity(btVector3(0, 0, 0));
 	box->setFriction(1);
 }
 
@@ -1411,7 +1414,7 @@ static void Init_TestSupportA18(CableDemo* pdemo)
 	LestTransform.setIdentity();
 	LestTransform.setOrigin(btVector3(0, -3, 0));
 	btRigidBody* Lest = pdemo->createRigidBody(10, LestTransform, cylander);
-	Lest->updateMassAtImpact(true, 704, 0.005, 0.1);
+	Lest->updateMassAtImpact(true, 704, 0, 0.1);
 
 	//btVector3 positionWall(2, 0.8,0);
 	//btTransform transformWall;
@@ -1447,6 +1450,9 @@ static void Init_TestSupportA18(CableDemo* pdemo)
 	// cable->setCollisionViscosity(100);
 	cable->setCollisionStiffness(0, 1000, 0, 1);
 	cable->setCollisionParameters(3, 3, 0);
+
+	cable->m_anchors[0].BodyMassRatio = 0.1;
+	cable->m_anchors[1].BodyMassRatio = 0.1;
 
 	pdemo->SetCameraPosition(btVector3(0,2,-3));
 }
