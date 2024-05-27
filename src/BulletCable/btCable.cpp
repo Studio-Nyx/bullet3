@@ -374,18 +374,15 @@ void btCable::solveConstraints()
 			solveContact(&nodePairContact, &indexNodeContact);
 		}
 	}
-	// std::tuple<bool, btScalar> hasImpacted = anchorConstraint();
-	// impacted = std::get<0>(hasImpacted);
-	// distAnchor = std::get<1>(hasImpacted);
 
 	if (useCollision) ResolveConflitZone(&nodePairContact, &indexNodeContact);
 
-	// if (impacted)
-	// {
-	// 	std::tuple<bool, btScalar> hasImpacted = anchorConstraint();
-	// 	impacted = std::get<0>(hasImpacted);
-	// 	distAnchor = std::get<1>(hasImpacted);
-	// }
+	if (impacted)
+	{
+		std::tuple<bool, btScalar> hasImpacted = anchorConstraint();
+		impacted = std::get<0>(hasImpacted);
+		distAnchor = std::get<1>(hasImpacted);
+	}
 
 	for (int i = 0; i < m_anchors.size(); ++i)
 	{
