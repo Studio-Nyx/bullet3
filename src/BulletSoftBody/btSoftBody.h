@@ -494,6 +494,9 @@ public:
 		btScalar m_c2;		            // ima*dt
 		btVector3 tension;              // tension at this anchor
 		
+		bool impacted = false;			// overtension on specific body
+		btScalar m_dist;				// Last distance known between anchor posiiton and node position
+
 		// 0.2% of body mass added to anchor node by default
 		btScalar BodyMassRatio = 0.002f;
 	};
