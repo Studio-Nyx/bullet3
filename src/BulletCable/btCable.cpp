@@ -354,14 +354,11 @@ void btCable::solveConstraints()
 	}
 
 	bool impacted = false;
-	btScalar distAnchor = 0.0;
 	for (int i = 0; i < m_cfg.piterations; ++i)
 	{
 		updateNodeDeltaPos(i);
 
-		std::tuple<bool, btScalar> hasImpacted = anchorConstraint();
-		impacted = std::get<0>(hasImpacted);
-		distAnchor = std::get<1>(hasImpacted);
+		impacted = anchorConstraint();
 		
 		distanceConstraint();
 		
@@ -386,9 +383,7 @@ void btCable::solveConstraints()
 
 	if (impacted)
 	{
-		std::tuple<bool, btScalar> hasImpacted = anchorConstraint();
-		impacted = std::get<0>(hasImpacted);
-		distAnchor = std::get<1>(hasImpacted);
+		impacted = anchorConstraint();
 	}
 
 	for (int i = 0; i < m_anchors.size(); ++i)
@@ -396,10 +391,10 @@ void btCable::solveConstraints()
 		Anchor& a = this->m_anchors[i];
 		if (a.m_body->canChangedMassAtImpact() && !a.m_body->isStaticOrKinematicObject())
 		{
-			if (impacted)
+			if (a.impacted)
 			{
 				btScalar limit = a.m_body->getUpperLimitDistanceImpact() - a.m_body->getLowerLimitDistanceImpact();
-				btScalar ratio = (distAnchor - a.m_body->getLowerLimitDistanceImpact()) / limit;
+				btScalar ratio = (a.m_dist - a.m_body->getLowerLimitDistanceImpact()) / limit;
 				btScalar clampRatio = Clamp(ratio*ratio*ratio, 0.0, 1.0);
 				btScalar newMass = Lerp(a.m_body->getLowerLimitMassImpact(), a.m_body->getUpperLimitMassImpact(), clampRatio);
 				a.m_body->setMassProps(newMass, newMass * a.m_body->getLocalInertia() * a.m_body->getInvMass());
@@ -1953,7 +1948,7 @@ void btCable::Shrinks(float dt)
 	m_growingState = 1;
 }
 
-std::tuple<bool, btScalar> btCable::anchorConstraint()
+bool btCable::anchorConstraint()
 {
 	BT_PROFILE("PSolve_Anchors");
 	const btScalar kAHR = m_cfg.kAHR;
@@ -1983,7 +1978,6 @@ std::tuple<bool, btScalar> btCable::anchorConstraint()
 				impact = true;
 				a.impacted = true;
 				a.m_dist = wa.distance(n.m_x);
-				distAnchor = wa.distance(n.m_x);
 			}
 		}
 
@@ -1995,7 +1989,7 @@ std::tuple<bool, btScalar> btCable::anchorConstraint()
 		a.tension += finalImpulse / dt;
 		n.m_x = wa;
 	}
-	return std::tuple<bool, btScalar>{impact, distAnchor};
+	return impact;
 }
 
 void btCable::setCollisionMode(int mode)
