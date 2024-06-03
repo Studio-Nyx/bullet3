@@ -224,11 +224,10 @@ public:
 		return m_upperLimitDistanceImpact;
 	}
 
-	void updateMassAtImpact(bool impacted, btScalar upperMass, btScalar lowerLimit, btScalar upperLimit)
+	void updateMassAtImpact(bool impacted, btScalar lowerMass, btScalar upperMass, btScalar lowerLimit, btScalar upperLimit)
 	{ 
 		m_canChangedMassAtImpact = impacted;
-		// // TODO: 
-		m_lowerLimitMassImpact = getMass();
+		m_lowerLimitMassImpact = lowerMass;
 		m_upperLimitMassImpact = upperMass;
 		m_lowerLimitDistanceImpact = lowerLimit;
 		m_upperLimitDistanceImpact = upperLimit;
