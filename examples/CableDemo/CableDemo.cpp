@@ -1414,7 +1414,7 @@ static void Init_TestSupportA18(CableDemo* pdemo)
 	LestTransform.setIdentity();
 	LestTransform.setOrigin(btVector3(0, -3, 0));
 	btRigidBody* Lest = pdemo->createRigidBody(10, LestTransform, cylander);
-	Lest->updateMassAtImpact(true, 704, 0, 0.1);
+	Lest->updateMassAtImpact(true, 10, 704, 0, 0.1);
 
 	//btVector3 positionWall(2, 0.8,0);
 	//btTransform transformWall;
