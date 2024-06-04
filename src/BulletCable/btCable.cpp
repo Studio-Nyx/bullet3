@@ -393,7 +393,8 @@ void btCable::solveConstraints()
 			{
 				btScalar limit = a.m_body->getUpperLimitDistanceImpact() - a.m_body->getLowerLimitDistanceImpact();
 				btScalar ratio = (a.m_dist - a.m_body->getLowerLimitDistanceImpact()) / limit;
-				btScalar clampRatio = Clamp(ratio*ratio*ratio, 0.0, 1.0);
+				btScalar func = 1.0 - pow(max(0.0, abs(ratio - 1.0) * 1.1 - 0.1), 3);
+				btScalar clampRatio = Clamp(func, 0.0, 1.0);
 				btScalar newMass = Lerp(a.m_body->getLowerLimitMassImpact(), a.m_body->getUpperLimitMassImpact(), clampRatio);
 				a.m_body->setMassProps(newMass, newMass * a.m_body->getLocalInertia() * a.m_body->getInvMass());
 				a.m_body->setGravity(m_worldInfo->m_gravity  * (a.m_body->getLowerLimitMassImpact() /  newMass));
