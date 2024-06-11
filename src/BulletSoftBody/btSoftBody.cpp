@@ -1113,7 +1113,10 @@ void btSoftBody::transform(const btTransform& trs)
 	{
 		Node& n = m_nodes[i];
 		n.m_x = trs * n.m_x;
-		n.m_q = trs * n.m_q;
+		n.m_q = n.m_x;
+		n.m_v = btVector3(0, 0, 0);
+		n.m_vn = btVector3(0, 0, 0);
+		n.m_splitv = btVector3(0, 0, 0);
 		n.m_n = trs.getBasis() * n.m_n;		
 	}
 	updateBounds();
@@ -1127,7 +1130,10 @@ void btSoftBody::translate(const btVector3& trs)
 	{
 		Node& n = m_nodes[i];
 		n.m_x += trs;
-		n.m_q += trs;
+		n.m_q = n.m_x;
+		n.m_v = btVector3(0, 0, 0);
+		n.m_vn = btVector3(0, 0, 0);
+		n.m_splitv = btVector3(0, 0, 0);
 	}
 
 	/*
@@ -1151,11 +1157,8 @@ void btSoftBody::rotate(const btQuaternion& rot)
 void btSoftBody::rotateWithTranslation(const btQuaternion& rot, const btVector3& trs)
 {
 	translate(-trs);
-	btTransform t;
-	t.setIdentity();
-	t.setRotation(rot);
-	t.setOrigin(trs);
-	transform(t);
+	rotate(rot);
+	translate(trs);
 }
 
 //
