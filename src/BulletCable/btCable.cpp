@@ -1742,7 +1742,12 @@ void btCable::predictMotion(btScalar dt)
 
 void btCable::Grows(float dt)
 {
-	
+	btSoftRigidDynamicsWorld* world = (btSoftRigidDynamicsWorld*)m_world;
+	if (!world)
+		return;
+
+	int totalNumNodes = world->getTotalNumNodes();
+
 	double rl = m_links.at(m_links.size() - 1).m_rl;
 	double distance = dt * WantedSpeed + rl;
 	int nodeSize = m_nodes.size();
@@ -1757,9 +1762,20 @@ void btCable::Grows(float dt)
 			WantedSpeed = 0;
 		}
 	}
-	
+
 	// base restLength on the link
 	double linkRestLength = getLinkRestLength(m_links.size() - 1);
+	
+	// Check if we had to had a node 
+	if (distance > linkRestLength * 2)
+	{
+		// Node number limits
+		if (totalNumNodes >= m_worldInfo->maxNodeNumber || nodeSize >= m_worldInfo->maxNodeNumberPerCable)
+		{
+			m_growingState = 4;
+			return;
+		}
+	}
 
 	m_links.at(m_links.size() - 1).m_rl = distance;
 	m_links.at(m_links.size() - 1).m_c1 = distance*distance;

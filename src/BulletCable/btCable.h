@@ -109,6 +109,12 @@ class btCable : public btSoftBody
 	btAlignedObjectArray<CableManifolds> manifolds;
 	
 private:
+	// Growing state for Unity control
+	// 0: cable length isn't changing
+	// 1: cable currently grows
+	// 2: cable shinks at the minimal value
+	// 3: cable shrinks on an anchor
+	// 4: cable grow but cant add node
 	
 	int m_growingState=0;
 	// Number of solverIteration for 1 deltaTime passed

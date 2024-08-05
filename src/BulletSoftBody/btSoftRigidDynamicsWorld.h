@@ -97,6 +97,15 @@ public:
 		return m_softBodies;
 	}
 
+	int getTotalNumNodes() {
+		int total = 0;
+		for (int i = 0; i < m_softBodies.size(); i++)
+		{			
+			total += m_softBodies.at(i)->m_nodes.size();
+		}
+		return total;
+	}
+
 	virtual void rayTest(const btVector3& rayFromWorld, const btVector3& rayToWorld, RayResultCallback& resultCallback) const;
 
 	/// rayTestSingle performs a raycast call and calls the resultCallback. It is used internally by rayTest.

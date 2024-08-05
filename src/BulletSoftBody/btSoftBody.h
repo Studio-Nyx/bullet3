@@ -61,6 +61,7 @@ struct btSoftBodyWorldInfo
 	int numThread;
 	int maxCableNumber;
 	int maxNodeNumber;
+	int maxNodeNumberPerCable;
 	int numIteration;
 
 	btSoftBodyWorldInfo()
@@ -75,6 +76,7 @@ struct btSoftBodyWorldInfo
 		  numThread(6),
 		  maxCableNumber(100),
 		  maxNodeNumber(8192),
+		  maxNodeNumberPerCable(2000),
 		  numIteration(1)
 	{
 	}
@@ -91,6 +93,7 @@ struct btSoftBodyWorldInfo
 		  numThread(worldInfo->numThread),
 		  maxCableNumber(worldInfo->maxCableNumber),
 		  maxNodeNumber(worldInfo->maxNodeNumber),
+		  maxNodeNumberPerCable(worldInfo->maxNodeNumberPerCable),
 		  numIteration(worldInfo->numIteration)
 	{
 	}
@@ -1477,6 +1480,7 @@ public:
 
 	///fills the dataBuffer and returns the struct name (and 0 on failure)
 	virtual const char* serialize(void* dataBuffer, class btSerializer* serializer) const;
+
 };
 
 #endif  //_BT_SOFT_BODY_H
