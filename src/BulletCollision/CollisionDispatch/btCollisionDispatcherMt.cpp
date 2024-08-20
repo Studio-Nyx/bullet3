@@ -99,6 +99,7 @@ void btCollisionDispatcherMt::releaseManifold(btPersistentManifold* manifold)
 		btAssert(findIndex < m_manifoldsPtr.size());
 		m_manifoldsPtr.swap(findIndex, m_manifoldsPtr.size() - 1);
 		m_manifoldsPtr[findIndex]->m_index1a = findIndex;
+		m_manifoldsPtr[findIndex]->m_hasCollided = false;
 		m_manifoldsPtr.pop_back();
 	} else {
 		m_batchReleasePtr[btGetCurrentThreadIndex()].push_back(manifold);
