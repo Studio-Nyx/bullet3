@@ -385,8 +385,6 @@ void btDiscreteDynamicsWorld::synchronizeMotionStates()
 int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep)
 {
 	startProfiling(timeStep);
-	
-	m_dispatcher1->ClearManifoldsCache();
 
 	int numSimulationSubSteps = 0;
 
@@ -434,25 +432,16 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 		saveKinematicState(fixedTimeStep * m_clampedSimulationSteps);
 
 		applyGravity();
-
-		// Go through all manifolds and set m_lifePoints to clampedSimulationSteps
-		for (int i = 0; i < m_dispatcher1->getNumManifolds(); i++)
-		{
-			btPersistentManifold* manifold = m_dispatcher1->getManifoldByIndexInternal(i);
-			for(int j = 0; j < manifold->getNumContacts(); j++)
-			{
-				manifold->getContactPoint(j).m_hasCollided = false;
-			}
-		}
 		
 		for (int i = 0; i < m_clampedSimulationSteps; i++)
 		{
+			// Clear all cached manifolds, only the last step manifolds are importants
+			m_dispatcher1->ClearManifoldsCache();
+
 			saveKinematicState(fixedTimeStep);
 			internalSingleStepSimulation(fixedTimeStep);
 			synchronizeMotionStates();
 		}
-
-		
 	}
 	else
 	{
