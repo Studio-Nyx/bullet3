@@ -432,16 +432,17 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 		saveKinematicState(fixedTimeStep * m_clampedSimulationSteps);
 
 		applyGravity();
+		// Clear all cached manifolds, only the last step manifolds are importants
+		m_dispatcher1->ClearManifoldsCache();
+
 		
 		for (int i = 0; i < m_clampedSimulationSteps; i++)
 		{
-			// Clear all cached manifolds, only the last step manifolds are importants
-			m_dispatcher1->ClearManifoldsCache();
-
 			saveKinematicState(fixedTimeStep);
 			internalSingleStepSimulation(fixedTimeStep);
 			synchronizeMotionStates();
 		}
+
 	}
 	else
 	{

@@ -142,6 +142,17 @@ void btCollisionDispatcherMt::releaseCachedManifold(btPersistentManifold* manifo
 
 void btCollisionDispatcherMt::addManifoldToCache(btPersistentManifold* manifold)
 {
+	for (int i = 0; i < m_collidedManifoldsCache.size(); i++)
+	{
+		bool isAlreadyInCache = m_collidedManifoldsCache.at(i)->getBody0() == manifold->getBody0() || m_collidedManifoldsCache.at(i)->getBody0() == manifold->getBody1();
+		isAlreadyInCache = isAlreadyInCache && (m_collidedManifoldsCache.at(i)->getBody1() == manifold->getBody0() || m_collidedManifoldsCache.at(i)->getBody1() == manifold->getBody1());
+		
+		if (isAlreadyInCache)
+		{
+			m_collidedManifoldsCache.removeAtIndex(i);
+			break;
+		}
+	}
 	m_collidedManifoldsCache.push_back(manifold);
 }
 
