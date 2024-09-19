@@ -33,6 +33,7 @@
 #include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
 #include <iostream>
 #include <chrono>
+#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
 
 class btBroadphaseInterface;
 class btCollisionShape;
@@ -1986,7 +1987,7 @@ static void Init_TestCollisionFallingA18Constraint(CableDemo* pdemo)
 static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 {
 	// Resolution's cable
-	int resolution = 50;
+	int resolution = 150;
 	int iterations = 100;
 	btScalar margin = 0.01;
 
@@ -2007,7 +2008,7 @@ static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 	GLInstanceGraphicsShape* glmesh = LoadMeshFromObj(relativeFileName, "", &fileIO);
 	printf("[INFO] Obj loaded: Extracted %d verticed from obj file [%s]\n", glmesh->m_numvertices, fileName);
 
-	btConvexHullShape* shape = new btConvexHullShape();
+	/* btConvexHullShape* shape = new btConvexHullShape();
 	for (int i = 0; i < glmesh->m_numvertices; i++)
 	{
 		const GLInstanceVertex& v = glmesh->m_vertices->at(i);
@@ -2018,12 +2019,35 @@ static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 	shape->setLocalScaling(btVector3(2,2,2));
 	shape->optimizeConvexHull();
 	shape->initializePolyhedralFeatures();
+	*/
+	
+	btTriangleMesh* meshInterface = new btTriangleMesh();
+	for (int i = 0; i < glmesh->m_numIndices / 3; i++)
+	{
+		const GLInstanceVertex& cv0 = glmesh->m_vertices->at(glmesh->m_indices->at(i * 3));
+		const btVector3& v0 = btVector3(cv0.xyzw[0], cv0.xyzw[1], cv0.xyzw[2]);
+		const GLInstanceVertex& cv1 = glmesh->m_vertices->at(glmesh->m_indices->at(i * 3 + 1));
+		const btVector3& v1 = btVector3(cv1.xyzw[0], cv1.xyzw[1], cv1.xyzw[2]);
+		const GLInstanceVertex& cv2 = glmesh->m_vertices->at(glmesh->m_indices->at(i * 3 + 2));
+		const btVector3& v2 = btVector3(cv2.xyzw[0], cv2.xyzw[1], cv2.xyzw[2]);
+		meshInterface->addTriangle(v0, v1, v2);
+	}	
+	btBvhTriangleMeshShape* shape = new btBvhTriangleMeshShape(meshInterface, true, true);
+	shape->setLocalScaling(btVector3(2, 2, 2));
+	btTriangleInfoMap* triangleInfoMap = new btTriangleInfoMap();
+	btGenerateInternalEdgeInfo(shape, triangleInfoMap);
+	
+	
+
 
 	btTransform t = btTransform();
 	t.setIdentity();
 	t.setOrigin(btVector3(0, 3, 0));
+	//btQuaternion r = btQuaternion();
+	//r.setRotation(btVector3(0, 1, 0), SIMD_PI * 0.40);
+	//t.setRotation(r);
 	shape->setMargin(0.0);
-	btRigidBody* cube = pdemo->createRigidBody(0, t, shape);
+	btRigidBody* sphere = pdemo->createRigidBody(0, t, shape);
 	
 
 	btVector3 groundPos = btVector3(0, -8, 0);
@@ -2045,7 +2069,7 @@ static void Init_TestCollisionCableConvexHullOnMeshSphere(CableDemo* pdemo)
 	btCable* cable = pdemo->createCable(resolution, iterations, 1, transformRight.getOrigin(), transformLeft.getOrigin() + btVector3(1, 0, 0), bodyLeftAnchor, bodyRightAnchor);
 	cable->setUseCollision(true);
 	cable->getCollisionShape()->setMargin(margin);
-	cable->setUseLRA(false);
+	cable->setUseLRA(true);
 	cable->setCollisionMargin(margin);
 	cable->setCollisionParameters(1,1,0);
 
