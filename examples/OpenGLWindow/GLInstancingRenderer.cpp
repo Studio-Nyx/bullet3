@@ -1282,10 +1282,12 @@ void GLInstancingRenderer::InitShaders()
 			glGenBuffers(1, &pointsIndexVbo);
 
 			int sz = MAX_POINTS_IN_BATCH * sizeof(b3Vector3);
+			int sz1 = MAX_POINTS_IN_BATCH * sizeof(b3Vector4);
 			glBindVertexArray(pointsVertexArrayObject);
 			glBindBuffer(GL_ARRAY_BUFFER, pointsVertexBufferObject);
 			glBufferData(GL_ARRAY_BUFFER, sz, 0, GL_DYNAMIC_DRAW);
-
+			glBindBuffer(GL_ARRAY_BUFFER, pointsIndexVbo);
+			glBufferData(GL_ARRAY_BUFFER, sz1, 0, GL_DYNAMIC_DRAW);
 			glBindVertexArray(0);
 		}
 
@@ -1968,7 +1970,7 @@ void GLInstancingRenderer::drawPoints(const float* positions, const float* color
 			glEnableVertexAttribArray(points_position);
 			glVertexAttribPointer(points_position, 3, GL_FLOAT, GL_FALSE, pointStrideInBytes, 0);
 
-			glBindBuffer(GL_ARRAY_BUFFER, pointsVertexArrayObject);
+			glBindBuffer(GL_ARRAY_BUFFER, pointsIndexVbo);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, curPointsInBatch * 4 * sizeof(float), colors + offsetNumPoints * 4);
 			glEnableVertexAttribArray(points_colourIn);
 			glVertexAttribPointer(points_colourIn, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
