@@ -28,10 +28,15 @@ public:
 	virtual void releaseManifold(btPersistentManifold* manifold) BT_OVERRIDE;
 	virtual void releaseCachedManifold(btPersistentManifold* manifold) BT_OVERRIDE;
 	virtual void releaseAllCachedManifolds() BT_OVERRIDE;
+	virtual void releaseAllParticlesManifolds() BT_OVERRIDE;
 	virtual int getNumManifoldsCache() const BT_OVERRIDE;
 	virtual btPersistentManifold* getManifoldsCacheByIndexInternal(int index) BT_OVERRIDE;
+	virtual int getNumParticlesManifolds() const BT_OVERRIDE;
+	virtual btPersistentManifold* getParticlesManifoldsByIndexInternal(int index) BT_OVERRIDE;
 	virtual void addManifoldToCache(btPersistentManifold* manifold) BT_OVERRIDE;
+	virtual void addParticlesManifold(btPersistentManifold* manifold) BT_OVERRIDE;
 	virtual void ClearManifoldsCache() BT_OVERRIDE;
+	virtual void ClearParticlesManifolds() BT_OVERRIDE;
 
 	virtual void dispatchAllCollisionPairs(btOverlappingPairCache* pairCache, const btDispatcherInfo& info, btDispatcher* dispatcher) BT_OVERRIDE;
 

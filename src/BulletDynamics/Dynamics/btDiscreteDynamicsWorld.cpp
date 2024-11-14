@@ -443,8 +443,9 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 			}
 		}
 
-		// Clear all cached manifolds, only the last step manifolds are importants
+		// Clear all cached manifolds, only the last step manifolds are important
 		m_dispatcher1->ClearManifoldsCache();
+		m_dispatcher1->ClearParticlesManifolds();
 		
 		for (int i = 0; i < m_clampedSimulationSteps; i++)
 		{
@@ -514,10 +515,19 @@ void btDiscreteDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 		btPersistentManifold* manifold = m_dispatcher1->getManifoldByIndexInternal(i);
 		if(manifold->m_hasCollided)
 		{
-			btPersistentManifold* newManifold = new btPersistentManifold;
-			*newManifold = *manifold;
-			newManifold->CopyContactsFromManifold(manifold);			
-			m_dispatcher1->addManifoldToCache(newManifold);
+			if(manifold->getBody0()->getBroadphaseHandle()->m_collisionFilterGroup == 3 || manifold->getBody1()->getBroadphaseHandle()->m_collisionFilterGroup == 3) {
+				btPersistentManifold* newManifold = new btPersistentManifold;
+				*newManifold = *manifold;
+				newManifold->CopyContactsFromManifold(manifold);
+				m_dispatcher1->addParticlesManifold(newManifold);
+			}
+			else
+			{
+				btPersistentManifold* newManifold = new btPersistentManifold;
+				*newManifold = *manifold;
+				newManifold->CopyContactsFromManifold(manifold);			
+				m_dispatcher1->addManifoldToCache(newManifold);
+			}
 		}
 	}
 	

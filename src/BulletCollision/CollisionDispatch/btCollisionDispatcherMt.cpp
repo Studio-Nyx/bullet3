@@ -62,7 +62,7 @@ btPersistentManifold* btCollisionDispatcherMt::getNewManifold(const btCollisionO
 	}
 	// RigidBody only
 	btPersistentManifold* manifold;
-	if (body0->getInternalType() == 2 && body1->getInternalType() == 2) 
+	if (body0->getInternalType() != btCollisionObject::CO_SOFT_BODY && body1->getInternalType() != btCollisionObject::CO_SOFT_BODY) 
  		manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
 	else
 	{
@@ -147,13 +147,29 @@ void btCollisionDispatcherMt::addManifoldToCache(btPersistentManifold* manifold)
 		bool isAlreadyInCache = m_collidedManifoldsCache.at(i)->getBody0() == manifold->getBody0() || m_collidedManifoldsCache.at(i)->getBody0() == manifold->getBody1();
 		isAlreadyInCache = isAlreadyInCache && (m_collidedManifoldsCache.at(i)->getBody1() == manifold->getBody0() || m_collidedManifoldsCache.at(i)->getBody1() == manifold->getBody1());
 		
-		if (isAlreadyInCache)
+		if (isAlreadyInCache && manifold->getNumContacts() > 0)
 		{
 			m_collidedManifoldsCache.removeAtIndex(i);
 			break;
 		}
 	}
 	m_collidedManifoldsCache.push_back(manifold);
+}
+
+void btCollisionDispatcherMt::addParticlesManifold(btPersistentManifold* manifold)
+{
+	for (int i = 0; i < m_particlesManifolds.size(); i++)
+	{
+		bool isAlreadyInCache = m_particlesManifolds.at(i)->getBody0() == manifold->getBody0() || m_particlesManifolds.at(i)->getBody0() == manifold->getBody1();
+		isAlreadyInCache = isAlreadyInCache && (m_particlesManifolds.at(i)->getBody1() == manifold->getBody0() || m_particlesManifolds.at(i)->getBody1() == manifold->getBody1());
+		
+		if (isAlreadyInCache && manifold->getNumContacts() > 0)
+		{
+			m_particlesManifolds.removeAtIndex(i);
+			break;
+		}
+	}
+	m_particlesManifolds.push_back(manifold);
 }
 
 void btCollisionDispatcherMt::ClearManifoldsCache()
@@ -184,6 +200,34 @@ void btCollisionDispatcherMt::releaseAllCachedManifolds()
 	
 }
 
+void btCollisionDispatcherMt::ClearParticlesManifolds()
+{
+	releaseAllParticlesManifolds();
+	m_particlesManifolds.clear();
+}
+
+void btCollisionDispatcherMt::releaseAllParticlesManifolds()
+{
+	//btAssert( !btThreadsAreRunning() );
+
+	while (	m_particlesManifolds.size() > 0)
+	{
+		btPersistentManifold* manifold = m_particlesManifolds[m_particlesManifolds.size()-1];
+		m_particlesManifolds.pop_back();
+
+		manifold->freeContactPoint();
+		if (m_persistentManifoldPoolAllocator->validPtr(manifold))
+		{
+			m_persistentManifoldPoolAllocator->freeMemory(manifold);
+		}
+		else
+		{
+			btAlignedFree(manifold);
+		}
+	}
+	
+}
+
 
 int btCollisionDispatcherMt::getNumManifoldsCache() const
 {
@@ -195,6 +239,18 @@ btPersistentManifold* btCollisionDispatcherMt::getManifoldsCacheByIndexInternal(
 	btAssert(index>=0);
 	btAssert(index<m_collidedManifoldsCache.size());
 	return m_collidedManifoldsCache[index];
+}
+
+int btCollisionDispatcherMt::getNumParticlesManifolds() const
+{
+	return int(m_particlesManifolds.size());
+}
+
+btPersistentManifold* btCollisionDispatcherMt::getParticlesManifoldsByIndexInternal(int index)
+{
+	btAssert(index>=0);
+	btAssert(index<m_particlesManifolds.size());
+	return m_particlesManifolds[index];
 }
 
 struct CollisionDispatcherUpdater : public btIParallelForBody

@@ -322,10 +322,21 @@ void btCollisionDispatcher::addManifoldToCache(btPersistentManifold* manifold)
 	m_collidedManifoldsCache.push_back(manifold);
 }
 
+void btCollisionDispatcher::addParticlesManifold(btPersistentManifold* manifold)
+{
+	m_particlesManifolds.push_back(manifold);
+}
+
 void btCollisionDispatcher::ClearManifoldsCache()
 {
 	releaseAllCachedManifolds();
 	m_collidedManifoldsCache.clear();
+}
+
+void btCollisionDispatcher::ClearParticlesManifolds()
+{
+	releaseAllParticlesManifolds();
+	m_particlesManifolds.clear();
 }
 
 void btCollisionDispatcher::releaseAllCachedManifolds()
@@ -336,6 +347,16 @@ void btCollisionDispatcher::releaseAllCachedManifolds()
 	{
 		delete m_collidedManifoldsCache[i];  // If elements were dynamically allocated
 											 //releaseManifold(m_collidedManifoldsCache[i]); // Or just set each element to nullptr
+	}
+}
+
+void btCollisionDispatcher::releaseAllParticlesManifolds()
+{
+	//btAssert( !btThreadsAreRunning() );
+	
+	for (int i = 0; i < m_particlesManifolds.size(); ++i)
+	{
+		delete m_particlesManifolds[i];
 	}
 }
 
@@ -350,4 +371,16 @@ btPersistentManifold* btCollisionDispatcher::getManifoldsCacheByIndexInternal(in
 	btAssert(index>=0);
 	btAssert(index<m_collidedManifoldsCache.size());
 	return m_collidedManifoldsCache[index];
+}
+
+int btCollisionDispatcher::getNumParticlesManifolds() const
+{
+	return int(m_particlesManifolds.size());
+}
+
+btPersistentManifold* btCollisionDispatcher::getParticlesManifoldsByIndexInternal(int index)
+{
+	btAssert(index>=0);
+	btAssert(index<m_particlesManifolds.size());
+	return m_particlesManifolds[index];
 }
