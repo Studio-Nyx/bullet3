@@ -61,15 +61,8 @@ btPersistentManifold* btCollisionDispatcherMt::getNewManifold(const btCollisionO
 		}
 	}
 	// RigidBody only
-	btPersistentManifold* manifold;
-	if (body0->getInternalType() != btCollisionObject::CO_SOFT_BODY && body1->getInternalType() != btCollisionObject::CO_SOFT_BODY) 
- 		manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
-	else
-	{
-		// Softbody always first
-		btSoftBody* temp = (btSoftBody*)body0;
-		manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold, temp->m_nodes.size());
-	}
+	btPersistentManifold* manifold = new (mem) btPersistentManifold(body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold);
+
 	if (!m_batchUpdating)
 	{
 		// batch updater will update manifold pointers array after finishing, so
