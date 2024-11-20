@@ -16,8 +16,6 @@
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
 #include <tuple>
 
-
-
 btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int node_count,int section_count, const btVector3* x, const btScalar* m) : btSoftBody(worldInfo, node_count, x, m)
 {
 	m_world = world;
@@ -476,8 +474,6 @@ void btCable::solveConstraints()
 	
 }
 
-
-
 void btCable::ResolveConflitZone(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, btAlignedObjectArray<int>* indexNodeContact)
 {
 	Node* node;
@@ -558,33 +554,32 @@ void btCable::updateNodeData()
 		n.m_f = btVector3(0, 0, 0);
 
 		// Update NodePos
-		m_nodePos[i].x = m_nodes[i].m_x.getX();
-		m_nodePos[i].y = m_nodes[i].m_x.getY();
-		m_nodePos[i].z = m_nodes[i].m_x.getZ();
+		m_nodePos[i].x = n.m_x.getX();
+		m_nodePos[i].y = n.m_x.getY();
+		m_nodePos[i].z = n.m_x.getZ();
 
 		// Update NodeData
-		m_nodeData[i].velocity_x = m_nodes[i].m_v.getX();
-		m_nodeData[i].velocity_y = m_nodes[i].m_v.getY();
-		m_nodeData[i].velocity_z = m_nodes[i].m_v.getZ();
+		m_nodeData[i].velocity_x = n.m_v.getX();
+		m_nodeData[i].velocity_y = n.m_v.getY();
+		m_nodeData[i].velocity_z = n.m_v.getZ();
 
 		// Calculate Volume
 		float sizeElement = 0;
-
 		if (i == 0)
 		{
-			sizeElement = (m_nodes[i].m_x - m_nodes[i + 1].m_x).length();
+			sizeElement = (n.m_x - m_nodes[i + 1].m_x).length();
 		}
 		else if (i == m_nodes.size() - 1)
 		{
-			sizeElement = (m_nodes[i].m_x - m_nodes[i - 1].m_x).length();
+			sizeElement = (n.m_x - m_nodes[i - 1].m_x).length();
 		}
 		else
 		{
-			sizeElement = (m_nodes[i].m_x - m_nodes[i - 1].m_x).length();
-			sizeElement += (m_nodes[i].m_x - m_nodes[i + 1].m_x).length();
+			sizeElement = (n.m_x - m_nodes[i - 1].m_x).length();
+			sizeElement += (n.m_x - m_nodes[i + 1].m_x).length();
 		}
 
-		// Using a cylinder volume calculation and divide by 2
+		// Using a cylinder volume calculation with 2 links and divide by 2
 		m_nodeData[i].volume = SIMD_PI * m_cableData->radius * m_cableData->radius * sizeElement * 0.5;
 	}
 }
@@ -687,7 +682,6 @@ void btCable::recursiveBroadPhase(BroadPhasePair* obj, Node* n, btCompoundShape*
 	}
 }
 
-
 // todo compute Velocity to move mq out of the box
 btVector3 btCable::PositionStartRayCalculation(Node *n, btCollisionObject * obj)
 {
@@ -709,6 +703,7 @@ btVector3 btCable::PositionStartRayCalculation(Node *n, btCollisionObject * obj)
 
 	return ComputeCollisionSphere(position, obj, n);	
 }
+
 struct MyContactResultCallback : public btCollisionWorld::ContactResultCallback
 {
 	bool m_connected;
@@ -738,7 +733,6 @@ struct MyContactResultCallback : public btCollisionWorld::ContactResultCallback
 	}
 };
 
-
 btVector3 btCable::ComputeCollisionSphere(btVector3 pos, btCollisionObject* obj, Node* n)
 {
 	btSphereShape sphere = btSphereShape(this->m_collisionMargin);
@@ -757,7 +751,6 @@ btVector3 btCable::ComputeCollisionSphere(btVector3 pos, btCollisionObject* obj,
 	}
 	return pos;
 }
-
 
 void btCable::setupNodeForCollision(btAlignedObjectArray<int>* indexNodeContact)
 {
@@ -1092,9 +1085,6 @@ void btCable::solveContact(btAlignedObjectArray<NodePairNarrowPhase>* nodePairCo
 			temp->m_Xout = temp->node->m_x;
 		}
 	}
-
-
-	
 }
 
 void btCable::solveContactLimited(btAlignedObjectArray<NodePairNarrowPhase>* nodePairContact, int limitLow, int limitHigh)
@@ -1436,7 +1426,6 @@ void btCable::LRAHierachique() {
 	}	
 }
 
-
 // IndexMain is the node we treat
 void btCable::DistanceHierachy(int indexMain, int indexCheck)
 {
@@ -1534,7 +1523,6 @@ void btCable::bendingConstraintDistance()
 	float stiffness = this->bendingStiffness;
 	float iterationFactor = stiffness * stiffness;
 	btScalar angleMax = this->maxAngle;
-
 
 	for (int i = 1; i < this->m_links.size(); ++i)
 	{
@@ -1677,8 +1665,6 @@ void btCable::distanceConstraintLock(int limMin, int limMax)
 
 }
 
-
-
 void btCable::predictMotion(btScalar dt)
 {
 	cableState = Valid;
@@ -1693,6 +1679,7 @@ void btCable::predictMotion(btScalar dt)
 
 	/* Prepare                */
 	m_sst.sdt = dt * m_cfg.timescale;
+	m_sst.fdt = dt * m_cfg.timescale * m_world->GetSubIteration();
 	m_sst.isdt = 1 / m_sst.sdt;
 	m_sst.velmrg = m_sst.sdt * 3;
 	m_sst.radmrg = getCollisionShape()->getMargin();
@@ -1704,18 +1691,17 @@ void btCable::predictMotion(btScalar dt)
 	// SoftRigidBody
 	NodeForces* nodeForces = static_cast<btSoftRigidDynamicsWorld*>(m_world)->m_nodeForces;
 	btVector3 nodeForceToApply = btVector3();
-
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
 		Node& n = m_nodes[i];
 		n.m_q = n.m_x;
 
 		if (isActive() && useHydroAero)
-		{  
-			// Apply Hydro and Aero forces
+		{
+			// Get the Hydro and Aero forces
 			NodeForces currentNodeForces = nodeForces[m_cableData->startIndex + i];
 
-			// We check if currentNodeForces Are Correct, if it's not then we dont apply these forces.
+			// We check if currentNodeForces are correct, if not, then we dont apply these forces.
 			if (std::isinf(currentNodeForces.x) || std::isnan(currentNodeForces.x) || std::isinf(currentNodeForces.y) || std::isnan(currentNodeForces.y) || std::isinf(currentNodeForces.z) || std::isnan(currentNodeForces.z))
 			{
 				cableState = InternalForcesError;
@@ -1732,6 +1718,7 @@ void btCable::predictMotion(btScalar dt)
 		n.m_x += n.m_v * m_sst.sdt;
 		n.m_f = btVector3(0, 0, 0);
 	}
+	
 	/* Bounds                */
 	updateBounds();
 
@@ -1819,7 +1806,6 @@ void btCable::Grows(float dt)
 		m_nodes.at(nodeSize - 2).m_v = (m_nodes.at(nodeSize - 3).m_v + m_nodes.at(nodeSize - 2).m_v) * 0.5;
 		appendLink(m_nodes.size() - 2, m_nodes.size() - 1, m_materials[0]);
 
-		
 		// Split rest length onto the 2 last links
 		m_links[m_links.size() - 2].m_rl = linkRestLength;
 		m_links[m_links.size() - 2].m_c1 = linkRestLength*linkRestLength;
@@ -1865,14 +1851,11 @@ void btCable::Grows(float dt)
 
 void btCable::Shrinks(float dt)
 {
-
-
 	int linkSize = m_links.size();
 	int nodesSize = m_nodes.size();
 
 	double rl = m_links.at(linkSize - 1).m_rl;
 	double distance = dt * WantedSpeed + m_links.at(linkSize - 1).m_rl;
-
 
 	// To avoid shrink to much
 	btScalar totalRl = getRestLength();
@@ -2253,7 +2236,6 @@ int btCable::getGrowingState()
 }
 
 #pragma endregion
-
 
 void btCable::updateCurveResponse(btScalar* dataX, btScalar* dataY, int size)
 {
