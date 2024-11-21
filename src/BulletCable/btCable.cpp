@@ -1716,9 +1716,8 @@ void btCable::predictMotion(btScalar dt)
 			}
 		}
 
-		btVector3 deltaV = n.m_f * n.m_im * m_sst.sdt;
+		btVector3 deltaV = n.m_f * n.m_im * m_sst.fdt;
 		n.m_v += deltaV;
-		//n.m_v *= btPow(btScalar(1) - m_dampingCoefficient, m_sst.sdt);
 		n.m_x += n.m_v * m_sst.sdt;
 		n.m_f = btVector3(0, 0, 0);
 	}
