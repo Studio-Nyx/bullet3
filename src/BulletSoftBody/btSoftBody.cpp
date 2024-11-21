@@ -149,6 +149,7 @@ btSoftBody::btSoftBody(btSoftBodyWorldInfo* worldInfo, int node_count, const btV
 		Node& n = m_nodes[i];
 		ZeroInitialize(n);
 		n.m_x = x ? *x++ : btVector3(0, 0, 0);
+		n.m_xn = n.m_x;
 		n.m_q = n.m_x;
 		n.m_im = m ? *m++ : 1;
 		n.m_im = n.m_im > 0 ? 1 / n.m_im : 0;
@@ -1113,6 +1114,7 @@ void btSoftBody::transform(const btTransform& trs)
 	{
 		Node& n = m_nodes[i];
 		n.m_x = trs * n.m_x;
+		n.m_xn = n.m_x;
 		n.m_q = n.m_x;
 		n.m_v = btVector3(0, 0, 0);
 		n.m_vn = btVector3(0, 0, 0);
@@ -1130,6 +1132,7 @@ void btSoftBody::translate(const btVector3& trs)
 	{
 		Node& n = m_nodes[i];
 		n.m_x += trs;
+		n.m_xn = n.m_x;
 		n.m_q = n.m_x;
 		n.m_v = btVector3(0, 0, 0);
 		n.m_vn = btVector3(0, 0, 0);
@@ -1172,6 +1175,7 @@ void btSoftBody::scale(const btVector3& scl)
 	{
 		Node& n = m_nodes[i];
 		n.m_x *= scl;
+		n.m_x = n.m_xn;
 		n.m_q *= scl;
 		vol = btDbvtVolume::FromCR(n.m_x, margin);
 		m_ndbvt.update(n.m_leaf, vol);
@@ -1517,6 +1521,7 @@ void btSoftBody::updateState(const btAlignedObjectArray<btVector3>& q, const btA
 	{
 		Node& n = m_nodes[i];
 		n.m_x = q[i];
+		n.m_xn = q[i];
 		n.m_q = q[i];
 		n.m_v = v[i];
 		n.m_vn = v[i];
@@ -2144,6 +2149,7 @@ void btSoftBody::predictMotion(btScalar dt)
 
 	/* Prepare                */
 	m_sst.sdt = dt * m_cfg.timescale;
+	m_sst.fdt = dt * m_cfg.timescale * m_world->GetSubIteration();
 	m_sst.isdt = 1 / m_sst.sdt;
 	m_sst.velmrg = m_sst.sdt * 3;
 	m_sst.radmrg = getCollisionShape()->getMargin();
