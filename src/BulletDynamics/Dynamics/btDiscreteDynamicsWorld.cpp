@@ -386,7 +386,7 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 {
 	startProfiling(timeStep);
 
-	int numSimulationSubSteps = 0;
+	m_subIteration = 0;
 
 	if (maxSubSteps)
 	{
@@ -395,8 +395,8 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 		m_localTime += timeStep;
 		if (m_localTime >= fixedTimeStep)
 		{
-			numSimulationSubSteps = int(m_localTime / fixedTimeStep);
-			m_localTime -= numSimulationSubSteps * fixedTimeStep;
+			m_subIteration = int(m_localTime / fixedTimeStep);
+			m_localTime -= m_subIteration * fixedTimeStep;
 		}
 	}
 	else
@@ -407,12 +407,12 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 		m_fixedTimeStep = 0;
 		if (btFuzzyZero(timeStep))
 		{
-			numSimulationSubSteps = 0;
+			m_subIteration = 0;
 			maxSubSteps = 0;
 		}
 		else
 		{
-			numSimulationSubSteps = 1;
+			m_subIteration = 1;
 			maxSubSteps = 1;
 		}
 	}
@@ -423,10 +423,10 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 		btIDebugDraw* debugDrawer = getDebugDrawer();
 		gDisableDeactivation = (debugDrawer->getDebugMode() & btIDebugDraw::DBG_NoDeactivation) != 0;
 	}
-	if (numSimulationSubSteps)
+	if (m_subIteration)
 	{
 		//clamp the number of substeps, to prevent simulation grinding spiralling down to a halt
-		m_clampedSimulationSteps = (numSimulationSubSteps > maxSubSteps) ? maxSubSteps : numSimulationSubSteps;
+		m_clampedSimulationSteps = (m_subIteration > maxSubSteps) ? maxSubSteps : m_subIteration;
 
 		// Update the kinematic objects first (may have been moved by animation)
 		saveKinematicState(fixedTimeStep * m_clampedSimulationSteps);
@@ -446,11 +446,13 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 		// Clear all cached manifolds, only the last step manifolds are importants
 		m_dispatcher1->ClearManifoldsCache();
 		
+		m_indexSubIteration = 0;
 		for (int i = 0; i < m_clampedSimulationSteps; i++)
 		{
 			saveKinematicState(fixedTimeStep);
 			internalSingleStepSimulation(fixedTimeStep);
 			synchronizeMotionStates();
+			m_indexSubIteration++;
 		}
 
 	}
@@ -465,7 +467,7 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 	CProfileManager::Increment_Frame_Counter();
 #endif  //BT_NO_PROFILE
 
-	return numSimulationSubSteps;
+	return m_indexSubIteration;
 }
 
 void btDiscreteDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)

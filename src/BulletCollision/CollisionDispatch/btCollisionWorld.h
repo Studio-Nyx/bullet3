@@ -85,6 +85,10 @@ class btSerializer;
 class btCollisionWorld
 {
 protected:
+
+	int m_indexSubIteration;
+	int m_subIteration;
+
 	btAlignedObjectArray<btCollisionObject*> m_collisionObjects;
 
 	btDispatcher* m_dispatcher1;
@@ -108,6 +112,10 @@ public:
 	btCollisionWorld(btDispatcher* dispatcher, btBroadphaseInterface* broadphasePairCache, btCollisionConfiguration* collisionConfiguration);
 
 	virtual ~btCollisionWorld();
+	
+	int GetSubIteration() { return m_subIteration; }
+
+	int GetIndexSubIteration() { return m_indexSubIteration; }
 
 	void setBroadphase(btBroadphaseInterface* pairCache)
 	{
