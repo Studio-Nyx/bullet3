@@ -546,9 +546,7 @@ void btCable::updateNodeData()
 {
 	if (m_world->GetIndexSubIteration() != m_world->GetSubIteration() - 1) return;
 
-	const btScalar damping    = (1.0 - m_cfg.kDP);
-	const btScalar subFrameDT = (1.0 / m_sst.sdt) * damping;
-	const btScalar frameDT    = (1.0 / m_sst.fdt) * damping;
+	const btScalar frameDT = (1.0 / m_sst.fdt) * (1.0 - m_cfg.kDP);
 	for (int i = 0; i < m_nodes.size(); ++i)
 	{
 		Node& n = m_nodes[i];

@@ -84,7 +84,7 @@ void btDefaultSoftBodySolver::solveConstraints(btScalar solverdt)
 			psb->solveConstraints();
 		}
 		
-		if (cable != nullptr)
+		if (cable != nullptr && psb->isActive())
 		{
 			cable->updateNodeData();
 		}	
