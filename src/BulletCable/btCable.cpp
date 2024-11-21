@@ -31,6 +31,7 @@ btCable::btCable(btSoftBodyWorldInfo* worldInfo, btCollisionWorld* world, int no
 	{
 		m_nodes[i].m_battach = 0;
 		m_nodes[i].index = i;
+		m_nodes[i].m_xn = x[i];
 
 		if (i != 0)
 		{
@@ -543,14 +544,17 @@ void btCable::updateLength(btScalar dt)
 
 void btCable::updateNodeData() 
 {
-	const btScalar vc = m_sst.isdt * (1 - m_cfg.kDP);
+	if (m_world->GetIndexSubIteration() != m_world->GetSubIteration() - 1) return;
 
-	int ni { m_nodes.size() };
-	for (int i = 0; i < ni; ++i)
+	const btScalar damping    = (1.0 - m_cfg.kDP);
+	const btScalar subFrameDT = (1.0 / m_sst.sdt) * damping;
+	const btScalar frameDT    = (1.0 / m_sst.fdt) * damping;
+	for (int i = 0; i < m_nodes.size(); ++i)
 	{
-		
- 		Node& n = m_nodes[i];
-		n.m_v = (n.m_x - n.m_q) * vc;
+		Node& n = m_nodes[i];
+		n.m_vn = n.m_v;
+		n.m_v = (n.m_x - n.m_xn) * frameDT;
+		n.m_xn = n.m_x;
 		n.m_f = btVector3(0, 0, 0);
 
 		// Update NodePos
@@ -2134,6 +2138,7 @@ void btCable::appendNode(const btVector3& x, btScalar m)
 	ZeroInitialize(n);
 
 	n.m_x = x;
+	n.m_xn = x;
 	n.m_q = n.m_x;
 	n.m_im = m > 0 ? 1 / m : 0;
 	n.m_material = m_materials[0];

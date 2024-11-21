@@ -303,7 +303,8 @@ public:
 		btScalar areColliding;
 		int distToAnchor;
 		btVector3 m_x;       // Position
-		btVector3 m_xOut;  // Previous step position/Test position
+		btVector3 m_xn;      // Previous position from the last step, not the substep
+		btVector3 m_xOut;	 // Previous step position/Test position
 		int m_nbCollidingObjectPotential;  // Number of element in potential collision
 		int m_nbCollidingObjectInFrame;  // Number of element in collision
 		btVector3 m_q;       // Previous step position/Test position
@@ -815,13 +816,15 @@ public:
 	{
 		//if you add new variables, always initialize them!
 		SolverState()
-			: sdt(0),
+			: fdt(0),
+			  sdt(0),
 			  isdt(0),
 			  velmrg(0),
 			  radmrg(0),
 			  updmrg(0)
 		{
 		}
+		btScalar fdt;     // frame's dt
 		btScalar sdt;     // dt*timescale
 		btScalar isdt;    // 1/sdt
 		btScalar velmrg;  // velocity margin
