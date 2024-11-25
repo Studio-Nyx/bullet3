@@ -130,10 +130,13 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 	solveSoftBodiesConstraints(timeStep);
 
 	// Reset arrays in order to avoid garbage values causing wrong calculations
-	std::fill_n(m_nodesData, m_sbi.maxNodeNumber, m_defaultNodeData);
-	std::fill_n(m_nodesPos, m_sbi.maxNodeNumber, m_defaultNodePos);
-	std::fill_n(m_nodeForces, m_sbi.maxNodeNumber, m_defaultNodeForces);
-	std::fill_n(m_cablesData, m_sbi.maxCableNumber, m_defaultCableData);
+	if (m_indexSubIteration == m_subIteration - 1)
+	{
+		std::fill_n(m_nodesData, m_sbi.maxNodeNumber, m_defaultNodeData);
+		std::fill_n(m_nodesPos, m_sbi.maxNodeNumber, m_defaultNodePos);
+		std::fill_n(m_cablesData, m_sbi.maxCableNumber, m_defaultCableData);
+		std::fill_n(m_nodeForces, m_sbi.maxNodeNumber, m_defaultNodeForces);
+	}
 	
 	//Set Arrays
 	int NodesIndex = 0;
