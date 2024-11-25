@@ -156,6 +156,10 @@ btSoftBody::btSoftBody(btSoftBodyWorldInfo* worldInfo, int node_count, const btV
 		n.m_leaf = m_ndbvt.insert(btDbvtVolume::FromCR(n.m_x, margin), &n);
 		n.m_material = pm;
 		m_X[i] = n.m_x;
+		n.m_maxSizeMovingAverage = 24;
+		n.m_movingAverage = new btVector3[n.m_maxSizeMovingAverage];
+		n.m_firstLoopMovingAverage = false;
+		n.m_indexMovingAverage = 0;
 	}
 	updateBounds();
 	setCollisionQuadrature(3);
@@ -235,6 +239,20 @@ void btSoftBody::initDefaults()
 
 	// reduced flag
 	m_reducedModel = false;
+}
+
+void btSoftBody::InitializeNode(Node* node, const btVector3* x, btScalar m)
+{
+	node->m_x = x ? *x++ : btVector3(0, 0, 0);
+	node->m_xn = node->m_x;
+	node->m_q = node->m_x;
+	node->m_im = m ? m++ : 1;
+	node->m_im = node->m_im > 0 ? 1 / node->m_im : 0;
+
+	node->m_maxSizeMovingAverage = 24;
+	node->m_movingAverage = new btVector3[node->m_maxSizeMovingAverage];
+	node->m_firstLoopMovingAverage = false;
+	node->m_indexMovingAverage = 0;
 }
 
 //

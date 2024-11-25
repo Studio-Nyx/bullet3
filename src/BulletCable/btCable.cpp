@@ -544,16 +544,30 @@ void btCable::updateLength(btScalar dt)
 
 void btCable::updateNodeData() 
 {
-	if (m_world->GetIndexSubIteration() != m_world->GetSubIteration() - 1) return;
-
 	const btScalar frameDT = (1.0 / m_sst.fdt) * (1.0 - m_cfg.kDP);
+	const btScalar subFrameDT = (1.0 / m_sst.sdt) * (1.0 - m_cfg.kDP);
 	for (int i = 0; i < m_nodes.size(); ++i)
 	{
+		// Update velocities for the cable
 		Node& n = m_nodes[i];
 		n.m_vn = n.m_v;
-		n.m_v = (n.m_x - n.m_xn) * frameDT;
-		n.m_xn = n.m_x;
-		n.m_f = btVector3(0, 0, 0);
+		n.m_v = (n.m_x - n.m_q) * subFrameDT;
+		if (m_world->GetIndexSubIteration() == m_world->GetSubIteration() - 1)
+		{
+			n.m_f = btVector3(0, 0, 0);
+		}
+
+		// Update velocities for the hydro's forces
+		n.m_movingAverage[n.m_indexMovingAverage] = n.m_v;
+		int ratio = n.m_maxSizeMovingAverage - n.m_indexMovingAverage;
+		btVector3 average = btVector3(0, 0, 0);
+		for (int i = 0; i < n.m_maxSizeMovingAverage; ++i)
+		{
+			btScalar weight = (btScalar)((i + ratio) % n.m_maxSizeMovingAverage) / (btScalar)n.m_maxSizeMovingAverage;
+			average += n.m_movingAverage[i] * weight;
+		}
+		average = average / n.m_maxSizeMovingAverage;
+		n.m_indexMovingAverage = (n.m_indexMovingAverage + 1) % n.m_maxSizeMovingAverage;
 
 		// Update NodePos
 		m_nodePos[i].x = n.m_x.getX();
@@ -561,9 +575,9 @@ void btCable::updateNodeData()
 		m_nodePos[i].z = n.m_x.getZ();
 
 		// Update NodeData
-		m_nodeData[i].velocity_x = n.m_v.getX();
-		m_nodeData[i].velocity_y = n.m_v.getY();
-		m_nodeData[i].velocity_z = n.m_v.getZ();
+		m_nodeData[i].velocity_x = average.getX();
+		m_nodeData[i].velocity_y = average.getY();
+		m_nodeData[i].velocity_z = average.getZ();
 
 		// Calculate Volume
 		float sizeElement = 0;
@@ -1714,10 +1728,9 @@ void btCable::predictMotion(btScalar dt)
 			}
 		}
 
-		btVector3 deltaV = n.m_f * n.m_im * m_sst.fdt;
+		btVector3 deltaV = n.m_f * n.m_im * m_sst.sdt;
 		n.m_v += deltaV;
 		n.m_x += n.m_v * m_sst.sdt;
-		n.m_f = btVector3(0, 0, 0);
 	}
 	
 	/* Bounds                */
@@ -2133,11 +2146,8 @@ void btCable::appendNode(const btVector3& x, btScalar m)
 	m_nodes.push_back(Node());
 	Node& n = m_nodes[m_nodes.size() - 1];
 	ZeroInitialize(n);
+	InitializeNode(&n,&x,m);
 
-	n.m_x = x;
-	n.m_xn = x;
-	n.m_q = n.m_x;
-	n.m_im = m > 0 ? 1 / m : 0;
 	n.m_material = m_materials[0];
 	
 	for (int i = m_nodes.size()-3; i < m_nodes.size(); i++)

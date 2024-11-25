@@ -335,6 +335,11 @@ public:
 		btVector3 posPreviousIteration;
 		bool computeNodeConstraint;
 		int cptIteration;
+
+		int m_maxSizeMovingAverage;
+		btVector3* m_movingAverage;
+		int m_indexMovingAverage;
+		bool m_firstLoopMovingAverage;
 	};
 
 	/* SumForces of a node*/
@@ -1483,6 +1488,9 @@ public:
 
 	///fills the dataBuffer and returns the struct name (and 0 on failure)
 	virtual const char* serialize(void* dataBuffer, class btSerializer* serializer) const;
+
+	protected:
+		void InitializeNode(Node* node, const btVector3* x, btScalar m);
 
 };
 
