@@ -53,7 +53,7 @@ class btSoftRigidDynamicsWorld;
 class CableDemo : public CommonRigidBodyBase
 {
 public:
-	int substepSolver = 2;
+	int substepSolver = 4;
 	btAlignedObjectArray<btSoftSoftCollisionAlgorithm*> m_SoftSoftCollisionAlgorithms;
 
 	btAlignedObjectArray<btSoftRididCollisionAlgorithm*> m_SoftRigidCollisionAlgorithms;
@@ -179,6 +179,7 @@ public:
 	//
 	//void	clientResetScene();
 	void renderme();
+	bool m_applyForces;
 	bool keyboardCallback(int key, int state) override
 	{
 		if (key == 'a' && state)
@@ -208,6 +209,16 @@ public:
 			m_shrink = false;
 		}
 
+		if (key == 'a' && state)
+		{
+			ApplyForcesNodes();
+		}
+
+		if (key == 'e' & state)
+		{
+			m_applyForces = !m_applyForces;
+		} 
+	
 		if (key == '9' && state)
 		{
 			GrowsWithSpeedAndDistance(growthSpeed, growthDistance);
@@ -313,6 +324,63 @@ public:
 		{
 			m_growWithSpeedAndDistance = false;
 			_cable->WantedSpeed = 0;
+		}
+	}
+
+	btVector3 computeNormalForce(btVector3 relativeVel, btVector3 link, btVector3 linkDir, float radius, float density, float coefDragNormal)
+	{
+		float lengthRelativeVel = relativeVel.norm();
+		if (lengthRelativeVel < 0.001f) return btVector3(0, 0, 0);
+
+		// See Morison's equation to calculate drag https://www.orcina.com/webhelp/OrcaFlex/Content/html/Morison%27sequation.htm
+		btVector3 relativeVelNormalized = relativeVel.normalized();
+		btVector3 u = relativeVelNormalized.cross(linkDir);
+		btVector3 n = linkDir.cross(u);
+		const float effectiveAreaNormal = std::max(0.0, std::min(n.dot(relativeVelNormalized), 1.0));
+		const float areaLink = 2.0f * radius * link.norm();
+		btVector3 normalForce = -0.5f * density * coefDragNormal * areaLink * effectiveAreaNormal * lengthRelativeVel * relativeVel;
+		return normalForce;
+	}
+
+	void ApplyForcesNodes() 
+	{
+		if (getSoftDynamicsWorld()->getSoftBodyArray().size() == 0) return;
+		btCable* cable = (btCable*)getSoftDynamicsWorld()->getSoftBodyArray()[0];
+		for (int i = 1; i < cable->m_nodes.size()-1; ++i)
+		{
+			btVector3 nodePosition = cable->m_nodes[i].m_x;
+			btVector3 nodeVelocity = btVector3(cable->m_nodeData[i].velocity_x, cable->m_nodeData[i].velocity_y, cable->m_nodeData[i].velocity_z);
+
+			const float waterFactor = 1.0f;
+
+			// Initialize the forces/velocities
+			btVector3 waterNormalForce = btVector3(0,0,0);
+
+			// Water velocity
+			btVector3 relativeVelWater = nodeVelocity - btVector3(1.0, 0, 0);
+
+			// Previous Node
+			btVector3 prevPos = cable->m_nodes[i - 1].m_x;
+
+			// Next Node
+			btVector3 nextPos = cable->m_nodes[i + 1].m_x;
+
+			const btVector3 linkBefore = (nodePosition - prevPos);
+			const btVector3 linkAfter = (nextPos - nodePosition);
+
+			const btVector3 linkDirBefore = linkBefore.normalized();
+			const btVector3 linkDirAfter = linkAfter.normalized();
+
+			// Forces factors (before)
+			float linkBeforeWaterFactor = 1.0;
+
+			// Forces factors (after)
+			float linkAfterWaterFactor = 1.0;
+
+			waterNormalForce += computeNormalForce(relativeVelWater, linkBefore, linkDirBefore, 0.0048, 1027, 1.2) * linkBeforeWaterFactor / 2.0f;
+			waterNormalForce += computeNormalForce(relativeVelWater, linkAfter, linkDirAfter, 0.0048, 1027, 1.2) * linkAfterWaterFactor / 2.0f;
+		
+			cable->m_nodes[i].m_f += waterNormalForce;
 		}
 	}
 
@@ -525,6 +593,9 @@ public:
 
 			current_ticks = clock();
 
+			std::cout << std::endl;
+
+			if (m_applyForces) ApplyForcesNodes();
 
 			int subStep = substepSolver;
 			m_dynamicsWorld->stepSimulation(deltaTime, subStep, deltaTime / subStep);
@@ -621,7 +692,7 @@ public:
 		{
 			const btScalar t = i / (btScalar)(resolution - 1);
 			positionNodes[i] = lerp(posWorldAnchorBodyB, posWorldAnchorBodyA, t);
-			massNodes[i] = 1;
+			massNodes[i] = 0.013041;
 		}
 
 		// Cable's creation
@@ -634,7 +705,7 @@ public:
 			cable->appendAnchor(cable->m_nodes.size() - 1, bodyA, posWorldAnchorBodyA - bodyA->getWorldTransform().getOrigin(), DisableCollisionOnA);
 		// Cable's config
 	
-		cable->setTotalMass(totalMass);
+		// cable->setTotalMass(totalMass);
 		cable->m_cfg.piterations = iteration;
 		cable->m_cfg.kAHR = 1;
 		cable->setUseLRA(true);
@@ -649,7 +720,6 @@ public:
 
 	btCable* createCableWaypoint(int resolution, int iteration, btScalar totalMass, btAlignedObjectArray<btVector3> anchorPos, btRigidBody* bodyA = nullptr, btRigidBody* bodyB = nullptr, bool DisableCollisionOnA = true, bool DisableCollisionOnB = true)
 	{
-
 		int s = anchorPos.size()-1;
 		btScalar totalDist = 0;
 		for (int i = 0; i < s; i++)
@@ -678,7 +748,6 @@ public:
 			int limite = dist / totalDist * resolution;
 			for (int i = 0; i < limite; ++i)
 			{
-					
 				const btScalar t = i / (btScalar)(limite-1);
 				btVector3 pos = lerp(anchorPos.at(j), anchorPos.at(j+1), t);
 				positionNodes[position] = pos;
@@ -943,10 +1012,9 @@ static void Init_Lengths(CableDemo* pdemo)
 }
 
 static void Init_CableForceDown(CableDemo* pdemo)
-{
-	
+{	
 	// Shape
-	btCollisionShape* boxShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
+	btCollisionShape* boxShape = new btBoxShape(btVector3(0.25, 0.25, 0.25));
 
 	// Masses
 	btScalar massKinematic(0);
@@ -965,32 +1033,24 @@ static void Init_CableForceDown(CableDemo* pdemo)
 	transformPhysic.setRotation(rotation);
 	
 	// Resolution's cable
-	int resolution = 20;
-	int iteration = 50;
+	int resolution = 84;
+	int iteration = 120;
 
-	// Create 10 cube and 5 cables
-	for (int i = 0 ; i < 1 ; i++)
-	{
-		// Positions
-		btVector3 positionKinematic(0, 10, 0);
-		btVector3 positionPhysic(0, 4, 0);
-		transformKinematic.setOrigin(positionKinematic);
-		transformPhysic.setOrigin(positionPhysic);
-		
-		// Create the rigidbodys
-		btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
-		btRigidBody* physic = pdemo->createRigidBody(massPhysic, transformPhysic, boxShape);
+	// Positions
+	btVector3 positionKinematic(0, 3, 0);
+	btVector3 positionPhysic(0, 3-6.68, 0);
+	transformKinematic.setOrigin(positionKinematic);
+	transformPhysic.setOrigin(positionPhysic);
 
-		// Anchor's positions
-		btVector3 anchorPositionKinematic = positionKinematic - btVector3(0, -0.5, 0);
-		btVector3 anchorPositionPhysic = positionPhysic + btVector3(0, 0.5, 0);
-		
-		pdemo->createCable(resolution, iteration, 1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
-		
-	}
+	// Create the rigidbodys
+	btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
+	btRigidBody* physic = pdemo->createRigidBody(massKinematic, transformPhysic, boxShape);
 
+	// Anchor's positions
+	btVector3 anchorPositionKinematic = positionKinematic;
+	btVector3 anchorPositionPhysic = positionPhysic;
 
-
+	btCable* cable = pdemo->createCable(resolution, iteration, 1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 }
 
 static void Init_CableForceUp(CableDemo* pdemo)
