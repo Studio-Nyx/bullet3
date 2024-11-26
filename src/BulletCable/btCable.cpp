@@ -1712,7 +1712,7 @@ void btCable::predictMotion(btScalar dt)
 		Node& n = m_nodes[i];
 		n.m_q = n.m_x;
 
-		if (isActive() && useHydroAero)
+		if (isActive() && useHydroAero && m_world->GetIndexSubIteration() == 0)
 		{
 			// Get the Hydro and Aero forces
 			NodeForces currentNodeForces = nodeForces[m_cableData->startIndex + i];
