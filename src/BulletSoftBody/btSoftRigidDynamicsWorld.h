@@ -123,6 +123,7 @@ public:
 
 	void updateCableForces(btSoftBody::NodeForces* co, int size);
 
+	void prepareSingleStepSimulation();
 	void* btSoftRigidDynamicsWorld::getCablesData();
 	void* btSoftRigidDynamicsWorld::getNodesPos();
 	void* btSoftRigidDynamicsWorld::getNodesData();
