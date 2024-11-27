@@ -112,23 +112,8 @@ void btSoftRigidDynamicsWorld::predictUnconstraintMotion(btScalar timeStep)
 	}
 }
 
-void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
+void btSoftRigidDynamicsWorld::prepareSingleStepSimulation()
 {
-	// Let the solver grab the soft bodies and if necessary optimize for it
-	m_softBodySolver->optimize(getSoftBodyArray());
-
-	if (!m_softBodySolver->checkInitialized())
-	{
-		btAssert("Solver initialization failed\n");
-	}
-
-	btDiscreteDynamicsWorld::internalSingleStepSimulation(timeStep);
-
-	btDiscreteDynamicsWorld::saveKinematicState(timeStep);
-
-	///solve soft bodies constraints
-	solveSoftBodiesConstraints(timeStep);
-
 	// Reset arrays in order to avoid garbage values causing wrong calculations
 	if (m_indexSubIteration == m_subIteration - 1)
 	{
@@ -137,7 +122,7 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 		std::fill_n(m_cablesData, m_sbi.maxCableNumber, m_defaultCableData);
 		std::fill_n(m_nodeForces, m_sbi.maxNodeNumber, m_defaultNodeForces);
 	}
-	
+
 	//Set Arrays
 	int NodesIndex = 0;
 	for (int i = 0; i < m_softBodies.size(); i++)
@@ -163,6 +148,26 @@ void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 	}
 
 	m_hydroCableNodesNumber = NodesIndex;
+}
+
+void btSoftRigidDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
+{
+	// Let the solver grab the soft bodies and if necessary optimize for it
+	m_softBodySolver->optimize(getSoftBodyArray());
+
+	if (!m_softBodySolver->checkInitialized())
+	{
+		btAssert("Solver initialization failed\n");
+	}
+
+	btDiscreteDynamicsWorld::internalSingleStepSimulation(timeStep);
+
+	btDiscreteDynamicsWorld::saveKinematicState(timeStep);
+
+	///solve soft bodies constraints
+	solveSoftBodiesConstraints(timeStep);
+
+	
 
 	// End solver-wise simulation step
 	// ///////////////////////////////
