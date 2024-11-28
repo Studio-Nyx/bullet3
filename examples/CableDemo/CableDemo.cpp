@@ -117,6 +117,8 @@ private:
 
 	std::chrono::steady_clock::time_point startingTime{Clock::now()};
 
+	btVector3 m_waterCurrent;
+
 
 public:
 	void initPhysics();
@@ -148,7 +150,10 @@ public:
 		m_printFPS = false;
 		m_printTens = false;
 		m_cameraStartPosition = btVector3(0, 3, 0);
-	}
+
+		m_waterCurrent = btVector3(1, 0, 0);
+	} 
+
 	virtual ~CableDemo()
 	{
 		btAssert(m_dynamicsWorld == 0);
@@ -179,7 +184,28 @@ public:
 	//
 	//void	clientResetScene();
 	void renderme();
-	bool m_applyForces;
+
+	/*
+	* 4 -> Move body (=20)
+	* 6 -> Move body (=-20)
+	* 9 -> Grow cable with speed and distance
+	* A -> apply force on 
+	* E -> Increase water current (only used on demo 21)
+	* T -> Print cable tension
+	* O -> Increase grow distance (+=0.5)
+	* P -> Decrease grow speed (+=0.5)
+	* D -> print cable distance
+	* F -> Print FPS
+	* H -> Enable "Grow" and disable "shrink"
+	* J -> Disable "Grow" and enable "shrink"
+	* K -> Disable "Grow" and disable "shrink"
+	* L -> Decrease grow distance (-=0.5)
+	* M -> Decrease grow speed (-=0.5
+	* X -> Move body (+=1)
+	* C -> Move body (-=1)
+	* N -> attach Lock
+	*/
+
 	bool keyboardCallback(int key, int state) override
 	{
 		if (key == 'a' && state)
@@ -209,14 +235,10 @@ public:
 			m_shrink = false;
 		}
 
-		if (key == 'a' && state)
+		if (key == 'e' && state)
 		{
-			ApplyForcesNodes();
-		}
-
-		if (key == 'e' & state)
-		{
-			m_applyForces = !m_applyForces;
+			m_waterCurrent += btVector3(1, 0, 0);
+			b3Printf("Water current length : %f ", m_waterCurrent.norm());
 		} 
 	
 		if (key == '9' && state)
@@ -306,6 +328,7 @@ public:
 	void GrowsWithSpeedAndDistance(double speed, double distance, bool test = true)
 	{
 		if (getSoftDynamicsWorld()->getSoftBodyArray().size() == 0) return;
+
 		btCable* _cable = (btCable*)getSoftDynamicsWorld()->getSoftBodyArray()[0];
 		if (test)
 		{	
@@ -327,7 +350,7 @@ public:
 		}
 	}
 
-	btVector3 computeNormalForce(btVector3 relativeVel, btVector3 link, btVector3 linkDir, float radius, float density, float coefDragNormal)
+	btVector3 computeNormalForce(int nodeIndex, btVector3 relativeVel, btVector3 link, btVector3 linkDir, float radius, float density, float coefDragNormal)
 	{
 		float lengthRelativeVel = relativeVel.norm();
 		if (lengthRelativeVel < 0.001f) return btVector3(0, 0, 0);
@@ -342,10 +365,15 @@ public:
 		return normalForce;
 	}
 
-	void ApplyForcesNodes() 
+	void ApplyForcesNodes(btVector3 waterCurrent)
 	{
 		if (getSoftDynamicsWorld()->getSoftBodyArray().size() == 0) return;
 		btCable* cable = (btCable*)getSoftDynamicsWorld()->getSoftBodyArray()[0];
+
+		btScalar density = 1027;
+		btScalar radius = cable->m_cableData->radius;
+		btScalar coefficient = cable->m_cableData->normalDragCoefficient;
+
 		for (int i = 1; i < cable->m_nodes.size()-1; ++i)
 		{
 			btVector3 nodePosition = cable->m_nodes[i].m_x;
@@ -357,7 +385,7 @@ public:
 			btVector3 waterNormalForce = btVector3(0,0,0);
 
 			// Water velocity
-			btVector3 relativeVelWater = nodeVelocity - btVector3(1.0, 0, 0);
+			btVector3 relativeVelWater = nodeVelocity - waterCurrent;
 
 			// Previous Node
 			btVector3 prevPos = cable->m_nodes[i - 1].m_x;
@@ -377,8 +405,8 @@ public:
 			// Forces factors (after)
 			float linkAfterWaterFactor = 1.0;
 
-			waterNormalForce += computeNormalForce(relativeVelWater, linkBefore, linkDirBefore, 0.0048, 1027, 1.2) * linkBeforeWaterFactor / 2.0f;
-			waterNormalForce += computeNormalForce(relativeVelWater, linkAfter, linkDirAfter, 0.0048, 1027, 1.2) * linkAfterWaterFactor / 2.0f;
+			waterNormalForce += computeNormalForce(i,relativeVelWater, linkBefore, linkDirBefore,radius, density, 1.2)* linkBeforeWaterFactor / 2.0f;
+			waterNormalForce += computeNormalForce(i,relativeVelWater, linkAfter, linkDirAfter, radius, density, 1.2) * linkAfterWaterFactor / 2.0f;
 		
 			cable->m_nodes[i].m_f += waterNormalForce;
 		}
@@ -530,12 +558,15 @@ public:
 				wall->applyForce(btVector3(0, 0, 10) * (btScalar(1.0) / wall->getInvMass()), btVector3(0, 10, 0));
 				//AddConstantForce_DemoCableForce();
 			}
+
 			if (m_currentDemoIndex == 1 && m_applyForceOnRigidbody)
 			{
 				AddConstantForce_DemoCableForceUp();
 			}
+
 			if (m_moveBody)
 				MoveBody();
+
 			if (m_attachLock)
 			{
 				if (getSoftDynamicsWorld()->getSoftBodyArray().size() == 0) return;
@@ -545,6 +576,7 @@ public:
 				//attachLock();
 			if (m_printTens)
 				printTension();
+
 			if (m_grow)
 				Grows(deltaTime);
 			else
@@ -588,14 +620,12 @@ public:
 				
 			}
 
-			//if ( m_currentDemoIndex == 16)
-				
-
 			current_ticks = clock();
 
-			std::cout << std::endl;
-
-			if (m_applyForces) ApplyForcesNodes();
+			if (m_currentDemoIndex == 21) // Cable hydro force
+			{
+				ApplyForcesNodes(m_waterCurrent);
+			}
 
 			int subStep = substepSolver;
 			m_dynamicsWorld->stepSimulation(deltaTime, subStep, deltaTime / subStep);
@@ -603,7 +633,6 @@ public:
 
 			delta_ticks = clock() - current_ticks;
 			
-			if (m_printFPS)
 			if (m_printFPS && delta_ticks > 0)
 			{
 				m_fps = CLOCKS_PER_SEC / delta_ticks;
@@ -688,11 +717,12 @@ public:
 		// Nodes' positions
 		btVector3* positionNodes = new btVector3[resolution];
 		btScalar* massNodes = new btScalar[resolution];
+
 		for (int i = 0; i < resolution; ++i)
 		{
 			const btScalar t = i / (btScalar)(resolution - 1);
 			positionNodes[i] = lerp(posWorldAnchorBodyB, posWorldAnchorBodyA, t);
-			massNodes[i] = 0.013041;
+			massNodes[i] = 0.000241;
 		}
 
 		// Cable's creation
@@ -711,6 +741,7 @@ public:
 		cable->setUseLRA(true);
 		cable->setCollisionMargin(0.01);
 		cable->getCollisionShape()->setMargin(0.01);
+		//cable->m_materials[0]->m_kLST = 0.02; // Stiffness
 
 		// Add cable to the world
 		getSoftDynamicsWorld()->addSoftBody(cable);
@@ -1051,6 +1082,59 @@ static void Init_CableForceDown(CableDemo* pdemo)
 	btVector3 anchorPositionPhysic = positionPhysic;
 
 	btCable* cable = pdemo->createCable(resolution, iteration, 1, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+}
+
+static void Init_CableHydro(CableDemo* pdemo)
+{
+	// Shape
+	btCollisionShape* boxShape = new btBoxShape(btVector3(0.25, 0.25, 0.25));
+
+	// Masses
+	btScalar massKinematic(0);
+
+	// Rotation
+	btQuaternion rotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform transformKinematic;
+	transformKinematic.setIdentity();
+	transformKinematic.setRotation(rotation);
+
+	btTransform transformPhysic;
+	transformPhysic.setIdentity();
+	transformPhysic.setRotation(rotation);
+
+	// Resolution's cable
+	int resolution = 84;
+	int iteration = 120;
+	btScalar cableLength = 6.68;
+	btScalar linearMass = 0.003; // 3gr per meter
+	btScalar cableTotalMass = cableLength * linearMass;
+
+	// Positions
+	btScalar cubeUpPosition = 3;
+
+	btVector3 positionKinematic(0, cubeUpPosition, 0);
+	btVector3 positionPhysic(0, cubeUpPosition - cableLength, 0);
+	transformKinematic.setOrigin(positionKinematic);
+	transformPhysic.setOrigin(positionPhysic);
+
+	// Create the rigidbodys
+	btRigidBody* kinematic = pdemo->createRigidBody(massKinematic, transformKinematic, boxShape);
+	btRigidBody* physic = pdemo->createRigidBody(massKinematic, transformPhysic, boxShape);
+
+	// Anchor's positions
+	btVector3 anchorPositionKinematic = positionKinematic;
+	btVector3 anchorPositionPhysic = positionPhysic;
+
+	// Cable
+	btCable* cable = pdemo->createCable(resolution, iteration, cableTotalMass, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
+
+	cable->m_cableData->normalDragCoefficient = 1.2f;
+	cable->m_cableData->radius = 0.0048f; 
+
+	b3Printf("Cable length :%f - Total cable mass: %f - DragCoefficient:%f - Radius:%f ", cableLength, cableTotalMass, cable->m_cableData->normalDragCoefficient,
+		cable->m_cableData->radius = 0.0048);
 }
 
 static void Init_CableForceUp(CableDemo* pdemo)
@@ -2357,7 +2441,8 @@ void (*demofncs[])(CableDemo*) =
 		Init_TestClaw,
 		Init_TestConstraintClawA18,
 		Init_Growth,
-		Init_TestCableCollisionMt
+		Init_TestCableCollisionMt,
+		Init_CableHydro
 };
 
 ////////////////////////////////////
