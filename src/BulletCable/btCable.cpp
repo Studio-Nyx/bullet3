@@ -552,32 +552,48 @@ void btCable::updateNodeData()
 		Node& n = m_nodes[i];
 		n.m_vn = n.m_v;
 		n.m_v = (n.m_x - n.m_q) * subFrameDT;
+
+		// Only update data for last substep
 		if (m_world->GetIndexSubIteration() == m_world->GetSubIteration() - 1)
 		{
-			n.m_f = btVector3(0, 0, 0);
+			btVector3 nodeVelocity = (n.m_x - n.m_xn) * frameDT;
+
+			// Update velocities for the hydro's forces
+			n.m_movingAverage[n.m_indexMovingAverage] = nodeVelocity;
+
+			btVector3 average = btVector3(0, 0, 0);
+			int currentIndex = (n.m_indexMovingAverage + 1) % n.m_maxSizeMovingAverage; // start after current value, first has weight of 0.0
+
+			float weight = 0.0f;
+			float weightPortion = 1.0f / n.m_maxSizeMovingAverage;
+			float totalWeight = 0.0f;
+			for (int j = 0; j < n.m_maxSizeMovingAverage; j++)
+			{
+				average += n.m_movingAverage[currentIndex] * weight;
+
+				totalWeight += weight;
+
+				weight += weightPortion;
+				currentIndex = (currentIndex + 1) % n.m_maxSizeMovingAverage;
+			}
+
+			average = average / totalWeight;
+
+			n.m_indexMovingAverage = (n.m_indexMovingAverage + 1) % n.m_maxSizeMovingAverage;
+
+			// Update NodePos
+			m_nodePos[i].x = n.m_x.getX();
+			m_nodePos[i].y = n.m_x.getY();
+			m_nodePos[i].z = n.m_x.getZ();
+
+			// Update NodeData
+			m_nodeData[i].velocity_x = average.getX();
+			m_nodeData[i].velocity_y = average.getY();
+			m_nodeData[i].velocity_z = average.getZ();
+
+			n.m_xn = n.m_x; // Update previous pos with current
+			n.m_f = btVector3(0, 0, 0); // reset node total forces
 		}
-
-		// Update velocities for the hydro's forces
-		n.m_movingAverage[n.m_indexMovingAverage] = n.m_v;
-		int ratio = n.m_maxSizeMovingAverage - n.m_indexMovingAverage;
-		btVector3 average = btVector3(0, 0, 0);
-		for (int i = 0; i < n.m_maxSizeMovingAverage; ++i)
-		{
-			btScalar weight = (btScalar)((i + ratio) % n.m_maxSizeMovingAverage) / (btScalar)n.m_maxSizeMovingAverage;
-			average += n.m_movingAverage[i] * weight;
-		}
-		average = average / n.m_maxSizeMovingAverage;
-		n.m_indexMovingAverage = (n.m_indexMovingAverage + 1) % n.m_maxSizeMovingAverage;
-
-		// Update NodePos
-		m_nodePos[i].x = n.m_x.getX();
-		m_nodePos[i].y = n.m_x.getY();
-		m_nodePos[i].z = n.m_x.getZ();
-
-		// Update NodeData
-		m_nodeData[i].velocity_x = average.getX();
-		m_nodeData[i].velocity_y = average.getY();
-		m_nodeData[i].velocity_z = average.getZ();
 
 		// Calculate Volume
 		float sizeElement = 0;
