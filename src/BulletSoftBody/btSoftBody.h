@@ -348,6 +348,7 @@ public:
 		float x;
 		float y;
 		float z;
+		float ma;
 	};
 	static const std::size_t nodeForcesSize = sizeof(NodeForces);
 	/* Link			*/

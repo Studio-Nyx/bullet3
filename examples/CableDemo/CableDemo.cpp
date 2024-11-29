@@ -407,8 +407,17 @@ public:
 
 			waterNormalForce += computeNormalForce(i,relativeVelWater, linkBefore, linkDirBefore,radius, density, 1.2)* linkBeforeWaterFactor / 2.0f;
 			waterNormalForce += computeNormalForce(i,relativeVelWater, linkAfter, linkDirAfter, radius, density, 1.2) * linkAfterWaterFactor / 2.0f;
+
+			float addedMass = density * 3.1415926535f * (radius * radius) * linkBefore.length() * 0.5f;
+			addedMass += density * 3.1415926535f * (radius * radius) * linkAfter.length() * 0.5f;
 		
-			cable->m_nodes[i].m_f += waterNormalForce;
+		//	cable->m_nodes[i].m_f += waterNormalForce;
+
+			getSoftDynamicsWorld()->m_nodeForces[i].x = waterNormalForce.getX();
+			getSoftDynamicsWorld()->m_nodeForces[i].y = waterNormalForce.getY();
+			getSoftDynamicsWorld()->m_nodeForces[i].z = waterNormalForce.getZ();
+			getSoftDynamicsWorld()->m_nodeForces[i].ma = addedMass;
+			
 		}
 	}
 
