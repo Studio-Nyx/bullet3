@@ -1728,24 +1728,34 @@ void btCable::predictMotion(btScalar dt)
 		Node& n = m_nodes[i];
 		n.m_q = n.m_x;
 
-		if (isActive() && useHydroAero && m_world->GetIndexSubIteration() == 0)
+		float addedMass = 0.0f;
+		if (isActive() && useHydroAero)
 		{
 			// Get the Hydro and Aero forces
 			NodeForces currentNodeForces = nodeForces[m_cableData->startIndex + i];
 
-			// We check if currentNodeForces are correct, if not, then we dont apply these forces.
-			if (std::isinf(currentNodeForces.x) || std::isnan(currentNodeForces.x) || std::isinf(currentNodeForces.y) || std::isnan(currentNodeForces.y) || std::isinf(currentNodeForces.z) || std::isnan(currentNodeForces.z))
+			// Integrate forces only on first iteration
+			if (m_world->GetIndexSubIteration() == 0)
 			{
-				cableState = InternalForcesError;
+				// We check if currentNodeForces are correct, if not, then we dont apply these forces.
+				if (std::isinf(currentNodeForces.x) || std::isnan(currentNodeForces.x) || std::isinf(currentNodeForces.y) || std::isnan(currentNodeForces.y) || std::isinf(currentNodeForces.z) || std::isnan(currentNodeForces.z))
+				{
+					cableState = InternalForcesError;
+				}
+				else
+				{
+					n.m_f.setValue(n.m_f.getX() + currentNodeForces.x, n.m_f.getY() + currentNodeForces.y, n.m_f.getZ() + currentNodeForces.z);
+				}
 			}
-			else
-			{
-				n.m_f.setValue(n.m_f.getX() + currentNodeForces.x, n.m_f.getY() + currentNodeForces.y, n.m_f.getZ() + currentNodeForces.z);
-			}
+			
+			// Integrate addedMass for each substep
+			addedMass = currentNodeForces.ma;
 		}
 
-		btVector3 deltaV = n.m_f * n.m_im * m_sst.sdt;
-		n.m_v += deltaV;
+		const btScalar mass = 1.0f / n.m_im + addedMass;
+		btVector3 acceleration = n.m_f * m_sst.sdt / mass;
+		
+		n.m_v += acceleration;
 		n.m_x += n.m_v * m_sst.sdt;
 	}
 	
