@@ -107,6 +107,34 @@ class btCable : public btSoftBody
 	}
 
 	btAlignedObjectArray<CableManifolds> manifolds;
+
+public :
+	struct CableData
+	{
+		float radius;
+		float tangentDragCoefficient;
+		float normalDragCoefficient;
+		int startIndex;
+		int endIndex;
+	};
+	static const std::size_t CableDataSize = sizeof(CableData);
+
+	struct NodePos
+	{
+		double x;
+		double y;
+		double z;
+	};
+	static const std::size_t NodePosSize = sizeof(NodePos);
+
+	struct NodeData
+	{
+		float velocity_x;
+		float velocity_y;
+		float velocity_z;
+		float volume;
+	};
+	static const std::size_t NodeDataSize = sizeof(NodeData);
 	
 private:
 	// Growing state for Unity control
@@ -163,6 +191,10 @@ private:
 	bool useHydroAero = true;
 
 	float m_collisionMargin = 0;
+
+	btCable::CableData* m_cableData;
+	btCable::NodeData* m_nodeData;
+	btCable::NodePos* m_nodePos;
 
 	void distanceConstraint();
 	void distanceConstraintLock(int limMin, int limMax);
@@ -234,37 +266,6 @@ public:
 
 	CableState cableState = Valid;
 
-	struct CableData
-	{
-		float radius;
-		float tangentDragCoefficient;
-		float normalDragCoefficient;
-		int startIndex;
-		int endIndex;
-	};
-	static const std::size_t CableDataSize = sizeof(CableData);
-	
-	struct NodePos
-    {
-    	double x;
-		double y;
-		double z;
-    };
-	static const std::size_t NodePosSize = sizeof(NodePos);
-    	
-    struct NodeData
-    {
-    	float velocity_x;
-        float velocity_y;
-        float velocity_z;
-		float volume;
-    };
-	static const std::size_t NodeDataSize = sizeof(NodeData);
-
-	btCable::CableData* m_cableData;
-	btCable::NodeData* m_nodeData;
-	btCable::NodePos* m_nodePos;
-
 	struct SectionInfo
 	{
 		double RestLength;
@@ -274,9 +275,6 @@ public:
 	};
 
 	btCable::SectionInfo* m_section;
-
-private:
-
 
 #pragma region Use methods
 public:
@@ -311,7 +309,45 @@ public:
     bool getUseHydroAero();
 	void setUseHydroAero(bool active);
 	
-	bool updateCableData(btCable::CableData &cableData);
+	btCable::CableData getCableData()
+	{
+		return *m_cableData;
+	}
+
+	void setStartIndex(int start)
+	{
+		m_cableData->startIndex = start;
+	}
+
+	void setEndIndex(int end)
+	{
+		m_cableData->endIndex = end;
+	}
+
+	void setCableRadius(float radius)
+	{
+		m_cableData->radius = radius;
+	}
+
+	void setCableNormalDragCoefficient(float normalDragCoefficient)
+	{
+		m_cableData->normalDragCoefficient = normalDragCoefficient;
+	}
+
+	void setCableTangentDragCoefficient(float tangentDragCoefficient)
+	{
+		m_cableData->tangentDragCoefficient = tangentDragCoefficient;
+	}
+
+	btCable::NodeData* getNodeData()
+	{
+		return m_nodeData;
+	}
+
+	btCable::NodePos* getNodePos()
+	{
+		return m_nodePos;
+	}
 
 	void* getCableNodesPos();
 

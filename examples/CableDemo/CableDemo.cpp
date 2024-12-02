@@ -371,13 +371,13 @@ public:
 		btCable* cable = (btCable*)getSoftDynamicsWorld()->getSoftBodyArray()[0];
 
 		btScalar density = 1027;
-		btScalar radius = cable->m_cableData->radius;
-		btScalar coefficient = cable->m_cableData->normalDragCoefficient;
+		btScalar radius = cable->getCableData()->radius;
+		btScalar coefficient = cable->getCableData()->normalDragCoefficient;
 
 		for (int i = 1; i < cable->m_nodes.size()-1; ++i)
 		{
 			btVector3 nodePosition = cable->m_nodes[i].m_x;
-			btVector3 nodeVelocity = btVector3(cable->m_nodeData[i].velocity_x, cable->m_nodeData[i].velocity_y, cable->m_nodeData[i].velocity_z);
+			btVector3 nodeVelocity = btVector3(cable->getNodeData()[i].velocity_x, cable->getNodeData()[i].velocity_y, cable->getNodeData()[i].velocity_z);
 
 			const float waterFactor = 1.0f;
 
@@ -1139,11 +1139,11 @@ static void Init_CableHydro(CableDemo* pdemo)
 	// Cable
 	btCable* cable = pdemo->createCable(resolution, iteration, cableTotalMass, anchorPositionKinematic, anchorPositionPhysic, physic, kinematic);
 
-	cable->m_cableData->normalDragCoefficient = 1.2f;
-	cable->m_cableData->radius = 0.0048f; 
+	cable->setCableNormalDragCoefficient(1.2f);
+	cable->setCableRadius(0.0048f);
 
-	b3Printf("Cable length :%f - Total cable mass: %f - DragCoefficient:%f - Radius:%f ", cableLength, cableTotalMass, cable->m_cableData->normalDragCoefficient,
-		cable->m_cableData->radius = 0.0048);
+	b3Printf("Cable length :%f - Total cable mass: %f - DragCoefficient:%f - Radius:%f ", cableLength, cableTotalMass, cable->getCableData()->normalDragCoefficient,
+		cable->getCableData()->radius = 0.0048);
 }
 
 static void Init_CableForceUp(CableDemo* pdemo)
