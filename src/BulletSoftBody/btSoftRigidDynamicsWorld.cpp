@@ -133,17 +133,17 @@ void btSoftRigidDynamicsWorld::prepareSingleStepSimulation()
 		if (cable->isActive() && cable->getUseHydroAero())
 		{
 			std::size_t const nodesCount = cable->m_nodes.size();
-			cable->m_cableData->startIndex = NodesIndex;
+			cable->setStartIndex(NodesIndex);
 
 			// Clean and fast chunks initialization (see https://godbolt.org/z/nWK63GYcc)
 			std::fill_n(m_cableIndexesArray + NodesIndex, nodesCount, i);
-			memcpy(m_nodesData + NodesIndex, cable->m_nodeData, nodesCount * cable->NodeDataSize);
-			memcpy(m_nodesPos + NodesIndex, cable->m_nodePos, nodesCount * cable->NodePosSize);
+			memcpy(m_nodesData + NodesIndex, cable->getNodeData(), nodesCount * cable->NodeDataSize);
+			memcpy(m_nodesPos + NodesIndex, cable->getNodePos(), nodesCount * cable->NodePosSize);
 
 			// First update `endIndex` before performing the copy
 			NodesIndex += nodesCount;
-			cable->m_cableData->endIndex = NodesIndex - 1;
-			memcpy(m_cablesData + i, cable->m_cableData, cable->CableDataSize);
+			cable->setEndIndex(NodesIndex - 1);
+			memcpy(m_cablesData + i, &cable->getCableData(), cable->CableDataSize);
 		}
 	}
 

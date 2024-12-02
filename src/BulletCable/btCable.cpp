@@ -2134,12 +2134,6 @@ bool btCable::getUseHydroAero()
 	return useHydroAero;
 }
 
-bool btCable::updateCableData(btCable::CableData &cableData)
-{
-	memcpy(m_cableData, &cableData, CableDataSize);
-	return true;
-}
-
 void btCable::addSection(btScalar rl,int start,int end,int nbNodes)
 {
 	m_section[m_sectionCurrent].RestLength = rl;
