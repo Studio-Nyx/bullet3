@@ -257,6 +257,10 @@ public:
 
 	void updateNodeData();
 
+	void ResetForceAndVelocity();
+
+	void ResetNodePosition(const int nodeIndex, const btVector3 position);
+
 	enum CableState
 	{
 		Valid = 0,
@@ -355,6 +359,8 @@ public:
 
 	void appendNode(const btVector3& x, btScalar m) override;
 
+	void removeNodeAt(const int index);
+
 	void setTotalMass(btScalar mass, bool fromfaces = false) override;
 
 	bool checkCollisionAnchor(Node* n, btCollisionObject* obj);
@@ -379,6 +385,8 @@ public:
 	void setCollisionMode(int mode);
 	void setControlPoint(vector<btScalar> dataX, vector<btScalar> dataY);
 	void updateCurveResponse(btScalar* dataX, btScalar* dataY, int size);
+
+	void synchNodesInfos();
 
 #pragma endregion
 };

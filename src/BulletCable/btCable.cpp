@@ -616,6 +616,29 @@ void btCable::updateNodeData()
 	}
 }
 
+void btCable::ResetForceAndVelocity()
+{
+	int nodeCount = m_nodes.size();
+	btVector3 v0 = btVector3(0, 0, 0);
+	for (int i = 0; i < nodeCount; i++)
+	{
+		m_nodes[i].m_v = v0;
+		m_nodes[i].m_vn = v0;
+		m_nodes[i].m_f = v0;
+
+		ResetVelocityArray(i);
+	}
+}
+
+void btCable::ResetNodePosition(const int nodeIndex, const btVector3 position)
+{
+	m_nodes[nodeIndex].m_x = position;
+	m_nodes[nodeIndex].m_xn = position;
+	m_nodes[nodeIndex].m_xOut = position;
+
+	m_nodes[nodeIndex].m_q = position;
+}
+
 void btCable::UpdateManifoldBroadphase(btAlignedObjectArray<BroadPhasePair*> broadphasePair) {
 	int count = manifolds.size();
 	for (int i = 0; i < count; i++)
@@ -1943,7 +1966,7 @@ void btCable::Shrinks(float dt)
 
 		// Remove the last node and the last link
 		m_links.removeAtIndex(linkSize - 1);
-		m_nodes.removeAtIndex(nodesSize - 1);
+		removeNodeAt(nodesSize - 1);
 		nodesSize--;
 		linkSize--;
 		int indexNode = nodesSize - 1;
@@ -2180,6 +2203,16 @@ void btCable::appendNode(const btVector3& x, btScalar m)
 	n.index = m_nodes.size() - 1;	
 }
 
+void btCable::removeNodeAt(const int index)
+{
+	if (index < m_nodes.size())
+	{
+		delete[] m_nodes[index].m_movingAverage;
+
+		m_nodes.removeAtIndex(index);
+	}
+}
+
 void btCable::setTotalMass(btScalar mass, bool fromfaces)
 {
 	btScalar massNode = mass / m_nodes.size();
@@ -2279,4 +2312,22 @@ void btCable::updateCurveResponse(btScalar* dataX, btScalar* dataY, int size)
 		vectorY.push_back(dataY[i]);
 	}
 	setControlPoint(vectorX, vectorY);
+}
+
+void btCable::synchNodesInfos()
+{
+	int nodeCount = m_nodes.size();
+
+	for (int i = 0; i < nodeCount; i++)
+	{
+		// Update NodePos
+		m_nodePos[i].x = m_nodes[i].m_x.getX();
+		m_nodePos[i].y = m_nodes[i].m_x.getY();
+		m_nodePos[i].z = m_nodes[i].m_x.getZ();
+
+		// Update NodeData
+		m_nodeData[i].velocity_x = m_nodes[i].m_v.getX();
+		m_nodeData[i].velocity_y = m_nodes[i].m_v.getY();
+		m_nodeData[i].velocity_z = m_nodes[i].m_v.getZ();
+	}
 }

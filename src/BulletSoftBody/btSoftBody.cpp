@@ -148,18 +148,11 @@ btSoftBody::btSoftBody(btSoftBodyWorldInfo* worldInfo, int node_count, const btV
 	{
 		Node& n = m_nodes[i];
 		ZeroInitialize(n);
-		n.m_x = x ? *x++ : btVector3(0, 0, 0);
-		n.m_xn = n.m_x;
-		n.m_q = n.m_x;
-		n.m_im = m ? *m++ : 1;
-		n.m_im = n.m_im > 0 ? 1 / n.m_im : 0;
 		n.m_leaf = m_ndbvt.insert(btDbvtVolume::FromCR(n.m_x, margin), &n);
 		n.m_material = pm;
 		m_X[i] = n.m_x;
-		n.m_maxSizeMovingAverage = 24;
-		n.m_movingAverage = new btVector3[n.m_maxSizeMovingAverage];
-		n.m_firstLoopMovingAverage = false;
-		n.m_indexMovingAverage = 0;
+	
+		InitializeNode(&n, x, *m);
 	}
 	updateBounds();
 	setCollisionQuadrature(3);
@@ -251,8 +244,16 @@ void btSoftBody::InitializeNode(Node* node, const btVector3* x, btScalar m)
 
 	node->m_maxSizeMovingAverage = 24;
 	node->m_movingAverage = new btVector3[node->m_maxSizeMovingAverage];
-	node->m_firstLoopMovingAverage = false;
 	node->m_indexMovingAverage = 0;
+}
+
+void btSoftBody::ResetVelocityArray(int nodeIndex)
+{
+	m_nodes[nodeIndex].m_indexMovingAverage = 0;
+	for (int j = 0; j < m_nodes[nodeIndex].m_maxSizeMovingAverage; j++)
+	{
+		m_nodes[nodeIndex].m_movingAverage[j] = btVector3(0,0,0);
+	}
 }
 
 //
@@ -269,6 +270,12 @@ btSoftBody::~btSoftBody()
 		btAlignedFree(m_joints[i]);
 	if (m_fdbvnt)
 		delete m_fdbvnt;
+
+	int nodeCount = m_nodes.size();
+	for (int i = 0 ; i < nodeCount; ++i)
+	{
+		delete [] m_nodes[i].m_movingAverage;
+	}
 }
 
 //
@@ -1154,6 +1161,7 @@ void btSoftBody::translate(const btVector3& trs)
 		n.m_q = n.m_x;
 		n.m_v = btVector3(0, 0, 0);
 		n.m_vn = btVector3(0, 0, 0);
+		ResetVelocityArray(i);
 		n.m_splitv = btVector3(0, 0, 0);
 	}
 
