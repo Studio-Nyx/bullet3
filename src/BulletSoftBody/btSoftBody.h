@@ -339,7 +339,6 @@ public:
 		int m_maxSizeMovingAverage;
 		btVector3* m_movingAverage;
 		int m_indexMovingAverage;
-		bool m_firstLoopMovingAverage;
 	};
 
 	/* SumForces of a node*/
@@ -1492,6 +1491,7 @@ public:
 
 	protected:
 		void InitializeNode(Node* node, const btVector3* x, btScalar m);
+		void ResetVelocityArray(int nodeIndex);
 
 };
 
