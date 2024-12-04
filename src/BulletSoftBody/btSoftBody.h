@@ -1490,7 +1490,7 @@ public:
 	virtual const char* serialize(void* dataBuffer, class btSerializer* serializer) const;
 
 	protected:
-		void InitializeNode(Node* node, const btVector3* x, btScalar m);
+		void InitializeNode(Node* node, const btVector3 x, btScalar m);
 		void ResetVelocityArray(int nodeIndex);
 
 };

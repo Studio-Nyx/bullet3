@@ -2189,7 +2189,7 @@ void btCable::appendNode(const btVector3& x, btScalar m)
 	m_nodes.push_back(Node());
 	Node& n = m_nodes[m_nodes.size() - 1];
 	ZeroInitialize(n);
-	InitializeNode(&n,&x,m);
+	InitializeNode(&n,x,m);
 
 	n.m_material = m_materials[0];
 	
