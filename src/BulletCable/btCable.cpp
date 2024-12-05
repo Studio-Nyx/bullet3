@@ -1741,7 +1741,7 @@ void btCable::predictMotion(btScalar dt)
 	m_sst.updmrg = m_sst.radmrg * (btScalar)0.25;
 
 	// Forces
-	if (useGravity) addVelocity(m_gravity * m_sst.sdt);
+	// if (useGravity) addVelocity(m_gravity * m_sst.sdt);
 
 	// SoftRigidBody
 	NodeForces* nodeForces = static_cast<btSoftRigidDynamicsWorld*>(m_world)->m_nodeForces;
@@ -1774,6 +1774,8 @@ void btCable::predictMotion(btScalar dt)
 			// Integrate addedMass for each substep
 			addedMass = currentNodeForces.ma;
 		}
+
+		if (useGravity) n.m_f += m_gravity / n.m_im;
 
 		const btScalar mass = 1.0f / n.m_im + addedMass;
 		btVector3 acceleration = n.m_f * m_sst.sdt / mass;
