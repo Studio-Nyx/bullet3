@@ -1872,9 +1872,13 @@ void btCable::Grows(float dt)
 		dir.normalize();
 		dir *= linkRestLength;
 
-		// Set the node at the right place
+		// Save last node position (will be new node's position)
 		btVector3 positionLastNode = node0->m_x;
-		node0->m_x = node1->m_x + dir;
+
+		// Set the node at the right place
+		btVector3 positionPreviousNode = node1->m_x + dir;
+		ResetNodePosition(nodeSize - 1, positionPreviousNode);
+
 		node0->m_battach = 0;
 
 		// Create the new node
