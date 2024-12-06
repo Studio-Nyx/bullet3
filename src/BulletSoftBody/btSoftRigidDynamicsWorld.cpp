@@ -130,7 +130,7 @@ void btSoftRigidDynamicsWorld::prepareSingleStepSimulation()
 		btCable* cable = reinterpret_cast<btCable*>(m_softBodies[i]);
 
 		// Store each cable data into a single one for GPU computing of Hydro and Aero Forces
-		if (cable->isActive() && cable->getUseHydroAero())
+		if (cable->isActive())
 		{
 			std::size_t const nodesCount = cable->m_nodes.size();
 			cable->setStartIndex(NodesIndex);
