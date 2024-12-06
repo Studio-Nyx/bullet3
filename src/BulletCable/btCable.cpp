@@ -587,9 +587,18 @@ void btCable::updateNodeData()
 			m_nodePos[i].z = n.m_x.getZ();
 
 			// Update NodeData
-			m_nodeData[i].velocity_x = average.getX();
-			m_nodeData[i].velocity_y = average.getY();
-			m_nodeData[i].velocity_z = average.getZ();
+			if (useHydroAero)
+			{
+				m_nodeData[i].velocity_x = average.getX();
+				m_nodeData[i].velocity_y = average.getY();
+				m_nodeData[i].velocity_z = average.getZ();
+			}
+			else
+			{
+				m_nodeData[i].velocity_x = nodeVelocity.getX();
+				m_nodeData[i].velocity_y = nodeVelocity.getY();
+				m_nodeData[i].velocity_z = nodeVelocity.getZ();
+			}
 
 			n.m_xn = n.m_x; // Update previous pos with current
 			n.m_f = btVector3(0, 0, 0); // reset node total forces
