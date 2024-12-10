@@ -84,11 +84,6 @@ class btCable : public btSoftBody
 		manifolds.clear();
 
 		// Release allocated data
-		if (m_cableData != nullptr)
-		{
-			delete m_cableData;
-		}
-
 		if (m_nodePos != nullptr)
 		{
 			delete[] m_nodePos;
@@ -193,7 +188,7 @@ private:
 
 	float m_collisionMargin = 0;
 
-	btCable::CableData* m_cableData;
+	btCable::CableData m_cableData;
 	btCable::NodeData* m_nodeData;
 	btCable::NodePos* m_nodePos;
 
@@ -315,34 +310,34 @@ public:
     bool getUseHydroAero();
 	void setUseHydroAero(bool active);
 	
-	btCable::CableData getCableData()
+	btCable::CableData& getCableData()
 	{
-		return *m_cableData;
+		return m_cableData;
 	}
 
 	void setStartIndex(int start)
 	{
-		m_cableData->startIndex = start;
+		m_cableData.startIndex = start;
 	}
 
 	void setEndIndex(int end)
 	{
-		m_cableData->endIndex = end;
+		m_cableData.endIndex = end;
 	}
 
 	void setCableRadius(float radius)
 	{
-		m_cableData->radius = radius;
+		m_cableData.radius = radius;
 	}
 
 	void setCableNormalDragCoefficient(float normalDragCoefficient)
 	{
-		m_cableData->normalDragCoefficient = normalDragCoefficient;
+		m_cableData.normalDragCoefficient = normalDragCoefficient;
 	}
 
 	void setCableTangentDragCoefficient(float tangentDragCoefficient)
 	{
-		m_cableData->tangentDragCoefficient = tangentDragCoefficient;
+		m_cableData.tangentDragCoefficient = tangentDragCoefficient;
 	}
 
 	btCable::NodeData* getNodeData()
