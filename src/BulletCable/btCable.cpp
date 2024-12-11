@@ -1640,8 +1640,6 @@ void btCable::bendingConstraintDistance()
 		// DHat
 		{
 			btVector3 r = after->m_x - before->m_x;
-			btScalar minLength = m_links[i].m_rl / 2;
-
 			btScalar rr = r.length2();
 			btScalar d2 = btDot(delta2, r);
 			btScalar d1 = btDot(delta1, r);
@@ -1649,7 +1647,6 @@ void btCable::bendingConstraintDistance()
 			btClamp(d1, (btScalar)0.0, rr);
 			btScalar alpha1 = d2 / rr;
 			btScalar alpha2 = d1 / rr;
-
 			btVector3 p = (before->m_x + after->m_x) * 0.5f;
 			btVector3 d = p - current->m_x;
 			btScalar dLen = d.length();
