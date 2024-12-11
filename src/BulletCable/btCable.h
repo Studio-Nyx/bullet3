@@ -153,6 +153,7 @@ private:
 	int m_sectionCurrent = 0; 
 	btScalar m_minLength;
 	bool useLRA = true;
+	bool invertLRA = false;
 	bool useBending = true;
 	bool useGravity = true;
 	bool useCollision = true;
@@ -301,6 +302,7 @@ public:
 
 	void setUseLRA(bool active);
 	bool getUseLRA();
+	void setInvertLRA(bool invert);
 
 	void setUseGravity(bool active);
 	bool getUseGravity();
