@@ -1051,6 +1051,50 @@ static void Init_Lengths(CableDemo* pdemo)
 	}
 }
 
+static void Init_CableBending(CableDemo* pdemo)
+{
+	// Shape
+	btCollisionShape* cubeShape = new btBoxShape(btVector3(0.5, 0.5, 0.5));
+	btCollisionShape* emptyShape = new btBoxShape(btVector3(0, 0, 0));
+
+	// Parameters
+	btScalar cubeMass(0);
+	btVector3 cubeOrigin(0,0,0);
+	btVector3 startPositionCable(2, 2, 0);
+	btVector3 endPositionCable(0, 2, 0);
+	btQuaternion cubeRotation(0, 0, 0, 1);
+
+	// Transform
+	btTransform cubeTransform;
+	cubeTransform.setIdentity();
+	cubeTransform.setRotation(cubeRotation);
+
+	cubeTransform.setOrigin(cubeOrigin);
+	// btRigidBody* cube = pdemo->createRigidBody(cubeMass, cubeTransform, cubeShape);
+
+	cubeTransform.setOrigin(startPositionCable);
+	btRigidBody* startAttach = pdemo->createRigidBody(0, cubeTransform, emptyShape);
+
+	cubeTransform.setOrigin(endPositionCable);
+	btRigidBody* endAttach = pdemo->createRigidBody(0, cubeTransform, emptyShape);
+
+	// Resolution's cable
+	int resolution = 20;
+	int iteration = 120;
+
+	btCable* cable = pdemo->createCable(resolution, iteration, 3, startPositionCable, endPositionCable, startAttach);
+	cable->appendAnchor(1, endAttach, cable->m_nodes[1].m_x - endPositionCable, true);
+	cable->setUseLRA(true);
+	cable->setInvertLRA(true);
+	cable->setUseBending(true);
+	cable->setUseHydroAero(false);
+	cable->setUseCollision(true);
+	cable->setCollisionParameters(3, 3, 0);
+	cable->setCableRadius(0.005);
+	cable->setCollisionMargin(0.01);
+	cable->setBendingStiffness(0.4);
+}
+
 static void Init_CableForceDown(CableDemo* pdemo)
 {	
 	// Shape
@@ -2450,7 +2494,8 @@ void (*demofncs[])(CableDemo*) =
 		Init_TestConstraintClawA18,
 		Init_Growth,
 		Init_TestCableCollisionMt,
-		Init_CableHydro
+		Init_CableHydro,
+		Init_CableBending
 };
 
 ////////////////////////////////////

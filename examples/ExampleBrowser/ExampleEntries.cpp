@@ -305,6 +305,7 @@ static ExampleEntry gDefaultExamples[] =
 		ExampleEntry(1, " Test Growth Speed", " Test duration of cable growth", CableDemoCreateFunc, 19),
 		ExampleEntry(1, "Test Cable CollisionMt", " Test multi threaded collisions with two cables", CableDemoCreateFunc, 20),
 		ExampleEntry(1, "Test Cable Hydro", "Apply water normal force on cable", CableDemoCreateFunc, 21),
+		ExampleEntry(1, "Test Cable Beding", "Cable on a cube", CableDemoCreateFunc, 22),
 
 #endif  //INCLUDE_CLOTH_DEMOS
 
