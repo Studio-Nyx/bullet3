@@ -1420,27 +1420,53 @@ btVector3 btCable::calculateBodyImpulse(btRigidBody* obj, btScalar margin, Node*
 
 void btCable::LRAConstraint()
 {
-	btScalar distance = 0;
-
-	Node& a = m_nodes[m_nodes.size() - 1];
-	bool aMove = a.computeNodeConstraint;
-	for (int i = 0; i < m_anchors.size(); ++i)
-		if (a.index == m_anchors[i].m_node->index)
-			a.m_x = m_anchors[i].m_c1 + m_anchors[i].m_body->getCenterOfMassPosition(); 
-
-	for (int i = m_links.size() - 1; i >= 0; --i)
+	if (invertLRA)
 	{
-		Link& l = m_links[i];
-		Node* b = l.m_n[0];
-		if (!aMove && !b->computeNodeConstraint) continue;
-		if (!b->computeNodeConstraint)
+		btScalar distance = 0;
+		Node& a = m_nodes[0];
+		bool aMove = a.computeNodeConstraint;
+		for (int i = 0; i < m_anchors.size(); ++i)
+			if (a.index == m_anchors[i].m_node->index)
+				a.m_x = m_anchors[i].m_c1 + m_anchors[i].m_body->getCenterOfMassPosition();
+
+		for (int i =0; i < m_links.size(); ++i)
 		{
-			b->computeNodeConstraint = true;
-			b->cptIteration++;	
+			Link& l = m_links[i];
+			Node* b = l.m_n[1];
+			if (!aMove && !b->computeNodeConstraint) continue;
+			if (!b->computeNodeConstraint)
+			{
+				b->computeNodeConstraint = true;
+				b->cptIteration++;
+			}
+			distance += l.m_rl;
+			if (a.m_x.distance(b->m_x) > distance)
+				b->m_x = a.m_x + (b->m_x - a.m_x).normalized() * distance;
 		}
-		distance += l.m_rl;
-		if (a.m_x.distance(b->m_x) > distance)
-			b->m_x = a.m_x + (b->m_x - a.m_x).normalized() * distance;
+	}
+	else
+	{
+		btScalar distance = 0;
+		Node& a = m_nodes[m_nodes.size() - 1];
+		bool aMove = a.computeNodeConstraint;
+		for (int i = 0; i < m_anchors.size(); ++i)
+			if (a.index == m_anchors[i].m_node->index)
+				a.m_x = m_anchors[i].m_c1 + m_anchors[i].m_body->getCenterOfMassPosition();
+
+		for (int i = m_links.size() - 1; i >= 0; --i)
+		{
+			Link& l = m_links[i];
+			Node* b = l.m_n[0];
+			if (!aMove && !b->computeNodeConstraint) continue;
+			if (!b->computeNodeConstraint)
+			{
+				b->computeNodeConstraint = true;
+				b->cptIteration++;
+			}
+			distance += l.m_rl;
+			if (a.m_x.distance(b->m_x) > distance)
+				b->m_x = a.m_x + (b->m_x - a.m_x).normalized() * distance;
+		}
 	}
 }
 
@@ -1448,21 +1474,40 @@ void btCable::LRAHierachique() {
 	int level = 2;
 	int size = m_nodes.size();
 	// iteration on node
-	
 
-	for (int i = 0; i < size; i++)
+	if (invertLRA)
 	{
-		int dist = 2;
-		for (int levelTemp = 1; levelTemp <= level; levelTemp++)
+		for (int i = size-1 ; i >= 0; i--)
 		{
-			int delta = dist / 2;
-			// We check if the node exist
-			if (i - delta >= 0 && i + delta < size)
+			int dist = 2;
+			for (int levelTemp = 1; levelTemp <= level; levelTemp++)
 			{
-				DistanceHierachy(i - delta, i + delta);
+				int delta = dist / 2;
+				// We check if the node exist
+				if (i - delta >= 0 && i + delta < size)
+				{
+					DistanceHierachy(i + delta, i - delta);
+				}
+				dist *= 2;
 			}
-			dist *= 2;
-		}
+		}	
+	}
+	else
+	{
+		for (int i = 0; i < size; i++)
+		{
+			int dist = 2;
+			for (int levelTemp = 1; levelTemp <= level; levelTemp++)
+			{
+				int delta = dist / 2;
+				// We check if the node exist
+				if (i - delta >= 0 && i + delta < size)
+				{
+					DistanceHierachy(i - delta, i + delta);
+				}
+				dist *= 2;
+			}
+		}	
 	}	
 }
 
@@ -2113,6 +2158,11 @@ void btCable::setUseLRA(bool active)
 bool btCable::getUseLRA()
 {
 	return useLRA;
+}
+
+void btCable::setInvertLRA(bool invert)
+{
+	invertLRA = invert;
 }
 
 void btCable::setUseBending(bool active)
