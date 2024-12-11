@@ -1864,7 +1864,7 @@ void btCable::Grows(float dt)
 	m_links.at(m_links.size() - 1).m_rl = distance;
 	m_links.at(m_links.size() - 1).m_c1 = distance*distance;
 
-	btScalar firstNodeMass = m_linearMass * 0.5f * std::min(linkRestLength, distance);
+	btScalar firstNodeMass = m_linearMass * 0.5f * distance;
 
 	// Update mass
 	setMass(nodeSize - 1, firstNodeMass);
@@ -1931,7 +1931,7 @@ void btCable::Grows(float dt)
 		distance -= linkRestLength;
 
 		// Update Mass
-		btScalar firstNodeMass = m_linearMass * 0.5f * std::min(m_defaultRestLength, distance);
+		btScalar firstNodeMass = m_linearMass * 0.5f * distance;
 		setMass(nodeSize - 1, firstNodeMass);
 		btScalar LinkMassWithRl = 0.5 * m_links[m_links.size() - 2].m_rl * m_linearMass ;
 		setMass(nodeSize - 2, LinkMassWithRl + firstNodeMass);
@@ -1984,7 +1984,7 @@ void btCable::Shrinks(float dt)
 	m_links.at(linkSize - 1).m_rl = distance;
 	m_links.at(linkSize - 1).m_c1 = distance*distance;
 	btScalar linkRestLength = getLinkRestLength(linkSize-1);
-	btScalar firstNodeMass = m_linearMass * 0.5f * std::min(linkRestLength, distance);  
+	btScalar firstNodeMass = m_linearMass * 0.5f * distance;  
 	setMass(nodesSize - 1, firstNodeMass);
 	if (nodesSize > 2)
 	{
@@ -2029,7 +2029,7 @@ void btCable::Shrinks(float dt)
 		m_links.at(linkSize - 1).m_c1 = dist * dist;
 
 
-		firstNodeMass = m_linearMass * 0.5f * std::min(getLinkRestLength(linkSize - 1), dist);
+		firstNodeMass = m_linearMass * 0.5f * distance;
 		setMass(nodesSize - 1, firstNodeMass);
 
 		if (nodesSize > 2)
