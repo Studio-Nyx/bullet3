@@ -371,8 +371,8 @@ public:
 		btCable* cable = (btCable*)getSoftDynamicsWorld()->getSoftBodyArray()[0];
 
 		btScalar density = 1027;
-		btScalar radius = cable->getCableData()->radius;
-		btScalar coefficient = cable->getCableData()->normalDragCoefficient;
+		btScalar radius = cable->getCableData().radius;
+		btScalar coefficient = cable->getCableData().normalDragCoefficient;
 
 		for (int i = 1; i < cable->m_nodes.size()-1; ++i)
 		{
@@ -1142,8 +1142,7 @@ static void Init_CableHydro(CableDemo* pdemo)
 	cable->setCableNormalDragCoefficient(1.2f);
 	cable->setCableRadius(0.0048f);
 
-	b3Printf("Cable length :%f - Total cable mass: %f - DragCoefficient:%f - Radius:%f ", cableLength, cableTotalMass, cable->getCableData()->normalDragCoefficient,
-		cable->getCableData()->radius = 0.0048);
+	b3Printf("Cable length :%f - Total cable mass: %f - DragCoefficient:%f - Radius:%f ", cableLength, cableTotalMass, cable->getCableData().normalDragCoefficient, cable->getCableData().radius);
 }
 
 static void Init_CableForceUp(CableDemo* pdemo)
