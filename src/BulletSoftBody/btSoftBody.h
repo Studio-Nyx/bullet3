@@ -301,7 +301,6 @@ public:
 	struct Node : Feature
 	{
 		btScalar areColliding;
-		int distToAnchor;
 		btVector3 m_x;       // Position
 		btVector3 m_xn;      // Previous position from the last step, not the substep
 		btVector3 m_xOut;	 // Previous step position/Test position

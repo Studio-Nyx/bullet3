@@ -137,37 +137,13 @@ void btCable::solveConstraints()
 	
 	for (i = 0, ni = m_nodes.size(); i < ni; ++i)
 	{
-		int minAnchorIndex;
-		int minDist;
-		int dist;
-		for (int j = 0; j < m_anchors.size(); j++)
-		{
-			Anchor a = m_anchors.at(j);
-			dist = abs(m_nodes[i].index - a.m_node->index);
-			if (j == 0)
-			{
-				minAnchorIndex = 0;
-				minDist = dist;
-			}
-			else
-			{
-				if (dist < minDist)
-				{
-					minAnchorIndex = j;
-					minDist = dist;
-				}
-			}
-		}
-		m_nodes[i].distToAnchor = minDist;
-		m_nodes[i].m_nbCollidingObjectPotential = 0;
-
-		m_nodes[i].m_splitv = btVector3(0, 0, 0);
-		m_nodes[i].m_xOut = btVector3(0, 0, 0);
-
-		m_nodes[i].posPreviousIteration = m_nodes[i].m_x;
-		m_nodes[i].computeNodeConstraint = true;
 		m_nodes[i].cptIteration = 0;
+		m_nodes[i].computeNodeConstraint = true;
+		m_nodes[i].posPreviousIteration = m_nodes[i].m_x;
 		m_nodes[i].collideInAllIteration = false;
+		m_nodes[i].m_nbCollidingObjectPotential = 0;
+		m_nodes[i].m_xOut = btVector3(0, 0, 0);
+		m_nodes[i].m_splitv = btVector3(0, 0, 0);
 	}
 
 	// Prepare links
