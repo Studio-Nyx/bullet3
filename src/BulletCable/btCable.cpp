@@ -1650,7 +1650,8 @@ void btCable::bendingConstraintDistance()
 			btScalar alpha1 = d2 / rr;
 			btScalar alpha2 = d1 / rr;
 
-			btVector3 d = alpha1 * before->m_x + alpha2 * after->m_x - current->m_x;
+			btVector3 p = (before->m_x + after->m_x) * 0.5f;
+			btVector3 d = p - current->m_x;
 			btScalar dLen = d.length();
 
 			if (btFuzzyZero(dLen))
