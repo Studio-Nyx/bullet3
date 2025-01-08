@@ -261,3 +261,7 @@ int btDiscreteDynamicsWorldMt::stepSimulation(btScalar timeStep, int maxSubSteps
 	}
 	return numSubSteps;
 }
+
+void btDiscreteDynamicsWorldMt::collisionWorldStep() {
+	btDiscreteDynamicsWorld::collisionWorldStep();
+}

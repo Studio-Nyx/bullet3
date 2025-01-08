@@ -539,6 +539,37 @@ void btDiscreteDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 	}
 }
 
+void btDiscreteDynamicsWorld::collisionWorldStep() {
+
+	// Clear all cached manifolds, only the last step manifolds are important
+	m_dispatcher1->ClearManifoldsCache();
+	m_dispatcher1->ClearParticlesManifolds();
+
+	///perform collision detection
+	performDiscreteCollisionDetection();
+
+	for (int i = 0; i < m_dispatcher1->getNumManifolds(); i++)
+	{
+		btPersistentManifold* manifold = m_dispatcher1->getManifoldByIndexInternal(i);
+		if(manifold->m_hasCollided)
+		{
+			if(manifold->getBody0()->getBroadphaseHandle()->m_collisionFilterGroup == 3 || manifold->getBody1()->getBroadphaseHandle()->m_collisionFilterGroup == 3) {
+				btPersistentManifold* newManifold = new btPersistentManifold;
+				*newManifold = *manifold;
+				newManifold->CopyContactsFromManifold(manifold);
+				m_dispatcher1->addParticlesManifold(newManifold);
+			}
+			else
+			{
+				btPersistentManifold* newManifold = new btPersistentManifold;
+				*newManifold = *manifold;
+				newManifold->CopyContactsFromManifold(manifold);			
+				m_dispatcher1->addManifoldToCache(newManifold);
+			}
+		}
+	}
+}
+
 void btDiscreteDynamicsWorld::setGravity(const btVector3& gravity)
 {
 	m_gravity = gravity;

@@ -126,6 +126,7 @@ public:
 	virtual ~btDiscreteDynamicsWorldMt();
 
 	virtual int stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep) BT_OVERRIDE;
+	virtual void collisionWorldStep() BT_OVERRIDE;
 };
 
 #endif  //BT_DISCRETE_DYNAMICS_WORLD_H
