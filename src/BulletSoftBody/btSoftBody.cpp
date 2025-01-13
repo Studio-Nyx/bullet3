@@ -452,6 +452,7 @@ void btSoftBody::appendLink(Node* node0,
 		l.m_n[0] = node0;
 		l.m_n[1] = node1;
 		l.m_rl = (l.m_n[0]->m_x - l.m_n[1]->m_x).length();
+		l.m_c1 = l.m_rl* l.m_rl;
 		m_bUpdateRtCst = true;
 	}
 }
