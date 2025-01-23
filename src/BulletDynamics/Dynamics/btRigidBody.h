@@ -71,7 +71,9 @@ class btRigidBody : public btCollisionObject
 	btVector3 m_gravity_acceleration;
 	btVector3 m_invInertiaLocal;
 	btVector3 m_totalForce;
+	btVector3 m_lastTotalForce;
 	btVector3 m_totalTorque;
+	btVector3 m_lastAcceleration;
 
 	btScalar m_linearDamping;
 	btScalar m_angularDamping;
@@ -336,6 +338,22 @@ public:
 		return m_totalForce;
 	};
 
+	const btVector3& updateAcceleration(btScalar step)
+	{
+		m_lastAcceleration = m_totalForce * (m_inverseMass * step);
+		return m_lastAcceleration;
+	}
+
+	const btVector3& getAcceleration() const
+	{
+		return m_lastAcceleration;
+	};
+
+	const btVector3& getLastTotalForce() const
+	{
+		return m_lastTotalForce;
+	};
+
 	const btVector3& getTotalTorque() const
 	{
 		return m_totalTorque;
@@ -485,6 +503,7 @@ public:
 
 	void clearForces()
 	{
+		m_lastTotalForce = m_totalForce;
 		m_totalForce.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 		m_totalTorque.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	}

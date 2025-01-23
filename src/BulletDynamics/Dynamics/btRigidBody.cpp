@@ -43,11 +43,13 @@ void btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 
 	m_linearVelocity.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_angularVelocity.setValue(btScalar(0.), btScalar(0.), btScalar(0.));
+	m_lastAcceleration.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_angularFactor.setValue(1, 1, 1);
 	m_linearFactor.setValue(1, 1, 1);
 	m_gravity.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_gravity_acceleration.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_totalForce.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
+	m_lastTotalForce.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_totalTorque.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0)),
 		setDamping(constructionInfo.m_linearDamping, constructionInfo.m_angularDamping);
 
@@ -389,7 +391,7 @@ void btRigidBody::integrateVelocities(btScalar step)
 	if (isStaticOrKinematicObject())
 		return;
 
-	m_linearVelocity += m_totalForce * (m_inverseMass * step);
+	m_linearVelocity += updateAcceleration(step);
 	m_angularVelocity += m_invInertiaTensorWorld * m_totalTorque * step;
 
 
