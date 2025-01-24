@@ -73,8 +73,10 @@ class btRigidBody : public btCollisionObject
 	btVector3 m_totalForce;
 	btVector3 m_lastTotalForce;
 	btVector3 m_totalTorque;
+	btVector3 m_lastTotalTorque;
 	btVector3 m_lastAcceleration;
-
+	btVector3 m_lastAngularAcceleration;
+	
 	btScalar m_linearDamping;
 	btVector3 m_angularDamping;
 
@@ -344,10 +346,16 @@ public:
 		return m_totalForce;
 	};
 
-	const btVector3& updateAcceleration(btScalar step)
+	const btVector3& updateAcceleration()
 	{
-		m_lastAcceleration = m_totalForce * (m_inverseMass * step);
+		m_lastAcceleration = m_totalForce * m_inverseMass;
 		return m_lastAcceleration;
+	}
+
+	const btVector3& updateAngularAcceleration()
+	{
+		m_lastAngularAcceleration = m_invInertiaTensorWorld * m_totalTorque;
+		return m_lastAngularAcceleration;
 	}
 
 	const btVector3& getAcceleration() const
@@ -355,14 +363,24 @@ public:
 		return m_lastAcceleration;
 	};
 
-	const btVector3& getLastTotalForce() const
+	const btVector3& getAngularAcceleration() const
 	{
-		return m_lastTotalForce;
+		return m_lastAngularAcceleration;
+	};
+
+	const btVector3& getLastTotalTorque() const
+	{
+		return m_lastTotalTorque;
 	};
 
 	const btVector3& getTotalTorque() const
 	{
 		return m_totalTorque;
+	};
+
+	const btVector3& getLastTotalForce() const
+	{
+		return m_lastTotalForce;
 	};
 
 	const btVector3& getInvInertiaDiagLocal() const
@@ -510,6 +528,7 @@ public:
 	void clearForces()
 	{
 		m_lastTotalForce = m_totalForce;
+		m_lastTotalTorque = m_totalTorque;
 		m_totalForce.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 		m_totalTorque.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	}

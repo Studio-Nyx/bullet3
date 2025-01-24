@@ -20,6 +20,7 @@ subject to the following restrictions:
 #include "LinearMath/btMotionState.h"
 #include "BulletDynamics/ConstraintSolver/btTypedConstraint.h"
 #include "LinearMath/btSerializer.h"
+#include <btBulletDynamicsCommon.h>
 
 //'temporarily' global variables
 btScalar gDeactivationTime = btScalar(2.);
@@ -42,8 +43,9 @@ void btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 	m_internalType = CO_RIGID_BODY;
 
 	m_linearVelocity.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
-	m_angularVelocity.setValue(btScalar(0.), btScalar(0.), btScalar(0.));
 	m_lastAcceleration.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
+	m_angularVelocity.setValue(btScalar(0.), btScalar(0.), btScalar(0.));
+	m_lastAngularAcceleration.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_angularFactor.setValue(1, 1, 1);
 	m_linearFactor.setValue(1, 1, 1);
 	m_gravity.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
@@ -51,6 +53,7 @@ void btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 	m_totalForce.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_lastTotalForce.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_totalTorque.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0)),
+	m_lastTotalTorque.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	setDamping(constructionInfo.m_linearDamping, constructionInfo.m_angularDamping);
 
 	m_linearSleepingThreshold = constructionInfo.m_linearSleepingThreshold;
@@ -447,20 +450,20 @@ void btRigidBody::integrateVelocities(btScalar step)
 	if (isStaticOrKinematicObject())
 		return;
 
-	m_linearVelocity += updateAcceleration(step);
-	m_angularVelocity += m_invInertiaTensorWorld * m_totalTorque * step;
+	m_linearVelocity += updateAcceleration() * step;
+	m_angularVelocity += updateAngularAcceleration() * step;
 
 
-#define MAX_ANGVEL SIMD_HALF_PI
-	/// clamp angular velocity. collision calculations will fail on higher angular velocities
-	btScalar angvel = m_angularVelocity.length();
-	if (angvel * step > MAX_ANGVEL)
-	{
-		m_angularVelocity *= (MAX_ANGVEL / step) / angvel;
-	}
-	#if defined(BT_CLAMP_VELOCITY_TO) && BT_CLAMP_VELOCITY_TO > 0
-	clampVelocity(m_angularVelocity);
-	#endif
+	/*#define MAX_ANGVEL SIMD_HALF_PI
+		/// clamp angular velocity. collision calculations will fail on higher angular velocities
+		btScalar angvel = m_angularVelocity.length();
+		if (angvel * step > MAX_ANGVEL)
+		{
+			m_angularVelocity *= (MAX_ANGVEL / step) / angvel;
+		}
+		#if defined(BT_CLAMP_VELOCITY_TO) && BT_CLAMP_VELOCITY_TO > 0
+		clampVelocity(m_angularVelocity);
+		#endif*/
 }
 
 void btRigidBody::clampVelocity()
