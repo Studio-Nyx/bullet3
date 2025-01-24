@@ -409,10 +409,23 @@ void btRigidBody::integrateVelocities(btScalar step)
 
 void btRigidBody::clampVelocity()
 {
-	if (m_linearVelocity.length() > m_maxLinearVelocity && m_maxLinearVelocity > 0)
+	if (m_maxLinearVelocity > 0 && m_linearVelocity.length() > m_maxLinearVelocity)
 		m_linearVelocity = m_linearVelocity.normalized() * m_maxLinearVelocity;
-	if (m_angularVelocity.length() > m_maxAngularVelocity && m_maxAngularVelocity > 0)
-		m_angularVelocity = m_angularVelocity.normalized() * m_maxAngularVelocity;
+
+	if (m_maxAngularVelocity > 0)
+	{
+		btScalar x = m_angularVelocity.getX();
+		btClamp(x, -m_maxAngularVelocity, m_maxAngularVelocity);
+		m_angularVelocity.setX(x);
+
+		btScalar y = m_angularVelocity.getY();
+		btClamp(y, -m_maxAngularVelocity, m_maxAngularVelocity);
+		m_angularVelocity.setY(y);
+
+		btScalar z = m_angularVelocity.getZ();
+		btClamp(z, -m_maxAngularVelocity, m_maxAngularVelocity);
+		m_angularVelocity.setZ(z);
+	}
 }
 
 btQuaternion btRigidBody::getOrientation() const
