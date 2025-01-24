@@ -35,6 +35,13 @@ btDefaultMotionState : public btMotionState
 	{
 		m_graphicsWorldTrans = centerOfMassWorldTrans * m_centerOfMassOffset;
 	}
+
+	///synchronizes world transform from physics to user
+	///Bullet only calls the update of worldtransform for active objects
+	virtual btTransform getGraphicsWorldTransform() const
+	{
+		return m_graphicsWorldTrans;
+	}
 };
 
 #endif  //BT_DEFAULT_MOTION_STATE_H

@@ -504,7 +504,7 @@ void btBulletXmlWorldImporter::deSerializeRigidBodyFloatData(XMLNode* pParent)
 	SET_VECTOR4_VALUE(pParent, rbData, m_totalForce)
 	SET_FLOAT_VALUE(pParent, rbData, m_inverseMass);
 	SET_FLOAT_VALUE(pParent, rbData, m_linearDamping);
-	SET_FLOAT_VALUE(pParent, rbData, m_angularDamping);
+	SET_VECTOR4_VALUE(pParent, rbData, m_angularDamping);
 	SET_FLOAT_VALUE(pParent, rbData, m_additionalDampingFactor);
 	SET_FLOAT_VALUE(pParent, rbData, m_additionalLinearDampingThresholdSqr);
 	SET_FLOAT_VALUE(pParent, rbData, m_additionalAngularDampingThresholdSqr);

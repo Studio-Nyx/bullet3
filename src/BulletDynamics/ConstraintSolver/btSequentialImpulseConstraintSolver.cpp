@@ -474,7 +474,7 @@ void btSequentialImpulseConstraintSolver::initSolverBody(btSolverBody* solverBod
 		solverBody->m_linearFactor = rb->getLinearFactor();
 		solverBody->m_linearVelocity = rb->getLinearVelocity();
 		solverBody->m_angularVelocity = rb->getAngularVelocity();
-		solverBody->m_externalTorqueImpulse = rb->getTotalTorque() * rb->getInvInertiaTensorWorld() * timeStep;
+		solverBody->m_externalTorqueImpulse = rb->updateAngularAcceleration(timeStep);
 		solverBody->m_externalForceImpulse = rb->updateAcceleration(timeStep);
 	}
 	else

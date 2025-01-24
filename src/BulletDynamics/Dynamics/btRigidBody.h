@@ -76,7 +76,7 @@ class btRigidBody : public btCollisionObject
 	btVector3 m_lastAcceleration;
 
 	btScalar m_linearDamping;
-	btScalar m_angularDamping;
+	btVector3 m_angularDamping;
 
 	bool m_additionalDamping;
 	btScalar m_additionalDampingFactor;
@@ -131,7 +131,7 @@ public:
 		btCollisionShape* m_collisionShape;
 		btVector3 m_localInertia;
 		btScalar m_linearDamping;
-		btScalar m_angularDamping;
+		btVector3 m_angularDamping;
 
 		///best simulation results when friction is non-zero
 		btScalar m_friction;
@@ -159,7 +159,7 @@ public:
 																																									   m_collisionShape(collisionShape),
 																																									   m_localInertia(localInertia),
 																																									   m_linearDamping(btScalar(0.)),
-																																									   m_angularDamping(btScalar(0.)),
+																																									   m_angularDamping(btVector3(0,0,0)),
 																																									   m_friction(btScalar(0.5)),
 																																									   m_rollingFriction(btScalar(0)),
 																																									   m_spinningFriction(btScalar(0)),
@@ -270,6 +270,7 @@ public:
 		return m_gravity_acceleration;
 	}
 
+	void setDamping(btScalar lin_damping, btVector3 ang_damping);
 	void setDamping(btScalar lin_damping, btScalar ang_damping);
 
 	btScalar getLinearDamping() const
@@ -277,9 +278,14 @@ public:
 		return m_linearDamping;
 	}
 
-	btScalar getAngularDamping() const
+	btVector3 getAngularDamping3() const
 	{
 		return m_angularDamping;
+	}
+
+	btScalar getAngularDamping() const
+	{
+		return m_angularDamping.length();
 	}
 
 	btScalar getLinearSleepingThreshold() const
@@ -747,7 +753,7 @@ struct btRigidBodyFloatData
 	btVector3FloatData m_totalTorque;
 	float m_inverseMass;
 	float m_linearDamping;
-	float m_angularDamping;
+	btVector3FloatData m_angularDamping;
 	float m_additionalDampingFactor;
 	float m_additionalLinearDampingThresholdSqr;
 	float m_additionalAngularDampingThresholdSqr;
@@ -773,7 +779,7 @@ struct btRigidBodyDoubleData
 	btVector3DoubleData m_totalTorque;
 	double m_inverseMass;
 	double m_linearDamping;
-	double m_angularDamping;
+	btVector3DoubleData m_angularDamping;
 	double m_additionalDampingFactor;
 	double m_additionalLinearDampingThresholdSqr;
 	double m_additionalAngularDampingThresholdSqr;

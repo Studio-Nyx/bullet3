@@ -51,7 +51,7 @@ void btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 	m_totalForce.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_lastTotalForce.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_totalTorque.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0)),
-		setDamping(constructionInfo.m_linearDamping, constructionInfo.m_angularDamping);
+	setDamping(constructionInfo.m_linearDamping, constructionInfo.m_angularDamping);
 
 	m_linearSleepingThreshold = constructionInfo.m_linearSleepingThreshold;
 	m_angularSleepingThreshold = constructionInfo.m_angularSleepingThreshold;
@@ -151,6 +151,19 @@ void btRigidBody::setGravity(const btVector3& acceleration)
 	m_gravity_acceleration = acceleration;
 }
 
+void btRigidBody::setDamping(btScalar lin_damping, btVector3 ang_damping)
+{
+#ifdef BT_USE_OLD_DAMPING_METHOD
+	m_linearDamping = btMax(lin_damping, btScalar(0.0));
+	m_angularDamping = btMax(ang_damping, btScalar(0.0));
+#else
+	m_linearDamping = btClamped(lin_damping, btScalar(0.0), btScalar(1.0));
+	m_angularDamping.setX(btClamped(ang_damping.getX(), btScalar(0.0), btScalar(1.0)));
+	m_angularDamping.setY(btClamped(ang_damping.getY(), btScalar(0.0), btScalar(1.0)));
+	m_angularDamping.setZ(btClamped(ang_damping.getZ(), btScalar(0.0), btScalar(1.0)));
+#endif
+}
+
 void btRigidBody::setDamping(btScalar lin_damping, btScalar ang_damping)
 {
 #ifdef BT_USE_OLD_DAMPING_METHOD
@@ -158,7 +171,11 @@ void btRigidBody::setDamping(btScalar lin_damping, btScalar ang_damping)
 	m_angularDamping = btMax(ang_damping, btScalar(0.0));
 #else
 	m_linearDamping = btClamped(lin_damping, btScalar(0.0), btScalar(1.0));
-	m_angularDamping = btClamped(ang_damping, btScalar(0.0), btScalar(1.0));
+	m_angularDamping.setX(btClamped(ang_damping, btScalar(0.0), btScalar(1.0)));
+	m_angularDamping.setY(btClamped(ang_damping, btScalar(0.0), btScalar(1.0)));
+	m_angularDamping.setZ(btClamped(ang_damping, btScalar(0.0), btScalar(1.0)));
+
+
 #endif
 }
 
@@ -172,8 +189,20 @@ void btRigidBody::applyDamping(btScalar timeStep)
 	m_linearVelocity *= btMax((btScalar(1.0) - timeStep * m_linearDamping), btScalar(0.0));
 	m_angularVelocity *= btMax((btScalar(1.0) - timeStep * m_angularDamping), btScalar(0.0));
 #else
-	m_linearVelocity *= btPow(btScalar(1) - m_linearDamping, timeStep);
-	m_angularVelocity *= btPow(btScalar(1) - m_angularDamping, timeStep);
+	m_linearVelocity *= btPow(btScalar(1) - m_linearDamping, timeStep); 
+
+	// m_angularDamping is LCS
+	// m_angularVelocity is ECEF
+	// Convert angular velocity to LCS, apply damping, convert it back to ECEF
+	btDefaultMotionState* mo = (btDefaultMotionState*)m_optionalMotionState;
+	btTransform tr = mo->getGraphicsWorldTransform();
+	btVector3 angularVelocityLCS = tr.getBasis().inverse() * m_angularVelocity;
+	angularVelocityLCS.setX(angularVelocityLCS.getX() * btPow(btScalar(1) - m_angularDamping.getX(), timeStep));
+	angularVelocityLCS.setY(angularVelocityLCS.getY() * btPow(btScalar(1) - m_angularDamping.getY(), timeStep));
+	angularVelocityLCS.setZ(angularVelocityLCS.getZ() * btPow(btScalar(1) - m_angularDamping.getZ(), timeStep));
+
+	m_angularVelocity = tr.getBasis() * angularVelocityLCS;
+
 #endif
 
 	if (m_additionalDamping)
@@ -202,18 +231,45 @@ void btRigidBody::applyDamping(btScalar timeStep)
 			}
 		}
 
-		btScalar angSpeed = m_angularVelocity.length();
-		if (angSpeed < m_angularDamping)
+		btScalar angDampVel = btScalar(0.005);
+		btVector3 dir = m_angularVelocity.normalized();
+
+		btScalar angSpeedX = m_angularVelocity.getX();
+		if (angSpeedX < m_angularDamping.getX())
 		{
-			btScalar angDampVel = btScalar(0.005);
-			if (angSpeed > angDampVel)
+			if (angSpeedX > angDampVel)
 			{
-				btVector3 dir = m_angularVelocity.normalized();
-				m_angularVelocity -= dir * angDampVel;
+				m_angularVelocity.setX(angSpeedX - dir.getX() * angDampVel);
 			}
 			else
 			{
-				m_angularVelocity.setValue(btScalar(0.), btScalar(0.), btScalar(0.));
+				m_angularVelocity.setX(btScalar(0.));
+			}
+		}
+
+		btScalar angSpeedY = m_angularVelocity.getY();
+		if (angSpeedY < m_angularDamping.getY())
+		{
+			if (angSpeedY > angDampVel)
+			{
+				m_angularVelocity.setY(angSpeedY - dir.getY() * angDampVel);
+			}
+			else
+			{
+				m_angularVelocity.setY(btScalar(0.));
+			}
+		}
+
+		btScalar angSpeedZ = m_angularVelocity.getZ();
+		if (angSpeedZ < m_angularDamping.getZ())
+		{
+			if (angSpeedZ > angDampVel)
+			{
+				m_angularVelocity.setZ(angSpeedZ - dir.getZ() * angDampVel);
+			}
+			else
+			{
+				m_angularVelocity.setZ(btScalar(0.));
 			}
 		}
 	}
@@ -519,7 +575,7 @@ const char* btRigidBody::serialize(void* dataBuffer, class btSerializer* seriali
 	m_totalForce.serialize(rbd->m_totalForce);
 	m_totalTorque.serialize(rbd->m_totalTorque);
 	rbd->m_linearDamping = m_linearDamping;
-	rbd->m_angularDamping = m_angularDamping;
+	m_angularDamping.serialize(rbd->m_angularDamping);
 	rbd->m_additionalDamping = m_additionalDamping;
 	rbd->m_additionalDampingFactor = m_additionalDampingFactor;
 	rbd->m_additionalLinearDampingThresholdSqr = m_additionalLinearDampingThresholdSqr;
